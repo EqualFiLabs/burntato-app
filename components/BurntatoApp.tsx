@@ -207,24 +207,34 @@ const navigation = [
 function BottomNavigation({ screen, select, announce }: { screen: Screen; select: (screen: Screen) => void; announce: (message: string) => void }) {
   return (
     <nav className="bottom-navigation" aria-label="Primary navigation">
-      {navigation.map(({ id, label, Icon, notice }) => {
-        const active = id === screen;
-        return (
-          <button
-            key={id}
-            className={active ? "nav-item is-active" : "nav-item"}
-            type="button"
-            aria-current={active ? "page" : undefined}
-            onClick={() => {
-              if (id === "grab" || id === "burn") select(id);
-              else announce(`${label} is a visual placeholder in this first pass.`);
-            }}
-          >
-            <span className="nav-icon"><Icon aria-hidden="true" />{notice && <i />}</span>
-            <span>{label}</span>
-          </button>
-        );
-      })}
+      <div className="sidebar-header">
+        <Brand />
+        <span>Hot Potato</span>
+      </div>
+      <div className="nav-items">
+        {navigation.map(({ id, label, Icon, notice }) => {
+          const active = id === screen;
+          return (
+            <button
+              key={id}
+              className={active ? "nav-item is-active" : "nav-item"}
+              type="button"
+              aria-current={active ? "page" : undefined}
+              onClick={() => {
+                if (id === "grab" || id === "burn") select(id);
+                else announce(`${label} is a visual placeholder in this first pass.`);
+              }}
+            >
+              <span className="nav-icon"><Icon aria-hidden="true" />{notice && <i />}</span>
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="sidebar-round" aria-hidden="true">
+        <span className="sidebar-round-flame"><Flame /></span>
+        <span><small>Live round</small><strong>#127</strong></span>
+      </div>
     </nav>
   );
 }
