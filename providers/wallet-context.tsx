@@ -2,9 +2,18 @@
 
 import { createContext, useContext } from "react";
 
-export type WalletStatus = "unconfigured" | "loading" | "signed-out" | "ready";
+export type WalletStatus =
+  | "unconfigured"
+  | "loading"
+  | "signed-out"
+  | "ready"
+  | "wallet-missing"
+  | "error";
 
 export type WalletKind = "embedded" | "external";
+
+/** Wallet action currently in flight, used to block duplicate clicks. */
+export type WalletAction = "login" | "logout" | "connect-external" | "select" | null;
 
 export type EvmWalletSummary = {
   address: string;
@@ -26,6 +35,11 @@ export type WalletState = {
   activeAddress: string | null;
   activeWalletKind: WalletKind | null;
   activeWalletLabel: string | null;
+  /** Ethereum-mainnet block-explorer URL for the active address, or null. */
+  explorerUrl: string | null;
+  busyAction: WalletAction;
+  /** Human-readable wallet feedback. Never contains provider internals. */
+  error: string | null;
   login: () => void;
   logout: () => void;
   connectExternalWallet: () => void;
@@ -42,6 +56,9 @@ export const defaultWalletState: WalletState = {
   activeAddress: null,
   activeWalletKind: null,
   activeWalletLabel: null,
+  explorerUrl: null,
+  busyAction: null,
+  error: null,
   login: () => undefined,
   logout: () => undefined,
   connectExternalWallet: () => undefined,

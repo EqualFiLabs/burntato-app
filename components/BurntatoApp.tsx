@@ -9,6 +9,7 @@ import {
   CircleCheck,
   Clock3,
   Copy,
+  ExternalLink,
   Flame,
   Gift,
   History,
@@ -291,21 +292,26 @@ function shortAddress(address: string): string {
 
 function AppHeader() {
   const wallet = useWalletState();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const activeAddress = wallet.activeAddress;
   const connected = wallet.status === "ready" && activeAddress !== null;
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!panelOpen) return;
+    panelRef.current?.focus();
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node | null;
-      if (menuRef.current && target && !menuRef.current.contains(target)) setMenuOpen(false);
+      if (panelRef.current && target && !panelRef.current.contains(target)) setPanelOpen(false);
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setPanelOpen(false);
+        triggerRef.current?.focus();
+      }
     }
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -314,13 +320,22 @@ function AppHeader() {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [menuOpen]);
+  }, [panelOpen]);
 
   async function copyAddress() {
     const succeeded = await wallet.copyActiveAddress();
     setCopied(succeeded);
     if (succeeded) window.setTimeout(() => setCopied(false), 2000);
   }
+
+  function closePanel() {
+    setPanelOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  const unavailableTitle = wallet.configured
+    ? undefined
+    : "Set the public wallet environment variables to enable sign in.";
 
   return (
     <header className="app-header">
@@ -334,32 +349,46 @@ function AppHeader() {
         {connected ? (
           <div className="wallet-control">
             <button
+              ref={triggerRef}
               className="wallet-pill"
               type="button"
-              aria-haspopup="menu"
-              aria-expanded={menuOpen}
-              aria-controls="account-menu"
-              onClick={() => setMenuOpen((open) => !open)}
+              aria-haspopup="dialog"
+              aria-expanded={panelOpen}
+              aria-controls="account-panel"
+              onClick={() => setPanelOpen((open) => !open)}
             >
               <WalletCards aria-hidden="true" />
               <span>{shortAddress(activeAddress)}</span>
               <ChevronDown aria-hidden="true" />
             </button>
-            {menuOpen && (
-              <div className="account-menu" id="account-menu" role="menu" aria-label="Account" ref={menuRef}>
+            {panelOpen && (
+              <div
+                className="account-menu"
+                id="account-panel"
+                role="dialog"
+                aria-label="Account"
+                ref={panelRef}
+                tabIndex={-1}
+              >
                 <div className="account-menu-heading">
                   <strong>{wallet.activeWalletLabel}</strong>
                   <span>{shortAddress(activeAddress)}</span>
                 </div>
-                <button role="menuitem" type="button" onClick={() => void copyAddress()}>
+                <button type="button" onClick={() => void copyAddress()}>
                   <Copy aria-hidden="true" />
                   <span>{copied ? "Copied" : "Copy address"}</span>
                 </button>
+                {wallet.explorerUrl && (
+                  <a href={wallet.explorerUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink aria-hidden="true" />
+                    <span>View on explorer</span>
+                  </a>
+                )}
                 <button
-                  role="menuitem"
                   type="button"
+                  disabled={wallet.busyAction !== null}
                   onClick={() => {
-                    setMenuOpen(false);
+                    closePanel();
                     wallet.connectExternalWallet();
                   }}
                 >
@@ -367,26 +396,35 @@ function AppHeader() {
                   <span>Connect external wallet</span>
                 </button>
                 <button
-                  role="menuitem"
                   type="button"
+                  disabled={wallet.busyAction === "logout"}
                   onClick={() => {
-                    setMenuOpen(false);
+                    closePanel();
                     wallet.logout();
                   }}
                 >
                   <LogOut aria-hidden="true" />
-                  <span>Sign out</span>
+                  <span>{wallet.busyAction === "logout" ? "Signing out…" : "Sign out"}</span>
                 </button>
               </div>
             )}
           </div>
-        ) : (
+        ) : wallet.status === "wallet-missing" ? (
           <button
             className="wallet-pill"
             type="button"
+            disabled={wallet.busyAction !== null}
+            onClick={wallet.connectExternalWallet}
+          >
+            <WalletCards aria-hidden="true" />
+            <span>{wallet.busyAction === "connect-external" ? "Connecting…" : "Add wallet"}</span>
+          </button>
+        ) : (
+          <button
+            className="wallet-pill"
             disabled={!wallet.configured || wallet.status === "loading"}
             aria-busy={wallet.status === "loading"}
-            title={wallet.configured ? undefined : "Set NEXT_PUBLIC_PRIVY_APP_ID to enable sign in."}
+            title={unavailableTitle}
             onClick={wallet.login}
           >
             <WalletCards aria-hidden="true" />
@@ -846,6 +884,7 @@ function PortalScreen({ announce }: { announce: (message: string) => void }) {
               {wallet.evmWallets.length > 0 && wallet.activeAddress ? (
                 <select
                   value={wallet.activeAddress}
+                  disabled={wallet.busyAction === "select"}
                   onChange={(event) => {
                     wallet.selectEvmWallet(event.target.value);
                     setReviewing(false);
@@ -861,16 +900,26 @@ function PortalScreen({ announce }: { announce: (message: string) => void }) {
                 <button
                   className="portal-wallet-cta"
                   type="button"
-                  disabled={!wallet.configured || wallet.status === "loading"}
+                  disabled={!wallet.configured || wallet.status === "loading" || wallet.busyAction !== null}
                   aria-busy={wallet.status === "loading"}
-                  title={wallet.configured ? undefined : "Set NEXT_PUBLIC_PRIVY_APP_ID to enable sign in."}
-                  onClick={wallet.login}
+                  title={
+                    wallet.configured
+                      ? undefined
+                      : "Set the public wallet environment variables to enable sign in."
+                  }
+                  onClick={
+                    wallet.status === "wallet-missing" ? wallet.connectExternalWallet : wallet.login
+                  }
                 >
                   {wallet.status === "loading"
                     ? "Preparing wallet…"
-                    : wallet.configured
-                      ? "Sign in to use your wallets"
-                      : "Sign-in unavailable"}
+                    : !wallet.configured
+                      ? "Sign-in unavailable"
+                      : wallet.status === "wallet-missing"
+                        ? "Connect an EVM wallet"
+                        : wallet.status === "error"
+                          ? "Retry sign in"
+                          : "Sign in to use your wallets"}
                 </button>
               )}
             </label>
@@ -1323,9 +1372,13 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
 }
 
 export function BurntatoApp() {
+  const wallet = useWalletState();
   const [screen, setScreen] = useState<Screen>("grab");
   const [notice, setNotice] = useState("");
   const [claimedRewards, setClaimedRewards] = useState<ClaimableRewardId[]>([]);
+  // Wallet errors take precedence over demo notices and clear themselves when
+  // the next wallet action starts, so they need no effect-driven copying.
+  const displayedNotice = wallet.error ?? notice;
 
   function announce(message: string) {
     setNotice(message);
@@ -1347,9 +1400,11 @@ export function BurntatoApp() {
         <RewardsScreen claimedRewards={claimedRewards} onClaim={claimReward} />
       )}
       <BottomNavigation screen={screen} select={setScreen} />
-      <div className={notice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
-        <span>{notice}</span>
-        {notice && <button type="button" onClick={() => setNotice("")} aria-label="Dismiss message">×</button>}
+      <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
+        <span>{displayedNotice}</span>
+        {displayedNotice === notice && notice && (
+          <button type="button" onClick={() => setNotice("")} aria-label="Dismiss message">×</button>
+        )}
       </div>
     </div>
   );

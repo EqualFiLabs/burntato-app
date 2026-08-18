@@ -3610,7 +3610,8 @@ button {
   font-size: 2.05cqw;
 }
 
-.account-menu button {
+.account-menu button,
+.account-menu a {
   display: flex;
   align-items: center;
   gap: 1.3cqw;
@@ -3622,15 +3623,19 @@ button {
   font-size: 2.3cqw;
   font-weight: 750;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 
 .account-menu button:hover,
-.account-menu button:focus-visible {
+.account-menu button:focus-visible,
+.account-menu a:hover,
+.account-menu a:focus-visible {
   background: rgba(255, 150, 28, 0.14);
 }
 
-.account-menu button svg {
+.account-menu button svg,
+.account-menu a svg {
   width: 2.7cqw;
   height: 2.7cqw;
   color: #ffa522;
@@ -3649,11 +3654,6 @@ button {
   font-weight: 850;
   text-align: left;
   cursor: pointer;
-}
-
-.portal-wallet-cta:disabled {
-  opacity: 0.62;
-  cursor: default;
 }
 
 @media (min-width: 1024px) {
@@ -3680,24 +3680,17 @@ button {
     font-size: 11px;
   }
 
-  .account-menu button {
+  .account-menu button,
+  .account-menu a {
     gap: 8px;
     padding: 9px 10px;
     border-radius: 7px;
     font-size: 12px;
   }
 
-  .account-menu button svg {
+  .account-menu button svg,
+  .account-menu a svg {
     width: 14px;
     height: 14px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
   }
 }

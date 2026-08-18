@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getEmbeddedConnectedWallet,
   PrivyProvider,
@@ -26,24 +26,97 @@ import {
   WalletContext,
   type EvmWalletSummary,
   type SolanaWalletSummary,
+  type WalletAction,
   type WalletKind,
   type WalletState,
   type WalletStatus,
 } from "./wallet-context";
 
+const RPC_VARIABLE_NAMES = [
+  "NEXT_PUBLIC_ETHEREUM_RPC_URL",
+  "NEXT_PUBLIC_BASE_RPC_URL",
+  "NEXT_PUBLIC_ARBITRUM_RPC_URL",
+] as const;
+
 type PrivyEnvironment = {
+  /** True only when Privy and every wallet RPC variable are present and valid. */
   configured: boolean;
   appId: string;
   clientId: string | undefined;
+  ethereumRpcUrl: string;
+  baseRpcUrl: string;
+  arbitrumRpcUrl: string;
 };
 
-function readPrivyEnvironment(source: Record<string, string | undefined> = process.env): PrivyEnvironment {
-  const appId = source.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
-  const clientId = source.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? "";
-  return { configured: appId.length > 0, appId, clientId: clientId.length > 0 ? clientId : undefined };
+/**
+ * Accepts only absolute, credential-free HTTP(S) URLs so a misconfigured
+ * endpoint fails loudly instead of quietly degrading the wallet runtime.
+ */
+function parsePublicRpcUrl(value: string | undefined, variableName: string, problems: string[]): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    problems.push(`${variableName} is not set`);
+    return "";
+  }
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    problems.push(`${variableName} is not an absolute HTTP(S) URL`);
+    return "";
+  }
+  if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) {
+    problems.push(`${variableName} is not a credential-free HTTP(S) URL`);
+    return "";
+  }
+  return url.toString();
 }
 
-const privyEnvironment = readPrivyEnvironment();
+/**
+ * Every variable is read through explicit static `process.env` property
+ * references so Next.js inlines identical values into the server and browser
+ * bundles. An indirect `process.env` object would leave the browser with
+ * undefined values and cause a configured/unconfigured hydration mismatch.
+ */
+function readPrivyEnvironment(source: {
+  NEXT_PUBLIC_PRIVY_APP_ID?: string;
+  NEXT_PUBLIC_PRIVY_CLIENT_ID?: string;
+  NEXT_PUBLIC_ETHEREUM_RPC_URL?: string;
+  NEXT_PUBLIC_BASE_RPC_URL?: string;
+  NEXT_PUBLIC_ARBITRUM_RPC_URL?: string;
+}): PrivyEnvironment {
+  const problems: string[] = [];
+  const appId = source.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
+  const clientId = source.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? "";
+  if (!appId) problems.push("NEXT_PUBLIC_PRIVY_APP_ID is not set");
+  const ethereumRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_ETHEREUM_RPC_URL, RPC_VARIABLE_NAMES[0], problems);
+  const baseRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_BASE_RPC_URL, RPC_VARIABLE_NAMES[1], problems);
+  const arbitrumRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_ARBITRUM_RPC_URL, RPC_VARIABLE_NAMES[2], problems);
+
+  const environment: PrivyEnvironment = {
+    configured: problems.length === 0,
+    appId,
+    clientId: clientId.length > 0 ? clientId : undefined,
+    ethereumRpcUrl,
+    baseRpcUrl,
+    arbitrumRpcUrl,
+  };
+
+  if (problems.length > 0) {
+    console.warn(
+      `Burntato wallets are unavailable: ${problems.join("; ")}. Set the public wallet environment variables to enable sign in.`
+    );
+  }
+  return environment;
+}
+
+const walletEnvironment = readPrivyEnvironment({
+  NEXT_PUBLIC_PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID,
+  NEXT_PUBLIC_PRIVY_CLIENT_ID: process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID,
+  NEXT_PUBLIC_ETHEREUM_RPC_URL: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL,
+  NEXT_PUBLIC_BASE_RPC_URL: process.env.NEXT_PUBLIC_BASE_RPC_URL,
+  NEXT_PUBLIC_ARBITRUM_RPC_URL: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL,
+});
 
 // Ethereum mainnet is the home chain; Base and Arbitrum are available because
 // the Portal will eventually bridge there.
@@ -52,9 +125,9 @@ const supportedChains = [mainnet, base, arbitrum] as const;
 const wagmiConfig = createConfig({
   chains: supportedChains,
   transports: {
-    [mainnet.id]: http(),
-    [base.id]: http(),
-    [arbitrum.id]: http(),
+    [mainnet.id]: http(walletEnvironment.ethereumRpcUrl),
+    [base.id]: http(walletEnvironment.baseRpcUrl),
+    [arbitrum.id]: http(walletEnvironment.arbitrumRpcUrl),
   },
 });
 
@@ -72,22 +145,6 @@ const WALLET_CLIENT_LABELS: Record<string, string> = {
   solflare: "Solflare",
   backpack: "Backpack",
 };
-
-/**
- * Single authoritative active-wallet resolution. The wallet wagmi reports as
- * active wins when it is still connected; otherwise the embedded wallet, then
- * any remaining wallet. Header and Portal both consume this through the wallet
- * context so they can never disagree.
- */
-function resolveActiveWallet(
-  wallets: readonly ConnectedWallet[],
-  wagmiAddress: string | undefined
-): ConnectedWallet | undefined {
-  const fromWagmi = wagmiAddress
-    ? wallets.find((wallet) => sameAddress(wallet.address, wagmiAddress))
-    : undefined;
-  return fromWagmi ?? getEmbeddedConnectedWallet([...wallets]) ?? wallets[0];
-}
 
 function walletClientLabel(clientType: string | undefined): string {
   if (!clientType) return "External wallet";
@@ -108,27 +165,100 @@ function sameAddress(left: string | undefined, right: string | undefined): boole
   return Boolean(left && right && left.toLowerCase() === right.toLowerCase());
 }
 
+/** Maps provider failures onto stable, human-readable feedback without internals. */
+function describeWalletError(error: unknown): string {
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
+  const normalized = message.toLowerCase();
+  if (normalized.includes("cancel") || normalized.includes("close") || normalized.includes("reject")) {
+    return "The wallet request was cancelled.";
+  }
+  if (normalized.includes("switch")) {
+    return "The active wallet could not be switched. Try again.";
+  }
+  return "The wallet request failed. Try again.";
+}
+
+/**
+ * Single authoritative active-wallet resolution. The wallet wagmi reports as
+ * active wins when it is still connected; otherwise the embedded wallet, then
+ * any remaining wallet. Header and Portal both consume this through the wallet
+ * context so they can never disagree.
+ */
+function resolveActiveWallet(
+  wallets: readonly ConnectedWallet[],
+  wagmiAddress: string | undefined
+): ConnectedWallet | undefined {
+  const fromWagmi = wagmiAddress
+    ? wallets.find((wallet) => sameAddress(wallet.address, wagmiAddress))
+    : undefined;
+  return fromWagmi ?? getEmbeddedConnectedWallet([...wallets]) ?? wallets[0];
+}
+
+function explorerUrlFor(address: string | null): string | null {
+  if (!address) return null;
+  const explorer = mainnet.blockExplorers?.default.url;
+  return explorer ? `${explorer}/address/${address}` : null;
+}
+
 function WalletBridge({ children }: { children: ReactNode }) {
-  const { ready, authenticated, login, logout } = usePrivy();
+  const { ready, authenticated, error: privyError, login, logout } = usePrivy();
   const { ready: walletsReady, wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
   const { address: wagmiAddress } = useAccount();
   const { setActiveWallet } = useSetActiveWallet();
+  const [busyAction, setBusyAction] = useState<WalletAction>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [requestedExternalAddress, setRequestedExternalAddress] = useState<string | null>(null);
+
   const { connectWallet } = useConnectWallet({
     onSuccess: ({ wallet }) => {
-      if (wallet.type === "ethereum") setRequestedExternalAddress(wallet.address);
+      setBusyAction(null);
+      if (wallet.type !== "ethereum") {
+        // The ethereum-only modal should never produce a Solana wallet here.
+        setActionError("Only an EVM wallet can be activated.");
+        return;
+      }
+      setRequestedExternalAddress(wallet.address);
+    },
+    onError: (error) => {
+      setBusyAction(null);
+      setActionError(describeWalletError(error));
     },
   });
 
+  const runAction = useCallback(
+    async (action: Exclude<WalletAction, null>, operation: () => Promise<unknown>) => {
+      setActionError(null);
+      setBusyAction(action);
+      try {
+        await operation();
+      } catch (error) {
+        setActionError(describeWalletError(error));
+      } finally {
+        setBusyAction(null);
+      }
+    },
+    []
+  );
+
+  // Activates a freshly connected external wallet once it appears in the
+  // wallet list. The connect-external busy state covers this whole span so
+  // duplicate clicks stay blocked until activation settles.
   useEffect(() => {
     if (!requestedExternalAddress) return;
     const wallet = wallets.find((candidate) => sameAddress(candidate.address, requestedExternalAddress));
     if (!wallet) return;
     let cancelled = false;
-    void setActiveWallet(wallet).finally(() => {
-      if (!cancelled) setRequestedExternalAddress(null);
-    });
+    setActiveWallet(wallet)
+      .then(() => {
+        if (!cancelled) setRequestedExternalAddress(null);
+      })
+      .catch(() => {
+        if (!cancelled) setActionError("The connected wallet could not be activated.");
+      })
+      .finally(() => {
+        if (!cancelled) setBusyAction(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -137,8 +267,9 @@ function WalletBridge({ children }: { children: ReactNode }) {
   const activeWallet = resolveActiveWallet(wallets, wagmiAddress);
 
   let status: WalletStatus = "loading";
-  if (ready && !authenticated) status = "signed-out";
-  else if (ready && authenticated && walletsReady && activeWallet) status = "ready";
+  if (privyError) status = "error";
+  else if (ready && !authenticated) status = "signed-out";
+  else if (ready && authenticated && walletsReady) status = activeWallet ? "ready" : "wallet-missing";
 
   const value = useMemo<WalletState>(() => {
     const evmWallets: EvmWalletSummary[] = wallets.map((wallet) => ({
@@ -160,12 +291,23 @@ function WalletBridge({ children }: { children: ReactNode }) {
       activeAddress,
       activeWalletKind: activeWallet ? walletKindOf(activeWallet.walletClientType) : null,
       activeWalletLabel: activeWallet ? walletClientLabel(activeWallet.walletClientType) : null,
-      login: () => login(),
-      logout: () => void logout(),
-      connectExternalWallet: () => void connectWallet(),
+      explorerUrl: explorerUrlFor(activeAddress),
+      busyAction,
+      error: actionError ?? (status === "error" ? describeWalletError(privyError) : null),
+      login: () => {
+        setActionError(null);
+        login();
+      },
+      logout: () => void runAction("logout", () => logout()),
+      connectExternalWallet: () => {
+        if (busyAction) return;
+        setActionError(null);
+        setBusyAction("connect-external");
+        connectWallet({ walletChainType: "ethereum-only" });
+      },
       selectEvmWallet: (address: string) => {
         const wallet = wallets.find((candidate) => sameAddress(candidate.address, address));
-        if (wallet) void setActiveWallet(wallet).catch(() => undefined);
+        if (wallet) void runAction("select", () => setActiveWallet(wallet));
       },
       copyActiveAddress: async () => {
         if (!activeAddress) return false;
@@ -178,11 +320,15 @@ function WalletBridge({ children }: { children: ReactNode }) {
       },
     };
   }, [
+    actionError,
     activeWallet,
     authenticated,
+    busyAction,
     connectWallet,
     login,
     logout,
+    privyError,
+    runAction,
     setActiveWallet,
     solanaWallets,
     status,
@@ -195,8 +341,8 @@ function WalletBridge({ children }: { children: ReactNode }) {
 function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
   return (
     <PrivyProvider
-      appId={privyEnvironment.appId}
-      clientId={privyEnvironment.clientId}
+      appId={walletEnvironment.appId}
+      clientId={walletEnvironment.clientId}
       config={{
         loginMethods: ["wallet", "email"],
         supportedChains: [...supportedChains],
@@ -226,7 +372,7 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
 
 function UnconfiguredWalletProviders({ children }: { children: ReactNode }) {
   // The module-level defaultWalletState keeps a stable identity, so the app
-  // renders normally in a signed-out shape without Privy environment values.
+  // renders normally in a signed-out shape without wallet environment values.
   return <WalletContext.Provider value={defaultWalletState}>{children}</WalletContext.Provider>;
 }
 
@@ -235,7 +381,7 @@ export function DAppProviders({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {privyEnvironment.configured ? (
+      {walletEnvironment.configured ? (
         <ConfiguredWalletProviders>{children}</ConfiguredWalletProviders>
       ) : (
         <UnconfiguredWalletProviders>{children}</UnconfiguredWalletProviders>
