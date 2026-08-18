@@ -20,7 +20,7 @@ import {
 import { createConfig, useSetActiveWallet, WagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "viem";
-import { arbitrum, base, mainnet } from "viem/chains";
+import { arbitrum, base, mainnet, sepolia } from "viem/chains";
 import { useAccount } from "wagmi";
 
 import {
@@ -33,11 +33,13 @@ import {
   type WalletState,
   type WalletStatus,
 } from "./wallet-context";
+import { BurntatoBridge, BurntatoContext, defaultBurntatoState } from "./burntato-context";
 
 const RPC_VARIABLE_NAMES = [
   "NEXT_PUBLIC_ETHEREUM_RPC_URL",
   "NEXT_PUBLIC_BASE_RPC_URL",
   "NEXT_PUBLIC_ARBITRUM_RPC_URL",
+  "NEXT_PUBLIC_SEPOLIA_RPC_URL",
 ] as const;
 
 type PrivyEnvironment = {
@@ -48,6 +50,7 @@ type PrivyEnvironment = {
   ethereumRpcUrl: string;
   baseRpcUrl: string;
   arbitrumRpcUrl: string;
+  sepoliaRpcUrl: string;
 };
 
 /**
@@ -86,6 +89,7 @@ function readPrivyEnvironment(source: {
   NEXT_PUBLIC_ETHEREUM_RPC_URL?: string;
   NEXT_PUBLIC_BASE_RPC_URL?: string;
   NEXT_PUBLIC_ARBITRUM_RPC_URL?: string;
+  NEXT_PUBLIC_SEPOLIA_RPC_URL?: string;
 }): PrivyEnvironment {
   const problems: string[] = [];
   const appId = source.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
@@ -94,6 +98,7 @@ function readPrivyEnvironment(source: {
   const ethereumRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_ETHEREUM_RPC_URL, RPC_VARIABLE_NAMES[0], problems);
   const baseRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_BASE_RPC_URL, RPC_VARIABLE_NAMES[1], problems);
   const arbitrumRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_ARBITRUM_RPC_URL, RPC_VARIABLE_NAMES[2], problems);
+  const sepoliaRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_SEPOLIA_RPC_URL, RPC_VARIABLE_NAMES[3], problems);
 
   const environment: PrivyEnvironment = {
     configured: problems.length === 0,
@@ -102,6 +107,7 @@ function readPrivyEnvironment(source: {
     ethereumRpcUrl,
     baseRpcUrl,
     arbitrumRpcUrl,
+    sepoliaRpcUrl,
   };
 
   if (problems.length > 0) {
@@ -118,11 +124,12 @@ const walletEnvironment = readPrivyEnvironment({
   NEXT_PUBLIC_ETHEREUM_RPC_URL: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL,
   NEXT_PUBLIC_BASE_RPC_URL: process.env.NEXT_PUBLIC_BASE_RPC_URL,
   NEXT_PUBLIC_ARBITRUM_RPC_URL: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL,
+  NEXT_PUBLIC_SEPOLIA_RPC_URL: process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL,
 });
 
-// Ethereum mainnet is the home chain; Base and Arbitrum are available because
-// the Portal will eventually bridge there.
-const supportedChains = [mainnet, base, arbitrum] as const;
+// Sepolia is the disposable game's home chain. Mainnet, Base, and Arbitrum
+// remain available for the future Portal plumbing.
+const supportedChains = [sepolia, mainnet, base, arbitrum] as const;
 
 const wagmiConfig = createConfig({
   chains: supportedChains,
@@ -130,6 +137,7 @@ const wagmiConfig = createConfig({
     [mainnet.id]: http(walletEnvironment.ethereumRpcUrl),
     [base.id]: http(walletEnvironment.baseRpcUrl),
     [arbitrum.id]: http(walletEnvironment.arbitrumRpcUrl),
+    [sepolia.id]: http(walletEnvironment.sepoliaRpcUrl),
   },
 });
 
@@ -203,7 +211,7 @@ function resolveActiveWallet(
 
 function explorerUrlFor(address: string | null): string | null {
   if (!address) return null;
-  const explorer = mainnet.blockExplorers?.default.url;
+  const explorer = sepolia.blockExplorers?.default.url;
   return explorer ? `${explorer}/address/${address}` : null;
 }
 
@@ -399,7 +407,7 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
       config={{
         loginMethods: ["wallet", "email"],
         supportedChains: [...supportedChains],
-        defaultChain: mainnet,
+        defaultChain: sepolia,
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
           solana: { createOnLogin: "off" },
@@ -417,7 +425,7 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
       }}
     >
       <WagmiProvider config={wagmiConfig}>
-        <WalletBridge>{children}</WalletBridge>
+        <WalletBridge><BurntatoBridge>{children}</BurntatoBridge></WalletBridge>
       </WagmiProvider>
     </PrivyProvider>
   );
@@ -426,7 +434,11 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
 function UnconfiguredWalletProviders({ children }: { children: ReactNode }) {
   // The module-level defaultWalletState keeps a stable identity, so the app
   // renders normally in a signed-out shape without wallet environment values.
-  return <WalletContext.Provider value={defaultWalletState}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider value={defaultWalletState}>
+      <BurntatoContext.Provider value={defaultBurntatoState}>{children}</BurntatoContext.Provider>
+    </WalletContext.Provider>
+  );
 }
 
 export function DAppProviders({ children }: { children: ReactNode }) {

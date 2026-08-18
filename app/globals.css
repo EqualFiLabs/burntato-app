@@ -299,6 +299,25 @@ button {
   filter: brightness(1.12);
 }
 
+.primary-action:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  filter: saturate(0.65);
+}
+
+.secondary-game-action {
+  width: 100%;
+  margin-top: 1.4cqw;
+  padding: 2.2cqw 2.5cqw;
+  border: 0.22cqw solid rgba(255, 178, 61, 0.48);
+  border-radius: 2.2cqw;
+  color: #ffd88d;
+  background: rgba(36, 23, 12, 0.92);
+  font-size: 3.2cqw;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .primary-action svg {
   width: 5.4cqw;
   height: 5.4cqw;
@@ -1310,6 +1329,39 @@ button {
 .rewards-heading p,
 .rewards-heading h1 {
   margin: 0;
+}
+
+.onchain-empty {
+  display: grid;
+  min-height: 18cqw;
+  padding: 3cqw;
+  color: #c9b6a1;
+  text-align: center;
+  place-items: center;
+}
+
+.onchain-empty svg {
+  width: 5cqw;
+  height: 5cqw;
+  color: #ffab2e;
+}
+
+.onchain-empty strong {
+  color: #fff0dc;
+  font-size: 3.1cqw;
+}
+
+.onchain-empty span {
+  font-size: 2.35cqw;
+}
+
+.burn-warning {
+  margin: 1.5cqw 0;
+  color: #d9bda3;
+  font-size: 2.25cqw;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .rewards-heading p {
@@ -2668,6 +2720,14 @@ button {
   cursor: pointer;
 }
 
+.demo-notice a {
+  color: #ffb43d;
+  font-size: 0.85em;
+  font-weight: 850;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
 @media (max-width: 360px) {
   .balance-pill,
   .wallet-pill {
@@ -2682,6 +2742,33 @@ button {
 }
 
 @media (min-width: 1024px) {
+  .secondary-game-action {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-width: 1px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+
+  .onchain-empty {
+    min-height: 86px;
+    padding: 14px;
+  }
+
+  .onchain-empty svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .onchain-empty strong {
+    font-size: 14px;
+  }
+
+  .onchain-empty span,
+  .burn-warning {
+    font-size: 11px;
+  }
+
   html,
   body {
     min-height: 100%;
