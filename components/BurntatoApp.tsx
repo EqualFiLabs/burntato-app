@@ -294,6 +294,7 @@ function AppHeader() {
   const wallet = useWalletState();
   const [panelOpen, setPanelOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const walletControlRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const activeAddress = wallet.activeAddress;
@@ -305,7 +306,9 @@ function AppHeader() {
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node | null;
-      if (panelRef.current && target && !panelRef.current.contains(target)) setPanelOpen(false);
+      if (walletControlRef.current && target && !walletControlRef.current.contains(target)) {
+        setPanelOpen(false);
+      }
     }
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -347,7 +350,7 @@ function AppHeader() {
           <span className="tiny-plus" aria-hidden="true"><Plus /></span>
         </span>
         {connected ? (
-          <div className="wallet-control">
+          <div className="wallet-control" ref={walletControlRef}>
             <button
               ref={triggerRef}
               className="wallet-pill"
@@ -397,7 +400,7 @@ function AppHeader() {
                 </button>
                 <button
                   type="button"
-                  disabled={wallet.busyAction === "logout"}
+                  disabled={wallet.busyAction !== null}
                   onClick={() => {
                     closePanel();
                     wallet.logout();
@@ -422,13 +425,19 @@ function AppHeader() {
         ) : (
           <button
             className="wallet-pill"
-            disabled={!wallet.configured || wallet.status === "loading"}
-            aria-busy={wallet.status === "loading"}
+            disabled={!wallet.configured || wallet.status === "loading" || wallet.busyAction !== null}
+            aria-busy={wallet.status === "loading" || wallet.busyAction === "login"}
             title={unavailableTitle}
             onClick={wallet.login}
           >
             <WalletCards aria-hidden="true" />
-            <span>{wallet.status === "loading" ? "Preparing…" : "Sign in"}</span>
+            <span>
+              {wallet.status === "loading"
+                ? "Preparing…"
+                : wallet.busyAction === "login"
+                  ? "Signing in…"
+                  : "Sign in"}
+            </span>
           </button>
         )}
       </div>
@@ -901,7 +910,7 @@ function PortalScreen({ announce }: { announce: (message: string) => void }) {
                   className="portal-wallet-cta"
                   type="button"
                   disabled={!wallet.configured || wallet.status === "loading" || wallet.busyAction !== null}
-                  aria-busy={wallet.status === "loading"}
+                  aria-busy={wallet.status === "loading" || wallet.busyAction === "login"}
                   title={
                     wallet.configured
                       ? undefined
@@ -915,6 +924,8 @@ function PortalScreen({ announce }: { announce: (message: string) => void }) {
                     ? "Preparing wallet…"
                     : !wallet.configured
                       ? "Sign-in unavailable"
+                      : wallet.busyAction === "login"
+                        ? "Signing in…"
                       : wallet.status === "wallet-missing"
                         ? "Connect an EVM wallet"
                         : wallet.status === "error"

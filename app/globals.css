@@ -3656,6 +3656,11 @@ button {
   cursor: pointer;
 }
 
+.portal-wallet-cta:disabled {
+  opacity: 0.62;
+  cursor: default;
+}
+
 @media (min-width: 1024px) {
   .account-menu {
     top: calc(100% + 8px);
@@ -3692,5 +3697,14 @@ button {
   .account-menu a svg {
     width: 14px;
     height: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

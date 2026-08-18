@@ -1,11 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getEmbeddedConnectedWallet,
   PrivyProvider,
   useConnectWallet,
+  useLogin,
+  useModalStatus,
   usePrivy,
   useWallets,
   type ConnectedWallet,
@@ -169,7 +171,12 @@ function sameAddress(left: string | undefined, right: string | undefined): boole
 function describeWalletError(error: unknown): string {
   const message = error instanceof Error ? error.message : typeof error === "string" ? error : "";
   const normalized = message.toLowerCase();
-  if (normalized.includes("cancel") || normalized.includes("close") || normalized.includes("reject")) {
+  if (
+    normalized.includes("cancel") ||
+    normalized.includes("close") ||
+    normalized.includes("exit") ||
+    normalized.includes("reject")
+  ) {
     return "The wallet request was cancelled.";
   }
   if (normalized.includes("switch")) {
@@ -201,30 +208,58 @@ function explorerUrlFor(address: string | null): string | null {
 }
 
 function WalletBridge({ children }: { children: ReactNode }) {
-  const { ready, authenticated, error: privyError, login, logout } = usePrivy();
+  const { ready, authenticated, error: privyError, logout } = usePrivy();
   const { ready: walletsReady, wallets } = useWallets();
   const { wallets: solanaWallets } = useSolanaWallets();
+  const { isOpen: isPrivyModalOpen } = useModalStatus();
   const { address: wagmiAddress } = useAccount();
   const { setActiveWallet } = useSetActiveWallet();
   const [busyAction, setBusyAction] = useState<WalletAction>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [loginPending, setLoginPending] = useState(false);
   const [requestedExternalAddress, setRequestedExternalAddress] = useState<string | null>(null);
+  const loginModalOpened = useRef(false);
+
+  const { login } = useLogin({
+    onComplete: () => {
+      loginModalOpened.current = false;
+      setLoginPending(false);
+    },
+    onError: (error) => {
+      loginModalOpened.current = false;
+      setLoginPending(false);
+      setActionError(describeWalletError(error));
+    },
+  });
 
   const { connectWallet } = useConnectWallet({
     onSuccess: ({ wallet }) => {
-      setBusyAction(null);
       if (wallet.type !== "ethereum") {
         // The ethereum-only modal should never produce a Solana wallet here.
+        setBusyAction(null);
         setActionError("Only an EVM wallet can be activated.");
         return;
       }
       setRequestedExternalAddress(wallet.address);
     },
     onError: (error) => {
+      setRequestedExternalAddress(null);
       setBusyAction(null);
       setActionError(describeWalletError(error));
     },
   });
+
+  useEffect(() => {
+    if (!loginPending) return;
+    if (isPrivyModalOpen) {
+      loginModalOpened.current = true;
+      return;
+    }
+    if (loginModalOpened.current) {
+      loginModalOpened.current = false;
+      setLoginPending(false);
+    }
+  }, [isPrivyModalOpen, loginPending]);
 
   const runAction = useCallback(
     async (action: Exclude<WalletAction, null>, operation: () => Promise<unknown>) => {
@@ -247,14 +282,24 @@ function WalletBridge({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!requestedExternalAddress) return;
     const wallet = wallets.find((candidate) => sameAddress(candidate.address, requestedExternalAddress));
-    if (!wallet) return;
+    if (!wallet) {
+      const timeout = window.setTimeout(() => {
+        setRequestedExternalAddress(null);
+        setBusyAction(null);
+        setActionError("The connected wallet could not be activated. Try again.");
+      }, 10_000);
+      return () => window.clearTimeout(timeout);
+    }
     let cancelled = false;
     setActiveWallet(wallet)
       .then(() => {
         if (!cancelled) setRequestedExternalAddress(null);
       })
       .catch(() => {
-        if (!cancelled) setActionError("The connected wallet could not be activated.");
+        if (!cancelled) {
+          setRequestedExternalAddress(null);
+          setActionError("The connected wallet could not be activated.");
+        }
       })
       .finally(() => {
         if (!cancelled) setBusyAction(null);
@@ -282,6 +327,7 @@ function WalletBridge({ children }: { children: ReactNode }) {
       label: wallet.standardWallet.name,
     }));
     const activeAddress = activeWallet?.address ?? null;
+    const currentBusyAction: WalletAction = loginPending ? "login" : busyAction;
     return {
       configured: true,
       status,
@@ -292,20 +338,26 @@ function WalletBridge({ children }: { children: ReactNode }) {
       activeWalletKind: activeWallet ? walletKindOf(activeWallet.walletClientType) : null,
       activeWalletLabel: activeWallet ? walletClientLabel(activeWallet.walletClientType) : null,
       explorerUrl: explorerUrlFor(activeAddress),
-      busyAction,
+      busyAction: currentBusyAction,
       error: actionError ?? (status === "error" ? describeWalletError(privyError) : null),
       login: () => {
+        if (currentBusyAction) return;
         setActionError(null);
+        setLoginPending(true);
         login();
       },
-      logout: () => void runAction("logout", () => logout()),
+      logout: () => {
+        if (currentBusyAction) return;
+        void runAction("logout", () => logout());
+      },
       connectExternalWallet: () => {
-        if (busyAction) return;
+        if (currentBusyAction) return;
         setActionError(null);
         setBusyAction("connect-external");
         connectWallet({ walletChainType: "ethereum-only" });
       },
       selectEvmWallet: (address: string) => {
+        if (currentBusyAction) return;
         const wallet = wallets.find((candidate) => sameAddress(candidate.address, address));
         if (wallet) void runAction("select", () => setActiveWallet(wallet));
       },
@@ -326,6 +378,7 @@ function WalletBridge({ children }: { children: ReactNode }) {
     busyAction,
     connectWallet,
     login,
+    loginPending,
     logout,
     privyError,
     runAction,
