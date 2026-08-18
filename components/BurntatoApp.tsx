@@ -711,8 +711,22 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
     const menu = menuRef.current;
     if (!menu) return;
 
-    if (menuOpen && !menu.open) menu.showModal();
-    if (!menuOpen && menu.open) menu.close();
+    try {
+      const isOpen = menu.hasAttribute("open");
+
+      if (menuOpen && !isOpen) {
+        if (typeof menu.showModal === "function") menu.showModal();
+        else menu.setAttribute("open", "");
+      }
+
+      if (!menuOpen && isOpen) {
+        if (typeof menu.close === "function") menu.close();
+        else menu.removeAttribute("open");
+      }
+    } catch {
+      menu.removeAttribute("open");
+      queueMicrotask(() => setMenuOpen(false));
+    }
   }, [menuOpen]);
 
   function chooseDestination(destination: (typeof destinationNavigation)[number]) {

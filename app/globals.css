@@ -1861,13 +1861,20 @@ button {
   max-height: none;
   margin: 0;
   padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 0;
   color: #f8ead8;
   background:
     radial-gradient(circle at 20% 4%, rgba(255, 119, 18, 0.17), transparent 33%),
     radial-gradient(circle at 86% 83%, rgba(255, 74, 7, 0.09), transparent 32%),
     linear-gradient(160deg, #21170f, #0b0908 56%, #17100b);
+  overscroll-behavior: contain;
+}
+
+.mobile-navigation-menu[open] {
+  display: flex;
+  flex-direction: column;
 }
 
 .mobile-navigation-menu::backdrop {
@@ -1877,6 +1884,7 @@ button {
 .mobile-menu-header {
   display: flex;
   min-height: 54px;
+  flex: 0 0 auto;
   align-items: flex-start;
   justify-content: space-between;
 }
@@ -1910,6 +1918,7 @@ button {
 
 .mobile-menu-heading {
   margin-top: clamp(18px, 5dvh, 48px);
+  flex: 0 0 auto;
 }
 
 .mobile-menu-heading p,
@@ -1936,6 +1945,7 @@ button {
   display: flex;
   margin-top: clamp(20px, 4dvh, 36px);
   gap: clamp(8px, 1.5dvh, 14px);
+  flex: 0 0 auto;
   flex-direction: column;
 }
 
@@ -1988,18 +1998,16 @@ button {
 }
 
 .mobile-menu-round {
-  position: absolute;
-  right: 20px;
-  bottom: max(20px, env(safe-area-inset-bottom));
-  left: 20px;
   display: flex;
   min-height: 58px;
+  margin-top: auto;
   padding: 10px 14px;
   gap: 12px;
   align-items: center;
   border: 1px solid rgba(255, 145, 25, 0.22);
   border-radius: 15px;
   background: radial-gradient(circle at 10% 20%, rgba(255, 107, 8, 0.12), rgba(15, 11, 8, 0.92));
+  flex: 0 0 auto;
 }
 
 .mobile-menu-round .sidebar-round-flame {
@@ -2710,7 +2718,8 @@ button {
     flex-direction: column;
   }
 
-  .mobile-navigation-menu {
+  .mobile-navigation-menu,
+  .mobile-navigation-menu[open] {
     display: none;
   }
 
