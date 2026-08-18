@@ -202,11 +202,15 @@ function formatLeaderboardValue(value: number, metric: LeaderboardMetric) {
   return `${value.toFixed(3)} ETH`;
 }
 
-function leaderboardSecondary(entry: LeaderboardEntry, metric: LeaderboardMetric) {
-  if (metric === "earned") return `${entry.wins} round wins`;
-  if (metric === "wins") return `${numberFormat.format(entry.earned)} POTATO earned`;
-  if (metric === "hold") return `${entry.wins} wins · best finalized hold`;
-  return `${numberFormat.format(entry.committed)} POTATO committed`;
+function leaderboardSecondary(entry: LeaderboardEntry, metric: LeaderboardMetric, period: LeaderboardPeriod) {
+  const wins = period === "all-time" ? entry.wins : entry.roundWins;
+  const earned = period === "all-time" ? entry.earned : entry.roundEarned;
+  const winLabel = `${wins} ${wins === 1 ? "win" : "wins"}`;
+
+  if (metric === "earned") return period === "all-time" ? `${winLabel} across rounds` : `${winLabel} this round`;
+  if (metric === "wins") return `${numberFormat.format(earned)} POTATO earned`;
+  if (metric === "hold") return `${winLabel} · ${period === "all-time" ? "best finalized hold" : "this round"}`;
+  return `${numberFormat.format(entry.committed)} POTATO committed${period === "round" ? " this round" : ""}`;
 }
 
 const claimableRewards = [
@@ -335,7 +339,7 @@ function LeaderboardScreen() {
               <p>Hall of Flame</p>
               <h1 id="leaderboard-title">Leaderboard</h1>
             </div>
-            <span className="leaderboard-live"><i /> Round #127</span>
+            <span className="leaderboard-live"><i aria-hidden="true" /> Round #127</span>
           </div>
 
           <div className="leaderboard-period" role="group" aria-label="Leaderboard period">
@@ -399,7 +403,7 @@ function LeaderboardScreen() {
                   <span className="player-avatar is-small">{entry.name.slice(0, 1)}</span>
                   <span className="leaderboard-player">
                     <strong>{entry.name}{entry.isYou && <i>You</i>}</strong>
-                    <small>{entry.address} · {leaderboardSecondary(entry, metric)}</small>
+                    <small>{entry.address} · {leaderboardSecondary(entry, metric, period)}</small>
                   </span>
                   <span className="leaderboard-score">
                     <strong>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</strong>
