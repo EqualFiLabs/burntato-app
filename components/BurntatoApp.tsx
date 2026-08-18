@@ -690,17 +690,17 @@ function BurnScreen({ announce }: { announce: (message: string) => void }) {
 
 const destinationNavigation = [
   { id: "grab", label: "Play", Icon: Home, screen: "grab" },
-  { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
   { id: "burn", label: "Burn", Icon: Flame, screen: "burn" },
   { id: "swap", label: "Swap", Icon: ArrowLeftRight, screen: null },
   { id: "rewards", label: "Rewards", Icon: Gift, screen: "rewards" },
+  { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
 ] as const;
 
 const mobileNavigation = [
   destinationNavigation[0],
+  destinationNavigation[1],
   destinationNavigation[2],
   destinationNavigation[3],
-  destinationNavigation[4],
 ] as const;
 
 function BottomNavigation({ screen, select, announce }: { screen: Screen; select: (screen: Screen) => void; announce: (message: string) => void }) {
