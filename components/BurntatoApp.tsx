@@ -2,9 +2,11 @@
 
 import { getImageProps } from "next/image";
 import {
+  Check,
   ChevronDown,
   Flame,
   Gift,
+  History,
   Home,
   Menu,
   Minus,
@@ -16,10 +18,59 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-type Screen = "grab" | "burn";
+type Screen = "grab" | "burn" | "rewards";
+type RewardsTab = "ready" | "positions" | "history";
 
 const potatoBalance = 42_690;
 const numberFormat = new Intl.NumberFormat("en-US");
+
+const heroSources: Record<Screen, {
+  mobile: string;
+  desktop: string;
+  mobileWidth: number;
+  mobileHeight: number;
+}> = {
+  grab: {
+    mobile: "/reference/grab.png",
+    desktop: "/scenes/home-desktop.png",
+    mobileWidth: 941,
+    mobileHeight: 1672,
+  },
+  burn: {
+    mobile: "/reference/burn.png",
+    desktop: "/scenes/burn-desktop.png",
+    mobileWidth: 941,
+    mobileHeight: 1672,
+  },
+  rewards: {
+    mobile: "/scenes/rewards-mobile.png",
+    desktop: "/scenes/rewards-desktop.png",
+    mobileWidth: 864,
+    mobileHeight: 1821,
+  },
+};
+
+const claimableRewards = [
+  {
+    id: "winner-127",
+    kind: "winner",
+    label: "Hot Potato Winner",
+    round: 127,
+    amount: 0.0125,
+    detail: "Final holder reward",
+  },
+  {
+    id: "recovery-126",
+    kind: "recovery",
+    label: "Recovery Reward",
+    round: 126,
+    amount: 0.008,
+    detail: "Your recovery share",
+  },
+] as const;
+
+type ClaimableReward = (typeof claimableRewards)[number];
+type ClaimableRewardId = ClaimableReward["id"];
 
 function EthereumMark({ small = false }: { small?: boolean }) {
   return (
@@ -71,12 +122,11 @@ function AppHeader({ announce }: { announce: (message: string) => void }) {
 }
 
 function Hero({ screen }: { screen: Screen }) {
-  const mobileSource = screen === "grab" ? "/reference/grab.png" : "/reference/burn.png";
-  const desktopSource = screen === "grab" ? "/scenes/home-desktop.png" : "/scenes/burn-desktop.png";
+  const { mobile, desktop, mobileWidth, mobileHeight } = heroSources[screen];
   const {
     props: { srcSet: desktopSrcSet },
   } = getImageProps({
-    src: desktopSource,
+    src: desktop,
     alt: "",
     width: 1672,
     height: 941,
@@ -86,10 +136,10 @@ function Hero({ screen }: { screen: Screen }) {
   const {
     props: { ...mobileImageProps },
   } = getImageProps({
-    src: mobileSource,
+    src: mobile,
     alt: "",
-    width: 941,
-    height: 1672,
+    width: mobileWidth,
+    height: mobileHeight,
     quality: 75,
     sizes: "(max-width: 1023px) min(100vw, 480px), 1px",
     fetchPriority: "high",
@@ -104,6 +154,159 @@ function Hero({ screen }: { screen: Screen }) {
       </picture>
       <div className="hero-vignette" />
     </div>
+  );
+}
+
+const rewardsTabs: { id: RewardsTab; label: string }[] = [
+  { id: "ready", label: "Ready" },
+  { id: "positions", label: "Positions" },
+  { id: "history", label: "History" },
+];
+
+function RewardsScreen({
+  claimedRewards,
+  onClaim,
+}: {
+  claimedRewards: ClaimableRewardId[];
+  onClaim: (reward: ClaimableReward) => void;
+}) {
+  const [tab, setTab] = useState<RewardsTab>("ready");
+  const claimableEth = claimableRewards.reduce(
+    (total, reward) => total + (claimedRewards.includes(reward.id) ? 0 : reward.amount),
+    0,
+  );
+  const readyCount = claimableRewards.length - claimedRewards.length;
+
+  return (
+    <main className="screen-content rewards-screen">
+      <Hero screen="rewards" />
+      <div className="rewards-controls">
+        <section className="rewards-hub" aria-labelledby="rewards-title">
+          <div className="rewards-heading">
+            <span className="rewards-heading-icon"><Gift aria-hidden="true" /></span>
+            <div>
+              <p>Reward vault</p>
+              <h1 id="rewards-title">Your Rewards</h1>
+            </div>
+            <span className={readyCount ? "ready-badge" : "ready-badge is-clear"}>
+              {readyCount ? `${readyCount} ready` : "All claimed"}
+            </span>
+          </div>
+
+          <div className="rewards-summary" aria-label="Rewards summary">
+            <div className="reward-summary-card is-claimable">
+              <span className="summary-symbol"><EthereumMark /></span>
+              <span>
+                <small>Claimable now</small>
+                <strong>{claimableEth.toFixed(4)} <em>ETH</em></strong>
+              </span>
+            </div>
+            <div className="reward-summary-card is-earned">
+              <PotatoCoin />
+              <span>
+                <small>Lifetime earned</small>
+                <strong>12,450 <em>POTATO</em></strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="rewards-tabs" role="tablist" aria-label="Reward views">
+            {rewardsTabs.map(({ id, label }) => (
+              <button
+                key={id}
+                id={`rewards-tab-${id}`}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                aria-controls="rewards-tab-panel"
+                className={tab === id ? "is-active" : ""}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div
+            id="rewards-tab-panel"
+            className="rewards-tab-panel"
+            role="tabpanel"
+            aria-labelledby={`rewards-tab-${tab}`}
+          >
+            {tab === "ready" && (
+              <div className="reward-list">
+                {claimableRewards.map((reward) => {
+                  const claimed = claimedRewards.includes(reward.id);
+                  return (
+                    <article className={claimed ? "reward-row is-claimed" : "reward-row"} key={reward.id}>
+                      <span className={`reward-type-icon is-${reward.kind}`}>
+                        {reward.kind === "winner" ? <Trophy aria-hidden="true" /> : <Gift aria-hidden="true" />}
+                      </span>
+                      <span className="reward-row-copy">
+                        <small>Round #{reward.round}</small>
+                        <strong>{reward.label}</strong>
+                        <em>{reward.detail}</em>
+                      </span>
+                      <span className="reward-row-action">
+                        <strong>{reward.amount.toFixed(4)} ETH</strong>
+                        <button type="button" disabled={claimed} onClick={() => onClaim(reward)}>
+                          {claimed ? <><Check aria-hidden="true" /> Claimed</> : "Claim"}
+                        </button>
+                      </span>
+                    </article>
+                  );
+                })}
+                <p className="reward-footnote">Rewards are claimed one round at a time.</p>
+              </div>
+            )}
+
+            {tab === "positions" && (
+              <div className="reward-list">
+                <article className="position-row">
+                  <span className="position-status is-live"><span /> Earning</span>
+                  <div>
+                    <small>Recovery Market · Round #128</small>
+                    <strong>8,000 POTATO committed</strong>
+                  </div>
+                  <span><small>Your share</small><strong>6.23%</strong></span>
+                </article>
+                <article className="position-row">
+                  <span className="position-status is-next"><Timer aria-hidden="true" /> Next</span>
+                  <div>
+                    <small>Recovery Market · Round #129</small>
+                    <strong>2,500 POTATO committed</strong>
+                  </div>
+                  <span><small>Est. share</small><strong>1.84%</strong></span>
+                </article>
+                <div className="position-note">
+                  <PieChart aria-hidden="true" />
+                  <span><strong>10,500 POTATO active</strong><small>Across two recovery positions</small></span>
+                </div>
+              </div>
+            )}
+
+            {tab === "history" && (
+              <div className="reward-list">
+                <article className="history-row">
+                  <span className="history-check"><Check aria-hidden="true" /></span>
+                  <span><small>Round #125 · Winner reward</small><strong>0.0100 ETH</strong></span>
+                  <em>Claimed</em>
+                </article>
+                <article className="history-row">
+                  <span className="history-check"><Check aria-hidden="true" /></span>
+                  <span><small>Round #124 · Recovery reward</small><strong>0.0065 ETH</strong></span>
+                  <em>Claimed</em>
+                </article>
+                <div className="history-total">
+                  <History aria-hidden="true" />
+                  <span><small>Lifetime ETH claimed</small><strong>0.1485 ETH</strong></span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
 
@@ -229,7 +432,7 @@ const navigation = [
   { id: "grab", label: "Home", Icon: Home, notice: false },
   { id: "leaderboard", label: "Leaderboard", Icon: Trophy, notice: false },
   { id: "burn", label: "Burn", Icon: Flame, notice: false },
-  { id: "rewards", label: "Rewards", Icon: Gift, notice: true },
+  { id: "rewards", label: "Rewards", Icon: Gift, notice: false },
   { id: "more", label: "More", Icon: Menu, notice: false },
 ] as const;
 
@@ -250,7 +453,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
               type="button"
               aria-current={active ? "page" : undefined}
               onClick={() => {
-                if (id === "grab" || id === "burn") select(id);
+                if (id === "grab" || id === "burn" || id === "rewards") select(id);
                 else announce(`${label} is a visual placeholder in this first pass.`);
               }}
             >
@@ -271,15 +474,25 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
 export function BurntatoApp() {
   const [screen, setScreen] = useState<Screen>("grab");
   const [notice, setNotice] = useState("");
+  const [claimedRewards, setClaimedRewards] = useState<ClaimableRewardId[]>([]);
 
   function announce(message: string) {
     setNotice(message);
   }
 
+  function claimReward(reward: ClaimableReward) {
+    setClaimedRewards((current) => current.includes(reward.id) ? current : [...current, reward.id]);
+    announce(`Visual preview: ${reward.amount.toFixed(4)} ETH from round #${reward.round} marked as claimed.`);
+  }
+
   return (
     <div className={`phone-shell is-${screen}`}>
       <AppHeader announce={announce} />
-      {screen === "grab" ? <GrabScreen announce={announce} /> : <BurnScreen announce={announce} />}
+      {screen === "grab" && <GrabScreen announce={announce} />}
+      {screen === "burn" && <BurnScreen announce={announce} />}
+      {screen === "rewards" && (
+        <RewardsScreen claimedRewards={claimedRewards} onClaim={claimReward} />
+      )}
       <BottomNavigation screen={screen} select={setScreen} announce={announce} />
       <div className={notice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
         <span>{notice}</span>
