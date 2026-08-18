@@ -2,9 +2,11 @@
 
 import { getImageProps } from "next/image";
 import {
+  Check,
   ChevronDown,
   Flame,
   Gift,
+  History,
   Home,
   Menu,
   Minus,
@@ -16,10 +18,222 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-type Screen = "grab" | "burn";
+type Screen = "grab" | "burn" | "leaderboard" | "rewards";
+type RewardsTab = "ready" | "positions" | "history";
+type LeaderboardMetric = "earned" | "wins" | "hold" | "recovery";
+type LeaderboardPeriod = "all-time" | "round";
+type LeaderboardEntry = {
+  name: string;
+  address: string;
+  earned: number;
+  roundEarned: number;
+  wins: number;
+  roundWins: number;
+  hold: number;
+  roundHold: number;
+  recovery: number;
+  roundRecovery: number;
+  committed: number;
+  trend: number;
+  isYou?: boolean;
+};
 
 const potatoBalance = 42_690;
 const numberFormat = new Intl.NumberFormat("en-US");
+
+const heroSources: Record<Screen, {
+  mobile: string;
+  desktop: string;
+  mobileWidth: number;
+  mobileHeight: number;
+}> = {
+  grab: {
+    mobile: "/reference/grab.png",
+    desktop: "/scenes/home-desktop.png",
+    mobileWidth: 941,
+    mobileHeight: 1672,
+  },
+  burn: {
+    mobile: "/reference/burn.png",
+    desktop: "/scenes/burn-desktop.png",
+    mobileWidth: 941,
+    mobileHeight: 1672,
+  },
+  rewards: {
+    mobile: "/scenes/rewards-mobile.png",
+    desktop: "/scenes/rewards-desktop.png",
+    mobileWidth: 864,
+    mobileHeight: 1821,
+  },
+  leaderboard: {
+    mobile: "/scenes/leaderboard-mobile.png",
+    desktop: "/scenes/leaderboard-desktop.png",
+    mobileWidth: 864,
+    mobileHeight: 1821,
+  },
+};
+
+const leaderboardEntries: LeaderboardEntry[] = [
+  {
+    name: "Blaze",
+    address: "0xA7...E91C",
+    earned: 182_450,
+    roundEarned: 15_200,
+    wins: 12,
+    roundWins: 1,
+    hold: 8_340,
+    roundHold: 4_860,
+    recovery: 6.842,
+    roundRecovery: 0.62,
+    committed: 128_000,
+    trend: 0,
+  },
+  {
+    name: "SpudKing",
+    address: "0x31...B44D",
+    earned: 156_800,
+    roundEarned: 11_850,
+    wins: 9,
+    roundWins: 0,
+    hold: 7_220,
+    roundHold: 3_920,
+    recovery: 8.214,
+    roundRecovery: 0.94,
+    committed: 151_400,
+    trend: 1,
+  },
+  {
+    name: "Tuber",
+    address: "0xC4...19F2",
+    earned: 129_640,
+    roundEarned: 13_100,
+    wins: 8,
+    roundWins: 1,
+    hold: 9_180,
+    roundHold: 5_240,
+    recovery: 5.128,
+    roundRecovery: 0.48,
+    committed: 94_500,
+    trend: -1,
+  },
+  {
+    name: "You",
+    address: "0x8f...a7c9",
+    earned: 84_250,
+    roundEarned: 9_420,
+    wins: 3,
+    roundWins: 0,
+    hold: 6_540,
+    roundHold: 4_110,
+    recovery: 4.825,
+    roundRecovery: 0.78,
+    committed: 82_000,
+    trend: 2,
+    isYou: true,
+  },
+  {
+    name: "Mash",
+    address: "0x72...0EA1",
+    earned: 78_920,
+    roundEarned: 8_760,
+    wins: 5,
+    roundWins: 0,
+    hold: 5_980,
+    roundHold: 2_960,
+    recovery: 3.942,
+    roundRecovery: 0.36,
+    committed: 71_250,
+    trend: 1,
+  },
+  {
+    name: "Crispy",
+    address: "0xD9...8C36",
+    earned: 71_340,
+    roundEarned: 7_140,
+    wins: 4,
+    roundWins: 0,
+    hold: 7_860,
+    roundHold: 3_440,
+    recovery: 4.106,
+    roundRecovery: 0.41,
+    committed: 76_800,
+    trend: -2,
+  },
+  {
+    name: "GoldEye",
+    address: "0x55...CA82",
+    earned: 64_180,
+    roundEarned: 10_320,
+    wins: 2,
+    roundWins: 0,
+    hold: 4_820,
+    roundHold: 2_410,
+    recovery: 2.774,
+    roundRecovery: 0.52,
+    committed: 59_600,
+    trend: 3,
+  },
+];
+
+const leaderboardMetrics: { id: LeaderboardMetric; label: string }[] = [
+  { id: "earned", label: "Earned" },
+  { id: "wins", label: "Wins" },
+  { id: "hold", label: "Hold Time" },
+  { id: "recovery", label: "Recovery" },
+];
+
+function leaderboardValue(entry: LeaderboardEntry, metric: LeaderboardMetric, period: LeaderboardPeriod) {
+  if (metric === "earned") return period === "all-time" ? entry.earned : entry.roundEarned;
+  if (metric === "wins") return period === "all-time" ? entry.wins : entry.roundWins;
+  if (metric === "hold") return period === "all-time" ? entry.hold : entry.roundHold;
+  return period === "all-time" ? entry.recovery : entry.roundRecovery;
+}
+
+function formatHold(seconds: number) {
+  const hours = Math.floor(seconds / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  return `${hours}h ${minutes}m`;
+}
+
+function formatLeaderboardValue(value: number, metric: LeaderboardMetric) {
+  if (metric === "earned") return `${numberFormat.format(value)} POTATO`;
+  if (metric === "wins") return `${value} ${value === 1 ? "win" : "wins"}`;
+  if (metric === "hold") return formatHold(value);
+  return `${value.toFixed(3)} ETH`;
+}
+
+function leaderboardSecondary(entry: LeaderboardEntry, metric: LeaderboardMetric, period: LeaderboardPeriod) {
+  const wins = period === "all-time" ? entry.wins : entry.roundWins;
+  const earned = period === "all-time" ? entry.earned : entry.roundEarned;
+  const winLabel = `${wins} ${wins === 1 ? "win" : "wins"}`;
+
+  if (metric === "earned") return period === "all-time" ? `${winLabel} across rounds` : `${winLabel} this round`;
+  if (metric === "wins") return `${numberFormat.format(earned)} POTATO earned`;
+  if (metric === "hold") return `${winLabel} · ${period === "all-time" ? "best finalized hold" : "this round"}`;
+  return `${numberFormat.format(entry.committed)} POTATO committed${period === "round" ? " this round" : ""}`;
+}
+
+const claimableRewards = [
+  {
+    id: "winner-127",
+    kind: "winner",
+    label: "Hot Potato Winner",
+    round: 127,
+    amount: 0.0125,
+    detail: "Final holder reward",
+  },
+  {
+    id: "recovery-126",
+    kind: "recovery",
+    label: "Recovery Reward",
+    round: 126,
+    amount: 0.008,
+    detail: "Your recovery share",
+  },
+] as const;
+
+type ClaimableReward = (typeof claimableRewards)[number];
+type ClaimableRewardId = ClaimableReward["id"];
 
 function EthereumMark({ small = false }: { small?: boolean }) {
   return (
@@ -71,12 +285,11 @@ function AppHeader({ announce }: { announce: (message: string) => void }) {
 }
 
 function Hero({ screen }: { screen: Screen }) {
-  const mobileSource = screen === "grab" ? "/reference/grab.png" : "/reference/burn.png";
-  const desktopSource = screen === "grab" ? "/scenes/home-desktop.png" : "/scenes/burn-desktop.png";
+  const { mobile, desktop, mobileWidth, mobileHeight } = heroSources[screen];
   const {
     props: { srcSet: desktopSrcSet },
   } = getImageProps({
-    src: desktopSource,
+    src: desktop,
     alt: "",
     width: 1672,
     height: 941,
@@ -86,10 +299,10 @@ function Hero({ screen }: { screen: Screen }) {
   const {
     props: { ...mobileImageProps },
   } = getImageProps({
-    src: mobileSource,
+    src: mobile,
     alt: "",
-    width: 941,
-    height: 1672,
+    width: mobileWidth,
+    height: mobileHeight,
     quality: 75,
     sizes: "(max-width: 1023px) min(100vw, 480px), 1px",
     fetchPriority: "high",
@@ -104,6 +317,254 @@ function Hero({ screen }: { screen: Screen }) {
       </picture>
       <div className="hero-vignette" />
     </div>
+  );
+}
+
+function LeaderboardScreen() {
+  const [metric, setMetric] = useState<LeaderboardMetric>("earned");
+  const [period, setPeriod] = useState<LeaderboardPeriod>("all-time");
+  const ranked = [...leaderboardEntries].sort(
+    (a, b) => leaderboardValue(b, metric, period) - leaderboardValue(a, metric, period),
+  );
+  const podium = [ranked[1], ranked[0], ranked[2]];
+
+  return (
+    <main className="screen-content leaderboard-screen">
+      <Hero screen="leaderboard" />
+      <div className="leaderboard-controls">
+        <section className="leaderboard-hub" aria-labelledby="leaderboard-title">
+          <div className="leaderboard-heading">
+            <span className="leaderboard-heading-icon"><Trophy aria-hidden="true" /></span>
+            <div>
+              <p>Hall of Flame</p>
+              <h1 id="leaderboard-title">Leaderboard</h1>
+            </div>
+            <span className="leaderboard-live"><i aria-hidden="true" /> Round #127</span>
+          </div>
+
+          <div className="leaderboard-period" role="group" aria-label="Leaderboard period">
+            <button
+              type="button"
+              className={period === "all-time" ? "is-active" : ""}
+              aria-pressed={period === "all-time"}
+              onClick={() => setPeriod("all-time")}
+            >
+              All Time
+            </button>
+            <button
+              type="button"
+              className={period === "round" ? "is-active" : ""}
+              aria-pressed={period === "round"}
+              onClick={() => setPeriod("round")}
+            >
+              This Round
+            </button>
+          </div>
+
+          <div className="leaderboard-metrics" role="group" aria-label="Leaderboard metric">
+            {leaderboardMetrics.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                className={metric === id ? "is-active" : ""}
+                aria-pressed={metric === id}
+                onClick={() => setMetric(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="leaderboard-podium" aria-label="Top three players">
+            {podium.map((entry) => {
+              const rank = ranked.indexOf(entry) + 1;
+              return (
+                <article className={`podium-card is-rank-${rank}${entry.isYou ? " is-you" : ""}`} key={entry.address}>
+                  <span className="podium-rank">#{rank}</span>
+                  <span className="player-avatar">{entry.name.slice(0, 1)}</span>
+                  <strong>{entry.name}</strong>
+                  <small>{entry.address}</small>
+                  <em>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</em>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="leaderboard-list-wrap">
+            <div className="leaderboard-list-heading">
+              <span>Rank</span>
+              <span>Player</span>
+              <span>{leaderboardMetrics.find((option) => option.id === metric)?.label}</span>
+            </div>
+            <ol className="leaderboard-list" start={4} aria-label="Leaderboard standings">
+              {ranked.slice(3).map((entry, index) => (
+                <li className={entry.isYou ? "leaderboard-row is-you" : "leaderboard-row"} key={entry.address}>
+                  <span className="list-rank">#{index + 4}</span>
+                  <span className="player-avatar is-small">{entry.name.slice(0, 1)}</span>
+                  <span className="leaderboard-player">
+                    <strong>{entry.name}{entry.isYou && <i>You</i>}</strong>
+                    <small>{entry.address} · {leaderboardSecondary(entry, metric, period)}</small>
+                  </span>
+                  <span className="leaderboard-score">
+                    <strong>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</strong>
+                    <small className={entry.trend > 0 ? "is-up" : entry.trend < 0 ? "is-down" : ""}>
+                      {entry.trend > 0 ? `↑ ${entry.trend}` : entry.trend < 0 ? `↓ ${Math.abs(entry.trend)}` : "—"}
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <p className="leaderboard-note">Mock standings · Event-indexed in the connected phase</p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+const rewardsTabs: { id: RewardsTab; label: string }[] = [
+  { id: "ready", label: "Ready" },
+  { id: "positions", label: "Positions" },
+  { id: "history", label: "History" },
+];
+
+function RewardsScreen({
+  claimedRewards,
+  onClaim,
+}: {
+  claimedRewards: ClaimableRewardId[];
+  onClaim: (reward: ClaimableReward) => void;
+}) {
+  const [tab, setTab] = useState<RewardsTab>("ready");
+  const claimableEth = claimableRewards.reduce(
+    (total, reward) => total + (claimedRewards.includes(reward.id) ? 0 : reward.amount),
+    0,
+  );
+  const readyCount = claimableRewards.length - claimedRewards.length;
+
+  return (
+    <main className="screen-content rewards-screen">
+      <Hero screen="rewards" />
+      <div className="rewards-controls">
+        <section className="rewards-hub" aria-labelledby="rewards-title">
+          <div className="rewards-heading">
+            <span className="rewards-heading-icon"><Gift aria-hidden="true" /></span>
+            <div>
+              <p>Reward vault</p>
+              <h1 id="rewards-title">Your Rewards</h1>
+            </div>
+            <span className={readyCount ? "ready-badge" : "ready-badge is-clear"}>
+              {readyCount ? `${readyCount} ready` : "All claimed"}
+            </span>
+          </div>
+
+          <div className="rewards-summary" aria-label="Rewards summary">
+            <div className="reward-summary-card is-claimable">
+              <span className="summary-symbol"><EthereumMark /></span>
+              <span>
+                <small>Claimable now</small>
+                <strong>{claimableEth.toFixed(4)} <em>ETH</em></strong>
+              </span>
+            </div>
+            <div className="reward-summary-card is-earned">
+              <PotatoCoin />
+              <span>
+                <small>Lifetime earned</small>
+                <strong>12,450 <em>POTATO</em></strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="rewards-tabs" role="group" aria-label="Reward view">
+            {rewardsTabs.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={tab === id}
+                className={tab === id ? "is-active" : ""}
+                onClick={() => setTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rewards-tab-panel">
+            {tab === "ready" && (
+              <div className="reward-list">
+                {claimableRewards.map((reward) => {
+                  const claimed = claimedRewards.includes(reward.id);
+                  return (
+                    <article className={claimed ? "reward-row is-claimed" : "reward-row"} key={reward.id}>
+                      <span className={`reward-type-icon is-${reward.kind}`}>
+                        {reward.kind === "winner" ? <Trophy aria-hidden="true" /> : <Gift aria-hidden="true" />}
+                      </span>
+                      <span className="reward-row-copy">
+                        <small>Round #{reward.round}</small>
+                        <strong>{reward.label}</strong>
+                        <em>{reward.detail}</em>
+                      </span>
+                      <span className="reward-row-action">
+                        <strong>{reward.amount.toFixed(4)} ETH</strong>
+                        <button type="button" disabled={claimed} onClick={() => onClaim(reward)}>
+                          {claimed ? <><Check aria-hidden="true" /> Claimed</> : "Claim"}
+                        </button>
+                      </span>
+                    </article>
+                  );
+                })}
+                <p className="reward-footnote">Rewards are claimed one round at a time.</p>
+              </div>
+            )}
+
+            {tab === "positions" && (
+              <div className="reward-list">
+                <article className="position-row">
+                  <span className="position-status is-live"><span /> Earning</span>
+                  <div>
+                    <small>Recovery Market · Round #128</small>
+                    <strong>8,000 POTATO committed</strong>
+                  </div>
+                  <span><small>Your share</small><strong>6.23%</strong></span>
+                </article>
+                <article className="position-row">
+                  <span className="position-status is-next"><Timer aria-hidden="true" /> Next</span>
+                  <div>
+                    <small>Recovery Market · Round #129</small>
+                    <strong>2,500 POTATO committed</strong>
+                  </div>
+                  <span><small>Est. share</small><strong>1.84%</strong></span>
+                </article>
+                <div className="position-note">
+                  <PieChart aria-hidden="true" />
+                  <span><strong>10,500 POTATO active</strong><small>Across two recovery positions</small></span>
+                </div>
+              </div>
+            )}
+
+            {tab === "history" && (
+              <div className="reward-list">
+                <article className="history-row">
+                  <span className="history-check"><Check aria-hidden="true" /></span>
+                  <span><small>Round #125 · Winner reward</small><strong>0.0100 ETH</strong></span>
+                  <em>Claimed</em>
+                </article>
+                <article className="history-row">
+                  <span className="history-check"><Check aria-hidden="true" /></span>
+                  <span><small>Round #124 · Recovery reward</small><strong>0.0065 ETH</strong></span>
+                  <em>Claimed</em>
+                </article>
+                <div className="history-total">
+                  <History aria-hidden="true" />
+                  <span><small>Lifetime ETH claimed</small><strong>0.1485 ETH</strong></span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
 
@@ -229,7 +690,7 @@ const navigation = [
   { id: "grab", label: "Home", Icon: Home, notice: false },
   { id: "leaderboard", label: "Leaderboard", Icon: Trophy, notice: false },
   { id: "burn", label: "Burn", Icon: Flame, notice: false },
-  { id: "rewards", label: "Rewards", Icon: Gift, notice: true },
+  { id: "rewards", label: "Rewards", Icon: Gift, notice: false },
   { id: "more", label: "More", Icon: Menu, notice: false },
 ] as const;
 
@@ -250,7 +711,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
               type="button"
               aria-current={active ? "page" : undefined}
               onClick={() => {
-                if (id === "grab" || id === "burn") select(id);
+                if (id === "grab" || id === "leaderboard" || id === "burn" || id === "rewards") select(id);
                 else announce(`${label} is a visual placeholder in this first pass.`);
               }}
             >
@@ -271,15 +732,26 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
 export function BurntatoApp() {
   const [screen, setScreen] = useState<Screen>("grab");
   const [notice, setNotice] = useState("");
+  const [claimedRewards, setClaimedRewards] = useState<ClaimableRewardId[]>([]);
 
   function announce(message: string) {
     setNotice(message);
   }
 
+  function claimReward(reward: ClaimableReward) {
+    setClaimedRewards((current) => current.includes(reward.id) ? current : [...current, reward.id]);
+    announce(`Visual preview: ${reward.amount.toFixed(4)} ETH from round #${reward.round} marked as claimed.`);
+  }
+
   return (
     <div className={`phone-shell is-${screen}`}>
       <AppHeader announce={announce} />
-      {screen === "grab" ? <GrabScreen announce={announce} /> : <BurnScreen announce={announce} />}
+      {screen === "grab" && <GrabScreen announce={announce} />}
+      {screen === "leaderboard" && <LeaderboardScreen />}
+      {screen === "burn" && <BurnScreen announce={announce} />}
+      {screen === "rewards" && (
+        <RewardsScreen claimedRewards={claimedRewards} onClaim={claimReward} />
+      )}
       <BottomNavigation screen={screen} select={setScreen} announce={announce} />
       <div className={notice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
         <span>{notice}</span>
