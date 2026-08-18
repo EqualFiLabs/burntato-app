@@ -18,8 +18,25 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-type Screen = "grab" | "burn" | "rewards";
+type Screen = "grab" | "burn" | "leaderboard" | "rewards";
 type RewardsTab = "ready" | "positions" | "history";
+type LeaderboardMetric = "earned" | "wins" | "hold" | "recovery";
+type LeaderboardPeriod = "all-time" | "round";
+type LeaderboardEntry = {
+  name: string;
+  address: string;
+  earned: number;
+  roundEarned: number;
+  wins: number;
+  roundWins: number;
+  hold: number;
+  roundHold: number;
+  recovery: number;
+  roundRecovery: number;
+  committed: number;
+  trend: number;
+  isYou?: boolean;
+};
 
 const potatoBalance = 42_690;
 const numberFormat = new Intl.NumberFormat("en-US");
@@ -48,7 +65,149 @@ const heroSources: Record<Screen, {
     mobileWidth: 864,
     mobileHeight: 1821,
   },
+  leaderboard: {
+    mobile: "/scenes/leaderboard-mobile.png",
+    desktop: "/scenes/leaderboard-desktop.png",
+    mobileWidth: 864,
+    mobileHeight: 1821,
+  },
 };
+
+const leaderboardEntries: LeaderboardEntry[] = [
+  {
+    name: "Blaze",
+    address: "0xA7...E91C",
+    earned: 182_450,
+    roundEarned: 15_200,
+    wins: 12,
+    roundWins: 1,
+    hold: 8_340,
+    roundHold: 4_860,
+    recovery: 6.842,
+    roundRecovery: 0.62,
+    committed: 128_000,
+    trend: 0,
+  },
+  {
+    name: "SpudKing",
+    address: "0x31...B44D",
+    earned: 156_800,
+    roundEarned: 11_850,
+    wins: 9,
+    roundWins: 0,
+    hold: 7_220,
+    roundHold: 3_920,
+    recovery: 8.214,
+    roundRecovery: 0.94,
+    committed: 151_400,
+    trend: 1,
+  },
+  {
+    name: "Tuber",
+    address: "0xC4...19F2",
+    earned: 129_640,
+    roundEarned: 13_100,
+    wins: 8,
+    roundWins: 1,
+    hold: 9_180,
+    roundHold: 5_240,
+    recovery: 5.128,
+    roundRecovery: 0.48,
+    committed: 94_500,
+    trend: -1,
+  },
+  {
+    name: "You",
+    address: "0x8f...a7c9",
+    earned: 84_250,
+    roundEarned: 9_420,
+    wins: 3,
+    roundWins: 0,
+    hold: 6_540,
+    roundHold: 4_110,
+    recovery: 4.825,
+    roundRecovery: 0.78,
+    committed: 82_000,
+    trend: 2,
+    isYou: true,
+  },
+  {
+    name: "Mash",
+    address: "0x72...0EA1",
+    earned: 78_920,
+    roundEarned: 8_760,
+    wins: 5,
+    roundWins: 0,
+    hold: 5_980,
+    roundHold: 2_960,
+    recovery: 3.942,
+    roundRecovery: 0.36,
+    committed: 71_250,
+    trend: 1,
+  },
+  {
+    name: "Crispy",
+    address: "0xD9...8C36",
+    earned: 71_340,
+    roundEarned: 7_140,
+    wins: 4,
+    roundWins: 0,
+    hold: 7_860,
+    roundHold: 3_440,
+    recovery: 4.106,
+    roundRecovery: 0.41,
+    committed: 76_800,
+    trend: -2,
+  },
+  {
+    name: "GoldEye",
+    address: "0x55...CA82",
+    earned: 64_180,
+    roundEarned: 10_320,
+    wins: 2,
+    roundWins: 0,
+    hold: 4_820,
+    roundHold: 2_410,
+    recovery: 2.774,
+    roundRecovery: 0.52,
+    committed: 59_600,
+    trend: 3,
+  },
+];
+
+const leaderboardMetrics: { id: LeaderboardMetric; label: string }[] = [
+  { id: "earned", label: "Earned" },
+  { id: "wins", label: "Wins" },
+  { id: "hold", label: "Hold Time" },
+  { id: "recovery", label: "Recovery" },
+];
+
+function leaderboardValue(entry: LeaderboardEntry, metric: LeaderboardMetric, period: LeaderboardPeriod) {
+  if (metric === "earned") return period === "all-time" ? entry.earned : entry.roundEarned;
+  if (metric === "wins") return period === "all-time" ? entry.wins : entry.roundWins;
+  if (metric === "hold") return period === "all-time" ? entry.hold : entry.roundHold;
+  return period === "all-time" ? entry.recovery : entry.roundRecovery;
+}
+
+function formatHold(seconds: number) {
+  const hours = Math.floor(seconds / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+  return `${hours}h ${minutes}m`;
+}
+
+function formatLeaderboardValue(value: number, metric: LeaderboardMetric) {
+  if (metric === "earned") return `${numberFormat.format(value)} POTATO`;
+  if (metric === "wins") return `${value} ${value === 1 ? "win" : "wins"}`;
+  if (metric === "hold") return formatHold(value);
+  return `${value.toFixed(3)} ETH`;
+}
+
+function leaderboardSecondary(entry: LeaderboardEntry, metric: LeaderboardMetric) {
+  if (metric === "earned") return `${entry.wins} round wins`;
+  if (metric === "wins") return `${numberFormat.format(entry.earned)} POTATO earned`;
+  if (metric === "hold") return `${entry.wins} wins · best finalized hold`;
+  return `${numberFormat.format(entry.committed)} POTATO committed`;
+}
 
 const claimableRewards = [
   {
@@ -154,6 +313,109 @@ function Hero({ screen }: { screen: Screen }) {
       </picture>
       <div className="hero-vignette" />
     </div>
+  );
+}
+
+function LeaderboardScreen() {
+  const [metric, setMetric] = useState<LeaderboardMetric>("earned");
+  const [period, setPeriod] = useState<LeaderboardPeriod>("all-time");
+  const ranked = [...leaderboardEntries].sort(
+    (a, b) => leaderboardValue(b, metric, period) - leaderboardValue(a, metric, period),
+  );
+  const podium = [ranked[1], ranked[0], ranked[2]];
+
+  return (
+    <main className="screen-content leaderboard-screen">
+      <Hero screen="leaderboard" />
+      <div className="leaderboard-controls">
+        <section className="leaderboard-hub" aria-labelledby="leaderboard-title">
+          <div className="leaderboard-heading">
+            <span className="leaderboard-heading-icon"><Trophy aria-hidden="true" /></span>
+            <div>
+              <p>Hall of Flame</p>
+              <h1 id="leaderboard-title">Leaderboard</h1>
+            </div>
+            <span className="leaderboard-live"><i /> Round #127</span>
+          </div>
+
+          <div className="leaderboard-period" role="group" aria-label="Leaderboard period">
+            <button
+              type="button"
+              className={period === "all-time" ? "is-active" : ""}
+              aria-pressed={period === "all-time"}
+              onClick={() => setPeriod("all-time")}
+            >
+              All Time
+            </button>
+            <button
+              type="button"
+              className={period === "round" ? "is-active" : ""}
+              aria-pressed={period === "round"}
+              onClick={() => setPeriod("round")}
+            >
+              This Round
+            </button>
+          </div>
+
+          <div className="leaderboard-metrics" role="group" aria-label="Leaderboard metric">
+            {leaderboardMetrics.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                className={metric === id ? "is-active" : ""}
+                aria-pressed={metric === id}
+                onClick={() => setMetric(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="leaderboard-podium" aria-label="Top three players">
+            {podium.map((entry) => {
+              const rank = ranked.indexOf(entry) + 1;
+              return (
+                <article className={`podium-card is-rank-${rank}${entry.isYou ? " is-you" : ""}`} key={entry.address}>
+                  <span className="podium-rank">#{rank}</span>
+                  <span className="player-avatar">{entry.name.slice(0, 1)}</span>
+                  <strong>{entry.name}</strong>
+                  <small>{entry.address}</small>
+                  <em>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</em>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="leaderboard-list-wrap">
+            <div className="leaderboard-list-heading">
+              <span>Rank</span>
+              <span>Player</span>
+              <span>{leaderboardMetrics.find((option) => option.id === metric)?.label}</span>
+            </div>
+            <ol className="leaderboard-list" start={4} aria-label="Leaderboard standings">
+              {ranked.slice(3).map((entry, index) => (
+                <li className={entry.isYou ? "leaderboard-row is-you" : "leaderboard-row"} key={entry.address}>
+                  <span className="list-rank">#{index + 4}</span>
+                  <span className="player-avatar is-small">{entry.name.slice(0, 1)}</span>
+                  <span className="leaderboard-player">
+                    <strong>{entry.name}{entry.isYou && <i>You</i>}</strong>
+                    <small>{entry.address} · {leaderboardSecondary(entry, metric)}</small>
+                  </span>
+                  <span className="leaderboard-score">
+                    <strong>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</strong>
+                    <small className={entry.trend > 0 ? "is-up" : entry.trend < 0 ? "is-down" : ""}>
+                      {entry.trend > 0 ? `↑ ${entry.trend}` : entry.trend < 0 ? `↓ ${Math.abs(entry.trend)}` : "—"}
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <p className="leaderboard-note">Mock standings · Event-indexed in the connected phase</p>
+        </section>
+      </div>
+    </main>
   );
 }
 
@@ -453,7 +715,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
               type="button"
               aria-current={active ? "page" : undefined}
               onClick={() => {
-                if (id === "grab" || id === "burn" || id === "rewards") select(id);
+                if (id === "grab" || id === "leaderboard" || id === "burn" || id === "rewards") select(id);
                 else announce(`${label} is a visual placeholder in this first pass.`);
               }}
             >
@@ -489,6 +751,7 @@ export function BurntatoApp() {
     <div className={`phone-shell is-${screen}`}>
       <AppHeader announce={announce} />
       {screen === "grab" && <GrabScreen announce={announce} />}
+      {screen === "leaderboard" && <LeaderboardScreen />}
       {screen === "burn" && <BurnScreen announce={announce} />}
       {screen === "rewards" && (
         <RewardsScreen claimedRewards={claimedRewards} onClaim={claimReward} />
