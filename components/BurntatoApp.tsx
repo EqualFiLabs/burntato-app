@@ -8,10 +8,12 @@ import {
   ChevronDown,
   CircleCheck,
   Clock3,
+  Copy,
   Flame,
   Gift,
   History,
   Home,
+  LogOut,
   Menu,
   Minus,
   PieChart,
@@ -24,6 +26,9 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+
+import { MainnetEthBalance } from "@/components/MainnetEthBalance";
+import { useWalletState } from "@/providers/wallet-context";
 
 type Screen = "grab" | "burn" | "portal" | "leaderboard" | "rewards";
 type RewardsTab = "ready" | "positions" | "history";
@@ -280,21 +285,114 @@ function Brand() {
   );
 }
 
-function AppHeader({ announce }: { announce: (message: string) => void }) {
+function shortAddress(address: string): string {
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
+}
+
+function AppHeader() {
+  const wallet = useWalletState();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const activeAddress = wallet.activeAddress;
+  const connected = wallet.status === "ready" && activeAddress !== null;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (menuRef.current && target && !menuRef.current.contains(target)) setMenuOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
+
+  async function copyAddress() {
+    const succeeded = await wallet.copyActiveAddress();
+    setCopied(succeeded);
+    if (succeeded) window.setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <header className="app-header">
       <Brand />
       <div className="header-actions">
-        <button className="balance-pill" type="button" onClick={() => announce("Balance controls will connect in the next phase.")}>
+        <span className="balance-pill" title="Read-only Ethereum balance for the active wallet">
           <EthereumMark small />
-          <span>0.125 ETH</span>
-          <span className="tiny-plus"><Plus /></span>
-        </button>
-        <button className="wallet-pill" type="button" onClick={() => announce("Wallet connection is intentionally visual-only.")}>
-          <WalletCards aria-hidden="true" />
-          <span>0x8f...a7c9</span>
-          <ChevronDown aria-hidden="true" />
-        </button>
+          <MainnetEthBalance />
+          <span className="tiny-plus" aria-hidden="true"><Plus /></span>
+        </span>
+        {connected ? (
+          <div className="wallet-control">
+            <button
+              className="wallet-pill"
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-controls="account-menu"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              <WalletCards aria-hidden="true" />
+              <span>{shortAddress(activeAddress)}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {menuOpen && (
+              <div className="account-menu" id="account-menu" role="menu" aria-label="Account" ref={menuRef}>
+                <div className="account-menu-heading">
+                  <strong>{wallet.activeWalletLabel}</strong>
+                  <span>{shortAddress(activeAddress)}</span>
+                </div>
+                <button role="menuitem" type="button" onClick={() => void copyAddress()}>
+                  <Copy aria-hidden="true" />
+                  <span>{copied ? "Copied" : "Copy address"}</span>
+                </button>
+                <button
+                  role="menuitem"
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    wallet.connectExternalWallet();
+                  }}
+                >
+                  <WalletCards aria-hidden="true" />
+                  <span>Connect external wallet</span>
+                </button>
+                <button
+                  role="menuitem"
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    wallet.logout();
+                  }}
+                >
+                  <LogOut aria-hidden="true" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            className="wallet-pill"
+            type="button"
+            disabled={!wallet.configured || wallet.status === "loading"}
+            aria-busy={wallet.status === "loading"}
+            title={wallet.configured ? undefined : "Set NEXT_PUBLIC_PRIVY_APP_ID to enable sign in."}
+            onClick={wallet.login}
+          >
+            <WalletCards aria-hidden="true" />
+            <span>{wallet.status === "loading" ? "Preparing…" : "Sign in"}</span>
+          </button>
+        )}
       </div>
     </header>
   );
@@ -591,11 +689,6 @@ type PortalToken = {
   usdPrice: number;
 };
 
-const portalWallets = [
-  { id: "privy", label: "Privy wallet", address: "0x8f...a7c9" },
-  { id: "external", label: "External wallet", address: "0x31...b44d" },
-] as const;
-
 const portalSwapNetworks: Record<PortalSwapNetwork, {
   label: string;
   route: string;
@@ -642,8 +735,8 @@ function PortalTokenMark({ symbol }: { symbol: string }) {
 }
 
 function PortalScreen({ announce }: { announce: (message: string) => void }) {
+  const wallet = useWalletState();
   const [mode, setMode] = useState<PortalMode>("swap");
-  const [walletId, setWalletId] = useState<(typeof portalWallets)[number]["id"]>("privy");
   const [swapNetwork, setSwapNetwork] = useState<PortalSwapNetwork>("ethereum");
   const [sourceSymbol, setSourceSymbol] = useState("ETH");
   const [destinationSymbol, setDestinationSymbol] = useState("POTATO");
@@ -750,17 +843,36 @@ function PortalScreen({ announce }: { announce: (message: string) => void }) {
           <div className="portal-context-row">
             <label>
               <span>Wallet</span>
-              <select
-                value={walletId}
-                onChange={(event) => {
-                  setWalletId(event.target.value as (typeof portalWallets)[number]["id"]);
-                  setReviewing(false);
-                }}
-              >
-                {portalWallets.map((wallet) => (
-                  <option key={wallet.id} value={wallet.id}>{wallet.label} · {wallet.address}</option>
-                ))}
-              </select>
+              {wallet.evmWallets.length > 0 && wallet.activeAddress ? (
+                <select
+                  value={wallet.activeAddress}
+                  onChange={(event) => {
+                    wallet.selectEvmWallet(event.target.value);
+                    setReviewing(false);
+                  }}
+                >
+                  {wallet.evmWallets.map((entry) => (
+                    <option key={entry.address} value={entry.address}>
+                      {entry.label} · {shortAddress(entry.address)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <button
+                  className="portal-wallet-cta"
+                  type="button"
+                  disabled={!wallet.configured || wallet.status === "loading"}
+                  aria-busy={wallet.status === "loading"}
+                  title={wallet.configured ? undefined : "Set NEXT_PUBLIC_PRIVY_APP_ID to enable sign in."}
+                  onClick={wallet.login}
+                >
+                  {wallet.status === "loading"
+                    ? "Preparing wallet…"
+                    : wallet.configured
+                      ? "Sign in to use your wallets"
+                      : "Sign-in unavailable"}
+                </button>
+              )}
             </label>
             {mode === "swap" && (
               <label>
@@ -1226,7 +1338,7 @@ export function BurntatoApp() {
 
   return (
     <div className={`phone-shell is-${screen}`}>
-      <AppHeader announce={announce} />
+      <AppHeader />
       {screen === "grab" && <GrabScreen announce={announce} />}
       {screen === "leaderboard" && <LeaderboardScreen />}
       {screen === "burn" && <BurnScreen announce={announce} />}

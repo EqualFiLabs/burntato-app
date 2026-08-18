@@ -3560,6 +3560,139 @@ button {
   }
 }
 
+/* Wallet connection states */
+.balance-value.is-unavailable {
+  color: #c8b39c;
+}
+
+.balance-value.is-loading {
+  letter-spacing: 0.2cqw;
+}
+
+.wallet-pill:disabled {
+  opacity: 0.62;
+  cursor: default;
+}
+
+.wallet-control {
+  position: relative;
+}
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 1.2cqw);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  min-width: 52cqw;
+  gap: 0.7cqw;
+  padding: 1.3cqw;
+  border: 0.18cqw solid rgba(255, 161, 48, 0.38);
+  border-radius: 2cqw;
+  background: linear-gradient(180deg, #1b1814, #100e0c);
+  box-shadow: 0 2cqw 5cqw rgba(0, 0, 0, 0.68);
+}
+
+.account-menu-heading {
+  display: grid;
+  gap: 0.35cqw;
+  padding: 0.7cqw 1cqw 1cqw;
+  border-bottom: 0.15cqw solid rgba(255, 161, 48, 0.2);
+}
+
+.account-menu-heading strong {
+  font-size: 2.35cqw;
+}
+
+.account-menu-heading span {
+  color: #c8b39c;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 2.05cqw;
+}
+
+.account-menu button {
+  display: flex;
+  align-items: center;
+  gap: 1.3cqw;
+  padding: 1.6cqw 1.7cqw;
+  border: 0.15cqw solid rgba(255, 161, 48, 0.18);
+  border-radius: 1.3cqw;
+  color: #f7eddf;
+  background: rgba(255, 150, 28, 0.06);
+  font-size: 2.3cqw;
+  font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-menu button:hover,
+.account-menu button:focus-visible {
+  background: rgba(255, 150, 28, 0.14);
+}
+
+.account-menu button svg {
+  width: 2.7cqw;
+  height: 2.7cqw;
+  color: #ffa522;
+}
+
+.portal-wallet-cta {
+  width: 100%;
+  height: 6.7cqw;
+  min-height: 26px;
+  padding: 0 2cqw;
+  border: 0.2cqw solid rgba(170, 135, 212, 0.22);
+  border-radius: 1.7cqw;
+  color: #ded2e6;
+  background: #110e14;
+  font-size: clamp(9px, 2cqw, 10px);
+  font-weight: 850;
+  text-align: left;
+  cursor: pointer;
+}
+
+.portal-wallet-cta:disabled {
+  opacity: 0.62;
+  cursor: default;
+}
+
+@media (min-width: 1024px) {
+  .account-menu {
+    top: calc(100% + 8px);
+    min-width: 230px;
+    gap: 4px;
+    padding: 9px;
+    border: 1px solid rgba(255, 161, 48, 0.38);
+    border-radius: 12px;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.68);
+  }
+
+  .account-menu-heading {
+    gap: 2px;
+    padding: 4px 6px 8px;
+  }
+
+  .account-menu-heading strong {
+    font-size: 12px;
+  }
+
+  .account-menu-heading span {
+    font-size: 11px;
+  }
+
+  .account-menu button {
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 7px;
+    font-size: 12px;
+  }
+
+  .account-menu button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
