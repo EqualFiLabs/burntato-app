@@ -472,15 +472,12 @@ function RewardsScreen({
             </div>
           </div>
 
-          <div className="rewards-tabs" role="tablist" aria-label="Reward views">
+          <div className="rewards-tabs" role="group" aria-label="Reward view">
             {rewardsTabs.map(({ id, label }) => (
               <button
                 key={id}
-                id={`rewards-tab-${id}`}
                 type="button"
-                role="tab"
-                aria-selected={tab === id}
-                aria-controls="rewards-tab-panel"
+                aria-pressed={tab === id}
                 className={tab === id ? "is-active" : ""}
                 onClick={() => setTab(id)}
               >
@@ -489,12 +486,7 @@ function RewardsScreen({
             ))}
           </div>
 
-          <div
-            id="rewards-tab-panel"
-            className="rewards-tab-panel"
-            role="tabpanel"
-            aria-labelledby={`rewards-tab-${tab}`}
-          >
+          <div className="rewards-tab-panel">
             {tab === "ready" && (
               <div className="reward-list">
                 {claimableRewards.map((reward) => {
