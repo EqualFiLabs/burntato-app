@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import {
   ChevronDown,
   Flame,
@@ -71,10 +71,37 @@ function AppHeader({ announce }: { announce: (message: string) => void }) {
 }
 
 function Hero({ screen }: { screen: Screen }) {
-  const source = screen === "grab" ? "/reference/grab.png" : "/reference/burn.png";
+  const mobileSource = screen === "grab" ? "/reference/grab.png" : "/reference/burn.png";
+  const desktopSource = screen === "grab" ? "/scenes/home-desktop.png" : "/scenes/burn-desktop.png";
+  const {
+    props: { srcSet: desktopSrcSet },
+  } = getImageProps({
+    src: desktopSource,
+    alt: "",
+    width: 1672,
+    height: 941,
+    quality: 75,
+    sizes: "(min-width: 1024px) calc(100vw - 236px), 1px",
+  });
+  const {
+    props: { ...mobileImageProps },
+  } = getImageProps({
+    src: mobileSource,
+    alt: "",
+    width: 941,
+    height: 1672,
+    quality: 75,
+    sizes: "(max-width: 1023px) min(100vw, 480px), 1px",
+    fetchPriority: "high",
+    loading: "eager",
+  });
+
   return (
-    <div className={`hero hero-${screen}`} aria-label={`Static Tato artwork for the ${screen} screen`}>
-      <Image src={source} alt="" width={941} height={1672} priority className="hero-source" />
+    <div className={`hero hero-${screen}`} aria-label={`Tato artwork for the ${screen} screen`}>
+      <picture>
+        <source media="(min-width: 1024px)" srcSet={desktopSrcSet} sizes="calc(100vw - 236px)" />
+        <img {...mobileImageProps} alt="" className="hero-source" />
+      </picture>
       <div className="hero-vignette" />
     </div>
   );
@@ -123,75 +150,77 @@ function BurnScreen({ announce }: { announce: (message: string) => void }) {
   return (
     <main className="screen-content burn-screen">
       <Hero screen="burn" />
-      <section className="burn-panel" aria-label="Commit POTATO to the next Recovery Market round">
-        <div className="burn-title-row">
-          <span className="title-flame"><Flame aria-hidden="true" /></span>
-          <div>
-            <h1><span>Burn</span> POTATO</h1>
-            <p>Commit to next round</p>
+      <div className="burn-controls">
+        <section className="burn-panel" aria-label="Commit POTATO to the next Recovery Market round">
+          <div className="burn-title-row">
+            <span className="title-flame"><Flame aria-hidden="true" /></span>
+            <div>
+              <h1><span>Burn</span> POTATO</h1>
+              <p>Commit to next round</p>
+            </div>
+            <div className="target-round">
+              <span>Target Round</span>
+              <strong>#128</strong>
+            </div>
           </div>
-          <div className="target-round">
-            <span>Target Round</span>
-            <strong>#128</strong>
-          </div>
-        </div>
 
-        <div className="amount-card">
-          <div className="available-balance">
-            <PotatoCoin />
-            <div>
-              <span>Available POTATO</span>
-              <strong>42,690 POTATO</strong>
+          <div className="amount-card">
+            <div className="available-balance">
+              <PotatoCoin />
+              <div>
+                <span>Available POTATO</span>
+                <strong>42,690 POTATO</strong>
+              </div>
             </div>
-          </div>
-          <div className="amount-stepper">
-            <button type="button" aria-label="Decrease amount" onClick={() => setAmount((value) => Math.max(0, value - 100))}>
-              <Minus />
-            </button>
-            <div>
-              <strong>{numberFormat.format(amount)}</strong>
-              <span>POTATO</span>
+            <div className="amount-stepper">
+              <button type="button" aria-label="Decrease amount" onClick={() => setAmount((value) => Math.max(0, value - 100))}>
+                <Minus />
+              </button>
+              <div>
+                <strong>{numberFormat.format(amount)}</strong>
+                <span>POTATO</span>
+              </div>
+              <button type="button" aria-label="Increase amount" onClick={() => setAmount((value) => Math.min(potatoBalance, value + 100))}>
+                <Plus />
+              </button>
             </div>
-            <button type="button" aria-label="Increase amount" onClick={() => setAmount((value) => Math.min(potatoBalance, value + 100))}>
-              <Plus />
-            </button>
+            <div className="quick-amounts">
+              <button type="button" onClick={() => setPercentage(0.25)}>25%</button>
+              <button type="button" onClick={() => setPercentage(0.5)}>50%</button>
+              <button className={amount === potatoBalance ? "is-selected" : ""} type="button" onClick={() => setPercentage(1)}>Max</button>
+            </div>
+            <input
+              className="amount-range"
+              type="range"
+              min="0"
+              max={potatoBalance}
+              step="10"
+              value={amount}
+              aria-label="POTATO commitment amount"
+              onChange={(event) => setAmount(Number(event.target.value))}
+            />
           </div>
-          <div className="quick-amounts">
-            <button type="button" onClick={() => setPercentage(0.25)}>25%</button>
-            <button type="button" onClick={() => setPercentage(0.5)}>50%</button>
-            <button className={amount === potatoBalance ? "is-selected" : ""} type="button" onClick={() => setPercentage(1)}>Max</button>
+          <button className="primary-action burn-button" type="button" onClick={() => announce(`Visual preview: ${numberFormat.format(amount)} POTATO was not submitted.`)}>
+            <Flame aria-hidden="true" />
+            <span>Burn POTATO</span>
+            <Flame aria-hidden="true" />
+          </button>
+        </section>
+        <section className="burn-stats" aria-label="Recovery Market summary">
+          <div className="burn-stat">
+            <span className="stat-icon fire"><Flame /></span>
+            <span><small>Total Committed</small><strong>128,400</strong><em>POTATO</em></span>
           </div>
-          <input
-            className="amount-range"
-            type="range"
-            min="0"
-            max={potatoBalance}
-            step="10"
-            value={amount}
-            aria-label="POTATO commitment amount"
-            onChange={(event) => setAmount(Number(event.target.value))}
-          />
-        </div>
-        <button className="primary-action burn-button" type="button" onClick={() => announce(`Visual preview: ${numberFormat.format(amount)} POTATO was not submitted.`)}>
-          <Flame aria-hidden="true" />
-          <span>Burn POTATO</span>
-          <Flame aria-hidden="true" />
-        </button>
-      </section>
-      <section className="burn-stats" aria-label="Recovery Market summary">
-        <div className="burn-stat">
-          <span className="stat-icon fire"><Flame /></span>
-          <span><small>Total Committed</small><strong>128,400</strong><em>POTATO</em></span>
-        </div>
-        <div className="burn-stat">
-          <span className="stat-icon ethereum"><EthereumMark /></span>
-          <span><small>Recovery Pool</small><strong>6.75</strong><em>ETH</em></span>
-        </div>
-        <div className="burn-stat">
-          <span className="stat-icon share"><PieChart /></span>
-          <span><small>Your Share</small><strong>{yourShare.toFixed(2)}%</strong><em>POTATO</em></span>
-        </div>
-      </section>
+          <div className="burn-stat">
+            <span className="stat-icon ethereum"><EthereumMark /></span>
+            <span><small>Recovery Pool</small><strong>6.75</strong><em>ETH</em></span>
+          </div>
+          <div className="burn-stat">
+            <span className="stat-icon share"><PieChart /></span>
+            <span><small>Your Share</small><strong>{yourShare.toFixed(2)}%</strong><em>POTATO</em></span>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
