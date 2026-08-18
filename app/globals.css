@@ -1826,11 +1826,11 @@ button {
 
 @media (max-height: 700px) and (max-width: 1023px) {
   .hero-portal .hero-source {
-    object-position: center 45%;
+    object-position: center 60%;
   }
 
   .portal-controls {
-    padding-top: 42cqw;
+    padding-top: 29cqw;
   }
 }
 
@@ -1872,7 +1872,7 @@ button {
 
 .portal-heading p {
   color: #bfa7ea;
-  font-size: 1.8cqw;
+  font-size: clamp(8px, 2cqw, 10px);
   font-weight: 900;
   letter-spacing: 0.22cqw;
   line-height: 1;
@@ -1911,7 +1911,7 @@ button {
 .portal-intro {
   margin: 1cqw 0 1.6cqw;
   color: #a89dac;
-  font-size: 1.95cqw;
+  font-size: clamp(9px, 2.2cqw, 11px);
   font-weight: 700;
 }
 
@@ -1961,7 +1961,7 @@ button {
 .portal-network-pair label > span {
   margin: 0 0 0.5cqw 0.5cqw;
   color: #85798b;
-  font-size: 1.55cqw;
+  font-size: clamp(8px, 1.8cqw, 9px);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -1976,7 +1976,7 @@ button {
   border-radius: 1.7cqw;
   color: #ded2e6;
   background: #110e14;
-  font-size: 1.85cqw;
+  font-size: clamp(9px, 2cqw, 10px);
   font-weight: 850;
   outline: 0;
 }
@@ -2006,7 +2006,7 @@ button {
   align-items: center;
   justify-content: space-between;
   color: #918796;
-  font-size: 1.6cqw;
+  font-size: clamp(8px, 1.8cqw, 9px);
   font-weight: 850;
 }
 
@@ -2015,7 +2015,7 @@ button {
   border: 0;
   color: #bc9cf5;
   background: transparent;
-  font-size: 1.45cqw;
+  font-size: clamp(8px, 1.7cqw, 9px);
   font-style: normal;
   font-weight: 950;
   cursor: pointer;
@@ -2093,7 +2093,7 @@ button {
   display: block;
   margin-top: 0.55cqw;
   color: #746d78;
-  font-size: 1.5cqw;
+  font-size: clamp(9px, 1.9cqw, 10px);
   font-weight: 750;
 }
 
@@ -2136,7 +2136,7 @@ button {
 
 .portal-quote-grid dt {
   color: #766f79;
-  font-size: 1.35cqw;
+  font-size: clamp(8px, 1.7cqw, 9px);
   font-weight: 800;
 }
 
@@ -2147,7 +2147,7 @@ button {
   align-items: center;
   overflow: hidden;
   color: #d9cfe0;
-  font-size: 1.48cqw;
+  font-size: clamp(9px, 1.85cqw, 10px);
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2192,7 +2192,7 @@ button {
   gap: 0.5cqw;
   align-items: center;
   color: #91a28f;
-  font-size: 1.45cqw;
+  font-size: clamp(8px, 1.8cqw, 9px);
   font-weight: 800;
 }
 
@@ -2203,13 +2203,13 @@ button {
 
 .portal-bridge-arrival strong {
   color: #a7df8d;
-  font-size: 2.2cqw;
+  font-size: clamp(10px, 2.35cqw, 12px);
 }
 
 .portal-bridge-arrival small {
   grid-column: 2;
   color: #687867;
-  font-size: 1.35cqw;
+  font-size: clamp(8px, 1.7cqw, 9px);
   text-align: right;
 }
 
@@ -2244,14 +2244,14 @@ button {
 
 .portal-review small {
   color: #769275;
-  font-size: 1.3cqw;
+  font-size: clamp(8px, 1.7cqw, 9px);
   font-weight: 850;
 }
 
 .portal-review strong {
   overflow: hidden;
   color: #d9efd2;
-  font-size: 1.65cqw;
+  font-size: clamp(9px, 1.9cqw, 10px);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2314,7 +2314,7 @@ button {
 
 .portal-activity small {
   color: #6e6871;
-  font-size: 1.25cqw;
+  font-size: clamp(8px, 1.65cqw, 9px);
   font-weight: 800;
 }
 
@@ -2322,14 +2322,14 @@ button {
   margin-top: 0.15cqw;
   overflow: hidden;
   color: #c8becd;
-  font-size: 1.45cqw;
+  font-size: clamp(8px, 1.8cqw, 10px);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .portal-activity em {
   color: #86c66c;
-  font-size: 1.3cqw;
+  font-size: clamp(8px, 1.7cqw, 9px);
   font-style: normal;
   font-weight: 900;
 }
@@ -2337,7 +2337,7 @@ button {
 .portal-footnote {
   margin: 0.75cqw 0 0;
   color: #5e5861;
-  font-size: 1.3cqw;
+  font-size: clamp(8px, 1.7cqw, 9px);
   font-weight: 750;
   text-align: center;
 }
@@ -2896,6 +2896,28 @@ button {
       0 22px 48px rgba(0, 0, 0, 0.58),
       0 0 28px rgba(126, 60, 255, 0.07);
     backdrop-filter: blur(10px);
+  }
+
+  .portal-context-row select,
+  .portal-network-pair select,
+  .portal-asset-card > small,
+  .portal-quote-grid dd,
+  .portal-review strong,
+  .portal-activity strong {
+    font-size: 10px;
+  }
+
+  .portal-field-label,
+  .portal-field-label button,
+  .portal-field-label em,
+  .portal-quote-grid dt,
+  .portal-bridge-arrival span,
+  .portal-bridge-arrival small,
+  .portal-review small,
+  .portal-activity small,
+  .portal-activity em,
+  .portal-footnote {
+    font-size: 9px;
   }
 
   .grab-button {
