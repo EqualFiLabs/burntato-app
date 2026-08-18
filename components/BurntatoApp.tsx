@@ -2,6 +2,7 @@
 
 import { getImageProps } from "next/image";
 import {
+  ArrowLeftRight,
   Check,
   ChevronDown,
   Flame,
@@ -15,8 +16,9 @@ import {
   Timer,
   Trophy,
   WalletCards,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Screen = "grab" | "burn" | "leaderboard" | "rewards";
 type RewardsTab = "ready" | "positions" | "history";
@@ -686,46 +688,140 @@ function BurnScreen({ announce }: { announce: (message: string) => void }) {
   );
 }
 
-const navigation = [
-  { id: "grab", label: "Home", Icon: Home, notice: false },
-  { id: "leaderboard", label: "Leaderboard", Icon: Trophy, notice: false },
-  { id: "burn", label: "Burn", Icon: Flame, notice: false },
-  { id: "rewards", label: "Rewards", Icon: Gift, notice: false },
-  { id: "more", label: "More", Icon: Menu, notice: false },
+const destinationNavigation = [
+  { id: "grab", label: "Play", Icon: Home, screen: "grab" },
+  { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
+  { id: "burn", label: "Burn", Icon: Flame, screen: "burn" },
+  { id: "swap", label: "Swap", Icon: ArrowLeftRight, screen: null },
+  { id: "rewards", label: "Rewards", Icon: Gift, screen: "rewards" },
+] as const;
+
+const mobileNavigation = [
+  destinationNavigation[0],
+  destinationNavigation[2],
+  destinationNavigation[3],
+  destinationNavigation[4],
 ] as const;
 
 function BottomNavigation({ screen, select, announce }: { screen: Screen; select: (screen: Screen) => void; announce: (message: string) => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    if (menuOpen && !menu.open) menu.showModal();
+    if (!menuOpen && menu.open) menu.close();
+  }, [menuOpen]);
+
+  function chooseDestination(destination: (typeof destinationNavigation)[number]) {
+    if (destination.screen) select(destination.screen);
+    else announce("Swap is a visual navigation placeholder until the market interface is added.");
+    setMenuOpen(false);
+  }
+
   return (
-    <nav className="bottom-navigation" aria-label="Primary navigation">
-      <div className="sidebar-header">
-        <Brand />
-        <span>Hot Potato</span>
-      </div>
-      <div className="nav-items">
-        {navigation.map(({ id, label, Icon, notice }) => {
-          const active = id === screen;
-          return (
-            <button
-              key={id}
-              className={active ? "nav-item is-active" : "nav-item"}
-              type="button"
-              aria-current={active ? "page" : undefined}
-              onClick={() => {
-                if (id === "grab" || id === "leaderboard" || id === "burn" || id === "rewards") select(id);
-                else announce(`${label} is a visual placeholder in this first pass.`);
-              }}
-            >
-              <span className="nav-icon"><Icon aria-hidden="true" />{notice && <i />}</span>
-              <span>{label}</span>
-            </button>
-          );
-        })}
-      </div>
-      <div className="sidebar-round" aria-hidden="true">
-        <span className="sidebar-round-flame"><Flame /></span>
-        <span><small>Live round</small><strong>#127</strong></span>
-      </div>
-    </nav>
+    <>
+      <nav className="bottom-navigation" aria-label="Primary navigation">
+        <div className="sidebar-header">
+          <Brand />
+          <span>Hot Potato</span>
+        </div>
+
+        <div className="mobile-nav-items">
+          {mobileNavigation.map((destination) => {
+            const active = destination.screen === screen;
+            return (
+              <button
+                key={destination.id}
+                className={active ? "nav-item is-active" : "nav-item"}
+                type="button"
+                aria-current={active ? "page" : undefined}
+                onClick={() => chooseDestination(destination)}
+              >
+                <span className="nav-icon"><destination.Icon aria-hidden="true" /></span>
+                <span>{destination.label}</span>
+              </button>
+            );
+          })}
+          <button
+            className={menuOpen || screen === "leaderboard" ? "nav-item is-active" : "nav-item"}
+            type="button"
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation-menu"
+            onClick={() => setMenuOpen(true)}
+          >
+            <span className="nav-icon"><Menu aria-hidden="true" /></span>
+            <span>More</span>
+          </button>
+        </div>
+
+        <div className="desktop-nav-items">
+          {destinationNavigation.map((destination) => {
+            const active = destination.screen === screen;
+            return (
+              <button
+                key={destination.id}
+                className={active ? "nav-item is-active" : "nav-item"}
+                type="button"
+                aria-current={active ? "page" : undefined}
+                onClick={() => chooseDestination(destination)}
+              >
+                <span className="nav-icon"><destination.Icon aria-hidden="true" /></span>
+                <span>{destination.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="sidebar-round" aria-hidden="true">
+          <span className="sidebar-round-flame"><Flame /></span>
+          <span><small>Live round</small><strong>#127</strong></span>
+        </div>
+      </nav>
+
+      <dialog
+        ref={menuRef}
+        id="mobile-navigation-menu"
+        className="mobile-navigation-menu"
+        aria-labelledby="mobile-menu-title"
+        onCancel={() => setMenuOpen(false)}
+        onClose={() => setMenuOpen(false)}
+      >
+        <div className="mobile-menu-header">
+          <Brand />
+          <button type="button" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)}>
+            <X aria-hidden="true" />
+          </button>
+        </div>
+        <div className="mobile-menu-heading">
+          <p>Burntato</p>
+          <h2 id="mobile-menu-title">Choose your move</h2>
+        </div>
+        <nav className="mobile-menu-list" aria-label="All destinations">
+          {destinationNavigation.map((destination) => {
+            const active = destination.screen === screen;
+            return (
+              <button
+                key={destination.id}
+                className={active ? "mobile-menu-item is-active" : "mobile-menu-item"}
+                type="button"
+                aria-current={active ? "page" : undefined}
+                onClick={() => chooseDestination(destination)}
+              >
+                <span><destination.Icon aria-hidden="true" /></span>
+                <strong>{destination.label}</strong>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="mobile-menu-round" aria-hidden="true">
+          <span className="sidebar-round-flame"><Flame /></span>
+          <span><small>Live round</small><strong>#127</strong></span>
+        </div>
+      </dialog>
+    </>
   );
 }
 
