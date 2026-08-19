@@ -10,8 +10,7 @@ import { useWalletState } from "@/providers/wallet-context";
  * Read-only Ethereum Sepolia ETH balance for the active wallet.
  *
  * A failed read renders as "Unavailable", never as zero — those are different
- * facts. The wagmi readout only mounts when Privy is configured, because the
- * Wagmi provider is mounted only in that case.
+ * facts. The readout mounts only when Privy has supplied an active wallet.
  */
 export function SepoliaEthBalance() {
   const { configured, activeAddress, status } = useWalletState();

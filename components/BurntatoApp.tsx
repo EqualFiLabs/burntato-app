@@ -565,8 +565,12 @@ function RewardsScreen() {
                       </span>
                       <span className="reward-row-action">
                         <strong>{formatEth(reward.amount)} ETH</strong>
-                        <button type="button" disabled={pending || game.anyTransactionPending} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToSepolia()}>
-                          {pending ? "Confirming…" : game.correctNetwork ? "Claim" : "Switch network"}
+                        <button type="button" disabled={pending || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToSepolia()}>
+                          {pending
+                            ? "Confirming…"
+                            : game.correctNetwork
+                              ? "Claim"
+                              : transactionLabel(game, "network", "Switch network")}
                         </button>
                       </span>
                     </article>
@@ -1023,9 +1027,13 @@ function GrabScreen() {
   const price = game.currentRound?.nextPrice ?? game.protocolConfig?.startingPrice ?? 0n;
   const isHolder = Boolean(wallet.activeAddress && game.currentRound?.currentHolder.toLowerCase() === wallet.activeAddress.toLowerCase());
   const vestingMature = Boolean(game.currentRound && game.chainNow >= game.currentRound.holderSince + game.currentRound.config.emissionVestingDuration);
+  const canFinalizeEmission = Boolean(game.currentRound && vestingMature && !game.currentRound.holderEmissionFinalized);
   let actionLabel = `Grab for ${formatEth(price)} ETH`;
   let action: () => void = () => void game.grab();
-  if (wallet.status !== "ready") {
+  if (wallet.status === "unconfigured") {
+    actionLabel = "Wallet sign-in unavailable";
+    action = () => undefined;
+  } else if (wallet.status !== "ready") {
     actionLabel = wallet.busyAction === "login" ? "Signing in…" : "Sign in to play";
     action = wallet.login;
   } else if (!game.correctNetwork) {
@@ -1037,7 +1045,7 @@ function GrabScreen() {
   } else {
     actionLabel = transactionLabel(game, "grab", actionLabel);
   }
-  const grabDisabled = game.anyTransactionPending || (
+  const grabDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
     wallet.status === "ready" && game.correctNetwork && (
       game.loading || (game.phase !== "expired" && game.purchasesPaused)
     )
@@ -1052,9 +1060,22 @@ function GrabScreen() {
           <span>{actionLabel}</span>
           <Flame aria-hidden="true" />
         </button>
-        {isHolder && vestingMature && !game.currentRound?.holderEmissionFinalized && (
-          <button className="secondary-game-action" type="button" disabled={game.anyTransactionPending || !game.correctNetwork} onClick={() => void game.collect()}>
-            {transactionLabel(game, "collect", `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`)}
+        {wallet.status === "ready" && canFinalizeEmission && (
+          <button
+            className="secondary-game-action"
+            type="button"
+            disabled={game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked}
+            onClick={() => game.correctNetwork ? void game.collect() : game.switchToSepolia()}
+          >
+            {game.correctNetwork
+              ? transactionLabel(
+                  game,
+                  "collect",
+                  isHolder
+                    ? `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
+                    : "Finalize holder emission"
+                )
+              : transactionLabel(game, "network", "Switch to Sepolia")}
           </button>
         )}
         <div className="round-card timer-card">
@@ -1100,7 +1121,10 @@ function BurnScreen() {
 
   let actionLabel = transactionLabel(game, "commit", "Commit POTATO");
   let action: () => void = () => void game.commit(amount);
-  if (wallet.status !== "ready") {
+  if (wallet.status === "unconfigured") {
+    actionLabel = "Wallet sign-in unavailable";
+    action = () => undefined;
+  } else if (wallet.status !== "ready") {
     actionLabel = wallet.busyAction === "login" ? "Signing in…" : "Sign in to commit";
     action = wallet.login;
   } else if (!game.correctNetwork) {
@@ -1110,7 +1134,7 @@ function BurnScreen() {
     actionLabel = "Start round in Play first";
     action = () => undefined;
   }
-  const commitDisabled = game.anyTransactionPending || (
+  const commitDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
     wallet.status === "ready" && game.correctNetwork && (
       amount === 0n || game.currentRoundId === 0n || game.commitmentsPaused || game.loading
     )

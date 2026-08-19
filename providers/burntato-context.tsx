@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Address, Hash, PublicClient } from "viem";
+import type { Address, PublicClient } from "viem";
 import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from "wagmi";
 
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
@@ -16,11 +16,15 @@ import {
   type RewardCandidate,
 } from "@/lib/burntato/history";
 import { describeBurntatoError, deriveRoundPhase, type BurntatoRound, type RoundConfig, type RoundPhase } from "@/lib/burntato/model";
+import {
+  canStartTransaction,
+  hasAnyTransactionPending,
+  hasGameplayTransactionPending,
+  type TransactionAction,
+  type TransactionState,
+  type Transactions,
+} from "@/lib/burntato/transactions";
 import { useWalletState } from "./wallet-context";
-
-export type TransactionAction = "network" | "grab" | "settle" | "collect" | "commit" | `winner-${string}` | `recovery-${string}`;
-export type TransactionStage = "wallet" | "confirming" | "success" | "error";
-export type TransactionState = { stage: TransactionStage; message: string; hash?: Hash };
 
 type BurntatoState = {
   configured: boolean;
@@ -46,9 +50,10 @@ type BurntatoState = {
   leaderboard: LeaderboardRow[];
   rewards: RewardCandidate[];
   lifetimeClaimed: bigint;
-  transactions: Partial<Record<TransactionAction, TransactionState>>;
+  transactions: Transactions;
   latestTransaction: TransactionState | null;
-  anyTransactionPending: boolean;
+  gameplayTransactionPending: boolean;
+  networkSwitchBlocked: boolean;
   switchToSepolia: () => void;
   refresh: () => Promise<void>;
   grab: () => Promise<void>;
@@ -85,7 +90,8 @@ export const defaultBurntatoState: BurntatoState = {
   lifetimeClaimed: 0n,
   transactions: {},
   latestTransaction: null,
-  anyTransactionPending: false,
+  gameplayTransactionPending: false,
+  networkSwitchBlocked: false,
   switchToSepolia: () => undefined,
   refresh: async () => undefined,
   grab: async () => undefined,
@@ -196,8 +202,9 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<RewardCandidate[]>([]);
-  const [transactions, setTransactions] = useState<Partial<Record<TransactionAction, TransactionState>>>({});
+  const [transactions, setTransactions] = useState<Transactions>({});
   const [latestTransaction, setLatestTransaction] = useState<TransactionState | null>(null);
+  const inFlightActionsRef = useRef(new Set<TransactionAction>());
   const scanToRef = useRef(initialHistoryCache.lastScannedBlock);
   const scanningRef = useRef(false);
   const refreshRequestRef = useRef(0);
@@ -272,6 +279,8 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
 
   const runTransaction = useCallback(async (action: TransactionAction, request: { functionName: string; args?: readonly unknown[]; value?: bigint }) => {
     if (!publicClient || !account) return;
+    if (!canStartTransaction(action, inFlightActionsRef.current)) return;
+    inFlightActionsRef.current.add(action);
     const walletState: TransactionState = { stage: "wallet", message: "Confirm in your wallet…" };
     setTransactions((current) => ({ ...current, [action]: walletState }));
     setLatestTransaction(walletState);
@@ -297,10 +306,14 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
       setTransactions((current) => ({ ...current, [action]: errorState }));
       setLatestTransaction(errorState);
       await refresh();
+    } finally {
+      inFlightActionsRef.current.delete(action);
     }
   }, [account, publicClient, refresh, scanHistory, writeContractAsync]);
 
   const switchToSepolia = useCallback(() => {
+    if (!canStartTransaction("network", inFlightActionsRef.current)) return;
+    inFlightActionsRef.current.add("network");
     const switchingState: TransactionState = { stage: "wallet", message: "Approve the Sepolia network switch…" };
     setTransactions((current) => ({ ...current, network: switchingState }));
     setLatestTransaction(switchingState);
@@ -314,7 +327,8 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
         const errorState: TransactionState = { stage: "error", message: describeBurntatoError(error) };
         setTransactions((current) => ({ ...current, network: errorState }));
         setLatestTransaction(errorState);
-      });
+      })
+      .finally(() => inFlightActionsRef.current.delete("network"));
   }, [switchChainAsync]);
 
   const leaderboard = useMemo(() => buildLeaderboard(history, snapshot.currentRoundId), [history, snapshot.currentRoundId]);
@@ -322,7 +336,8 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     if ((event.name !== "WinnerClaimed" && event.name !== "RecoveryClaimed") || !account) return total;
     return String(event.args.account ?? event.args.winner).toLowerCase() === account.toLowerCase() ? total + (event.args.amount as bigint) : total;
   }, 0n), [account, history]);
-  const anyTransactionPending = Object.values(transactions).some((state) => state?.stage === "wallet" || state?.stage === "confirming");
+  const gameplayTransactionPending = hasGameplayTransactionPending(transactions);
+  const networkSwitchBlocked = hasAnyTransactionPending(transactions);
 
   const value = useMemo<BurntatoState>(() => ({
     configured: true,
@@ -340,7 +355,8 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     lifetimeClaimed,
     transactions,
     latestTransaction,
-    anyTransactionPending,
+    gameplayTransactionPending,
+    networkSwitchBlocked,
     switchToSepolia,
     refresh,
     grab: () => runTransaction("grab", { functionName: "buyPotato", value: snapshot.currentRound?.nextPrice ?? snapshot.protocolConfig?.startingPrice ?? 0n }),
@@ -349,7 +365,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     commit: (amount) => runTransaction("commit", { functionName: "commitRecovery", args: [amount] }),
     claim: (reward) => runTransaction(`${reward.kind}-${reward.roundId}`, { functionName: reward.kind === "winner" ? "claimWinner" : "claimRecovery", args: [reward.roundId, account] }),
     dismissTransactionNotice: () => setLatestTransaction(null),
-  }), [account, anyTransactionPending, chainId, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, readError, refresh, rewards, runTransaction, snapshot, switchToSepolia, transactions]);
+  }), [account, chainId, gameplayTransactionPending, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToSepolia, transactions]);
 
   return <BurntatoContext.Provider value={value}>{children}</BurntatoContext.Provider>;
 }
@@ -359,3 +375,4 @@ export function useBurntatoState(): BurntatoState {
 }
 
 export { BurntatoContext };
+export type { TransactionAction, TransactionState } from "@/lib/burntato/transactions";

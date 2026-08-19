@@ -21,17 +21,11 @@ export type EvmWalletSummary = {
   label: string;
 };
 
-export type SolanaWalletSummary = {
-  address: string;
-  label: string;
-};
-
 export type WalletState = {
   configured: boolean;
   status: WalletStatus;
   authenticated: boolean;
   evmWallets: readonly EvmWalletSummary[];
-  solanaWallets: readonly SolanaWalletSummary[];
   activeAddress: string | null;
   activeWalletKind: WalletKind | null;
   activeWalletLabel: string | null;
@@ -52,7 +46,6 @@ export const defaultWalletState: WalletState = {
   status: "unconfigured",
   authenticated: false,
   evmWallets: [],
-  solanaWallets: [],
   activeAddress: null,
   activeWalletKind: null,
   activeWalletLabel: null,
