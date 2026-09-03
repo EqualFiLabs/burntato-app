@@ -4,6 +4,7 @@ import { getImageProps } from "next/image";
 import {
   ArrowDownUp,
   ArrowLeftRight,
+  BadgeCheck,
   Check,
   ChevronDown,
   CircleCheck,
@@ -29,11 +30,12 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NetworkEthBalance } from "@/components/NetworkEthBalance";
+import { OperatorScreen } from "@/components/OperatorScreen";
 import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
 
-type Screen = "grab" | "burn" | "portal" | "leaderboard" | "rewards";
+type Screen = "grab" | "burn" | "portal" | "leaderboard" | "rewards" | "operators";
 type RewardsTab = "ready" | "positions" | "history";
 type PortalMode = "swap" | "bridge";
 type PortalSwapNetwork = "ethereum" | "solana";
@@ -87,6 +89,12 @@ const heroSources: Record<Screen, {
     desktop: "/scenes/rewards-desktop.png",
     mobileWidth: 864,
     mobileHeight: 1821,
+  },
+  operators: {
+    mobile: "/scenes/rewards-mobile.png",
+    desktop: "/scenes/rewards-desktop.png",
+    mobileWidth: 938,
+    mobileHeight: 600,
   },
   leaderboard: {
     mobile: "/scenes/leaderboard-mobile.png",
@@ -1224,6 +1232,7 @@ const destinationNavigation = [
   { id: "burn", label: "Burn", Icon: Flame, screen: "burn" },
   { id: "portal", label: "Portal", Icon: ArrowLeftRight, screen: "portal" },
   { id: "rewards", label: "Rewards", Icon: Gift, screen: "rewards" },
+  { id: "operators", label: "Operators", Icon: BadgeCheck, screen: "operators" },
   { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
 ] as const;
 
@@ -1291,7 +1300,7 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
             );
           })}
           <button
-            className={menuOpen || screen === "leaderboard" ? "nav-item is-active" : "nav-item"}
+            className={menuOpen || screen === "leaderboard" || screen === "operators" ? "nav-item is-active" : "nav-item"}
             type="button"
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation-menu"
@@ -1390,6 +1399,7 @@ export function BurntatoApp() {
       {screen === "burn" && <BurnScreen />}
       {screen === "portal" && <PortalScreen announce={announce} />}
       {screen === "rewards" && <RewardsScreen />}
+      {screen === "operators" && <OperatorScreen />}
       <BottomNavigation screen={screen} select={setScreen} />
       <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
         <span>{displayedNotice}</span>

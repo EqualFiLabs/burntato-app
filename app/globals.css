@@ -3748,6 +3748,248 @@ button {
   cursor: default;
 }
 
+.operator-screen {
+  min-height: calc(100svh - 24cqw);
+  padding-bottom: 25cqw;
+  background:
+    radial-gradient(circle at 50% 0, rgba(255, 122, 18, 0.24), transparent 28rem),
+    #050403;
+}
+
+.operator-hero {
+  min-height: 43cqw;
+  padding: 8cqw 6cqw 5cqw;
+  border-bottom: 0.2cqw solid rgba(255, 151, 28, 0.35);
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.96), rgba(5, 4, 3, 0.5)),
+    url("/scenes/rewards-mobile.png") center 42% / cover;
+}
+
+.operator-hero p,
+.operator-card-heading small {
+  margin: 0 0 1cqw;
+  color: #ff9b20;
+  font-size: 2.5cqw;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.operator-hero h1 {
+  max-width: 78cqw;
+  margin: 0;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 8cqw;
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+
+.operator-hero > span {
+  display: block;
+  max-width: 82cqw;
+  margin-top: 2cqw;
+  color: #dec5aa;
+  font-size: 2.9cqw;
+  line-height: 1.45;
+}
+
+.operator-content {
+  display: grid;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 4cqw 4.5cqw;
+  gap: 3cqw;
+}
+
+.operator-contracts {
+  display: flex;
+  gap: 2cqw;
+  flex-wrap: wrap;
+}
+
+.operator-contracts a {
+  display: inline-flex;
+  padding: 1.6cqw 2.2cqw;
+  gap: 1cqw;
+  align-items: center;
+  border: 0.16cqw solid rgba(255, 154, 28, 0.38);
+  border-radius: 999px;
+  color: #ffd89c;
+  background: rgba(27, 18, 10, 0.9);
+  font-size: 2.45cqw;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.operator-contracts svg {
+  width: 2.8cqw;
+  height: 2.8cqw;
+}
+
+.operator-readiness {
+  min-height: 12cqw;
+  border-radius: 2.6cqw;
+  font-size: 3.3cqw;
+}
+
+.operator-card {
+  padding: 4cqw;
+  border: 0.2cqw solid rgba(214, 151, 82, 0.35);
+  border-radius: 3cqw;
+  background: linear-gradient(145deg, rgba(34, 23, 14, 0.98), rgba(10, 8, 6, 0.99));
+  box-shadow: 0 1.2cqw 2.5cqw rgba(0, 0, 0, 0.55);
+}
+
+.operator-card-heading {
+  display: flex;
+  gap: 2.5cqw;
+  align-items: center;
+}
+
+.operator-card-heading > svg {
+  width: 8cqw;
+  height: 8cqw;
+  padding: 1.6cqw;
+  border-radius: 2cqw;
+  color: #ff9b20;
+  background: rgba(255, 139, 17, 0.1);
+}
+
+.operator-card-heading small {
+  display: block;
+  margin: 0 0 0.3cqw;
+  font-size: 2cqw;
+}
+
+.operator-card-heading h2 {
+  margin: 0;
+  font-size: 4.1cqw;
+}
+
+.operator-metrics {
+  display: grid;
+  margin: 3cqw 0;
+  overflow: hidden;
+  border: 0.15cqw solid rgba(215, 157, 93, 0.25);
+  border-radius: 2cqw;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.operator-metrics div {
+  min-width: 0;
+  padding: 2cqw 1.3cqw;
+  border-right: 0.15cqw solid rgba(215, 157, 93, 0.2);
+}
+
+.operator-metrics div:last-child { border-right: 0; }
+.operator-metrics dt { color: #bfa78e; font-size: 2.1cqw; }
+.operator-metrics dd { overflow: hidden; margin: 0.6cqw 0 0; font-size: 2.7cqw; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+
+.operator-token-field {
+  display: grid;
+  margin-top: 3cqw;
+  gap: 1cqw;
+  color: #dfc3a5;
+  font-size: 2.5cqw;
+  font-weight: 800;
+}
+
+.operator-token-field input,
+.operator-token-field select {
+  width: 100%;
+  min-height: 10cqw;
+  padding: 0 3cqw;
+  border: 0.2cqw solid rgba(255, 155, 32, 0.48);
+  border-radius: 2cqw;
+  outline: none;
+  color: #fff5e8;
+  background: #0e0b08;
+  font-size: 3.4cqw;
+}
+
+.operator-token-field input:focus-visible,
+.operator-token-field select:focus-visible,
+.operator-action:focus-visible,
+.operator-contracts a:focus-visible {
+  outline: 3px solid #ffd05a;
+  outline-offset: 2px;
+}
+
+.operator-sequence {
+  display: grid;
+  gap: 1.8cqw;
+}
+
+.operator-action {
+  width: 100%;
+  min-height: 10cqw;
+  padding: 1.8cqw 2.5cqw;
+  border: 0.2cqw solid rgba(255, 162, 43, 0.5);
+  border-radius: 2cqw;
+  color: #ffd89c;
+  background: linear-gradient(180deg, #2d2116, #17100b);
+  font-size: 2.8cqw;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.operator-action.is-primary {
+  border-color: #ff6a12;
+  color: #fff;
+  background: linear-gradient(180deg, #f52c18, #c91509);
+}
+
+.operator-action:disabled { opacity: 0.52; cursor: not-allowed; }
+
+.operator-callout,
+.operator-transfer-warning,
+.operator-help,
+.operator-inline-error,
+.operator-sync {
+  margin: 2.5cqw 0;
+  padding: 2.4cqw;
+  border-radius: 1.8cqw;
+  color: #dcc5ae;
+  background: rgba(92, 58, 24, 0.22);
+  font-size: 2.45cqw;
+  line-height: 1.45;
+}
+
+.operator-callout.is-danger,
+.operator-inline-error,
+.operator-transfer-warning { color: #ffd2c9; background: rgba(181, 28, 12, 0.24); }
+.operator-callout.is-success { color: #c8ffd7; background: rgba(29, 132, 64, 0.2); }
+.operator-help { padding: 0; background: none; color: #a99580; }
+.operator-transfer-warning { border: 1px solid rgba(255, 87, 42, 0.42); }
+
+@media (min-width: 1024px) {
+  .operator-screen { min-height: 100vh; padding: 0 0 80px 230px; }
+  .operator-hero { min-height: 310px; padding: 86px 7vw 48px; border-width: 1px; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.96), rgba(5, 4, 3, 0.35)), url("/scenes/rewards-desktop.png"); }
+  .operator-hero p { margin-bottom: 8px; font-size: 13px; }
+  .operator-hero h1 { max-width: 660px; font-size: 58px; }
+  .operator-hero > span { max-width: 680px; margin-top: 14px; font-size: 16px; }
+  .operator-content { padding: 30px 40px; gap: 22px; }
+  .operator-contracts { gap: 10px; }
+  .operator-contracts a { padding: 8px 12px; gap: 6px; border-width: 1px; font-size: 12px; }
+  .operator-contracts svg { width: 13px; height: 13px; }
+  .operator-readiness { min-height: 52px; border-radius: 12px; font-size: 15px; }
+  .operator-card { padding: 24px; border-width: 1px; border-radius: 16px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55); }
+  .operator-card-heading { gap: 14px; }
+  .operator-card-heading > svg { width: 42px; height: 42px; padding: 9px; border-radius: 10px; }
+  .operator-card-heading small { margin-bottom: 2px; font-size: 10px; }
+  .operator-card-heading h2 { font-size: 22px; }
+  .operator-metrics { margin: 18px 0; border-width: 1px; border-radius: 10px; }
+  .operator-metrics div { padding: 12px; border-width: 1px; }
+  .operator-metrics dt { font-size: 11px; }
+  .operator-metrics dd { margin-top: 5px; font-size: 15px; }
+  .operator-token-field { margin-top: 18px; gap: 6px; font-size: 12px; }
+  .operator-token-field input, .operator-token-field select { min-height: 46px; padding: 0 14px; border-width: 1px; border-radius: 10px; font-size: 15px; }
+  .operator-sequence { gap: 10px; }
+  .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: 13px; }
+  .operator-callout, .operator-transfer-warning, .operator-help, .operator-inline-error, .operator-sync { margin: 14px 0; padding: 12px; border-radius: 9px; font-size: 12px; }
+  .operator-help { padding: 0; }
+}
+
 @media (min-width: 1024px) {
   .account-menu {
     top: calc(100% + 8px);

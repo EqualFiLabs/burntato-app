@@ -28,6 +28,7 @@ import {
   type WalletStatus,
 } from "./wallet-context";
 import { BurntatoBridge, BurntatoContext, defaultBurntatoState } from "./burntato-context";
+import { OperatorBridge, OperatorContext, defaultOperatorState } from "./operator-context";
 
 const ROBINHOOD_RPC_VARIABLE = "NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL";
 
@@ -402,7 +403,7 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
       }}
     >
       <PrivyWagmiProvider config={wagmiConfig}>
-        <WalletBridge><BurntatoBridge>{children}</BurntatoBridge></WalletBridge>
+        <WalletBridge><BurntatoBridge><OperatorBridge>{children}</OperatorBridge></BurntatoBridge></WalletBridge>
       </PrivyWagmiProvider>
     </PrivyProvider>
   );
@@ -412,7 +413,7 @@ function PublicGameProviders({ children }: { children: ReactNode }) {
   return (
     <PublicWagmiProvider config={wagmiConfig}>
       <WalletContext.Provider value={defaultWalletState}>
-        <BurntatoBridge>{children}</BurntatoBridge>
+        <BurntatoBridge><OperatorBridge>{children}</OperatorBridge></BurntatoBridge>
       </WalletContext.Provider>
     </PublicWagmiProvider>
   );
@@ -421,7 +422,9 @@ function PublicGameProviders({ children }: { children: ReactNode }) {
 function UnconfiguredProviders({ children }: { children: ReactNode }) {
   return (
     <WalletContext.Provider value={defaultWalletState}>
-      <BurntatoContext.Provider value={defaultBurntatoState}>{children}</BurntatoContext.Provider>
+      <BurntatoContext.Provider value={defaultBurntatoState}>
+        <OperatorContext.Provider value={defaultOperatorState}>{children}</OperatorContext.Provider>
+      </BurntatoContext.Provider>
     </WalletContext.Provider>
   );
 }
