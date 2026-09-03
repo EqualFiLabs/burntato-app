@@ -12,42 +12,33 @@ import {
   useWallets,
   type ConnectedWallet,
 } from "@privy-io/react-auth";
-import {
-  defaultSolanaRpcsPlugin,
-  toSolanaWalletConnectors,
-  useWallets as useSolanaWallets,
-} from "@privy-io/react-auth/solana";
-import { createConfig, useSetActiveWallet, WagmiProvider } from "@privy-io/wagmi";
+import { createConfig, useSetActiveWallet, WagmiProvider as PrivyWagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "viem";
-import { arbitrum, base, mainnet } from "viem/chains";
-import { useAccount } from "wagmi";
+import { sepolia } from "viem/chains";
+import { useAccount, WagmiProvider as PublicWagmiProvider } from "wagmi";
 
 import {
   defaultWalletState,
   WalletContext,
   type EvmWalletSummary,
-  type SolanaWalletSummary,
   type WalletAction,
   type WalletKind,
   type WalletState,
   type WalletStatus,
 } from "./wallet-context";
+import { BurntatoBridge, BurntatoContext, defaultBurntatoState } from "./burntato-context";
 
-const RPC_VARIABLE_NAMES = [
-  "NEXT_PUBLIC_ETHEREUM_RPC_URL",
-  "NEXT_PUBLIC_BASE_RPC_URL",
-  "NEXT_PUBLIC_ARBITRUM_RPC_URL",
-] as const;
+const SEPOLIA_RPC_VARIABLE = "NEXT_PUBLIC_SEPOLIA_RPC_URL";
 
-type PrivyEnvironment = {
-  /** True only when Privy and every wallet RPC variable are present and valid. */
-  configured: boolean;
+type RuntimeEnvironment = {
+  /** Public game reads need only a valid Sepolia RPC. */
+  gameConfigured: boolean;
+  /** Wallet identity additionally needs a Privy App ID. */
+  walletConfigured: boolean;
   appId: string;
   clientId: string | undefined;
-  ethereumRpcUrl: string;
-  baseRpcUrl: string;
-  arbitrumRpcUrl: string;
+  sepoliaRpcUrl: string;
 };
 
 /**
@@ -80,58 +71,56 @@ function parsePublicRpcUrl(value: string | undefined, variableName: string, prob
  * bundles. An indirect `process.env` object would leave the browser with
  * undefined values and cause a configured/unconfigured hydration mismatch.
  */
-function readPrivyEnvironment(source: {
+function readRuntimeEnvironment(source: {
   NEXT_PUBLIC_PRIVY_APP_ID?: string;
   NEXT_PUBLIC_PRIVY_CLIENT_ID?: string;
-  NEXT_PUBLIC_ETHEREUM_RPC_URL?: string;
-  NEXT_PUBLIC_BASE_RPC_URL?: string;
-  NEXT_PUBLIC_ARBITRUM_RPC_URL?: string;
-}): PrivyEnvironment {
+  NEXT_PUBLIC_SEPOLIA_RPC_URL?: string;
+}): RuntimeEnvironment {
   const problems: string[] = [];
   const appId = source.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
   const clientId = source.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? "";
-  if (!appId) problems.push("NEXT_PUBLIC_PRIVY_APP_ID is not set");
-  const ethereumRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_ETHEREUM_RPC_URL, RPC_VARIABLE_NAMES[0], problems);
-  const baseRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_BASE_RPC_URL, RPC_VARIABLE_NAMES[1], problems);
-  const arbitrumRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_ARBITRUM_RPC_URL, RPC_VARIABLE_NAMES[2], problems);
+  const sepoliaRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_SEPOLIA_RPC_URL, SEPOLIA_RPC_VARIABLE, problems);
+  const gameConfigured = problems.length === 0;
 
-  const environment: PrivyEnvironment = {
-    configured: problems.length === 0,
+  const environment: RuntimeEnvironment = {
+    gameConfigured,
+    walletConfigured: gameConfigured && appId.length > 0,
     appId,
     clientId: clientId.length > 0 ? clientId : undefined,
-    ethereumRpcUrl,
-    baseRpcUrl,
-    arbitrumRpcUrl,
+    sepoliaRpcUrl,
   };
 
   if (problems.length > 0) {
     console.warn(
-      `Burntato wallets are unavailable: ${problems.join("; ")}. Set the public wallet environment variables to enable sign in.`
+      `Burntato game data is unavailable: ${problems.join("; ")}. Set the public Sepolia RPC URL to enable live reads.`
     );
   }
   return environment;
 }
 
-const walletEnvironment = readPrivyEnvironment({
+const runtimeEnvironment = readRuntimeEnvironment({
   NEXT_PUBLIC_PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID,
   NEXT_PUBLIC_PRIVY_CLIENT_ID: process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID,
-  NEXT_PUBLIC_ETHEREUM_RPC_URL: process.env.NEXT_PUBLIC_ETHEREUM_RPC_URL,
-  NEXT_PUBLIC_BASE_RPC_URL: process.env.NEXT_PUBLIC_BASE_RPC_URL,
-  NEXT_PUBLIC_ARBITRUM_RPC_URL: process.env.NEXT_PUBLIC_ARBITRUM_RPC_URL,
+  NEXT_PUBLIC_SEPOLIA_RPC_URL: process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL,
 });
 
-// Ethereum mainnet is the home chain; Base and Arbitrum are available because
-// the Portal will eventually bridge there.
-const supportedChains = [mainnet, base, arbitrum] as const;
+const supportedChains = [sepolia] as const;
 
 const wagmiConfig = createConfig({
   chains: supportedChains,
   transports: {
-    [mainnet.id]: http(walletEnvironment.ethereumRpcUrl),
-    [base.id]: http(walletEnvironment.baseRpcUrl),
-    [arbitrum.id]: http(walletEnvironment.arbitrumRpcUrl),
+    [sepolia.id]: http(runtimeEnvironment.sepoliaRpcUrl),
   },
 });
+
+// The shared Privy tenant enables Solana for sibling apps. Burntato is
+// intentionally EVM-only, so acknowledge that tenant capability without
+// mounting Solana wallet discovery, connectors, RPCs, or plugins here.
+const disabledSolanaWalletConnectors = {
+  onMount: () => undefined,
+  onUnmount: () => undefined,
+  get: () => [],
+};
 
 const WALLET_CLIENT_LABELS: Record<string, string> = {
   privy: "Privy wallet",
@@ -203,14 +192,13 @@ function resolveActiveWallet(
 
 function explorerUrlFor(address: string | null): string | null {
   if (!address) return null;
-  const explorer = mainnet.blockExplorers?.default.url;
+  const explorer = sepolia.blockExplorers?.default.url;
   return explorer ? `${explorer}/address/${address}` : null;
 }
 
 function WalletBridge({ children }: { children: ReactNode }) {
   const { ready, authenticated, error: privyError, logout } = usePrivy();
   const { ready: walletsReady, wallets } = useWallets();
-  const { wallets: solanaWallets } = useSolanaWallets();
   const { isOpen: isPrivyModalOpen } = useModalStatus();
   const { address: wagmiAddress } = useAccount();
   const { setActiveWallet } = useSetActiveWallet();
@@ -322,10 +310,6 @@ function WalletBridge({ children }: { children: ReactNode }) {
       kind: walletKindOf(wallet.walletClientType),
       label: walletClientLabel(wallet.walletClientType),
     }));
-    const solanaSummaries: SolanaWalletSummary[] = solanaWallets.map((wallet) => ({
-      address: wallet.address,
-      label: wallet.standardWallet.name,
-    }));
     const activeAddress = activeWallet?.address ?? null;
     const currentBusyAction: WalletAction = loginPending ? "login" : busyAction;
     return {
@@ -333,7 +317,6 @@ function WalletBridge({ children }: { children: ReactNode }) {
       status,
       authenticated,
       evmWallets,
-      solanaWallets: solanaSummaries,
       activeAddress,
       activeWalletKind: activeWallet ? walletKindOf(activeWallet.walletClientType) : null,
       activeWalletLabel: activeWallet ? walletClientLabel(activeWallet.walletClientType) : null,
@@ -383,7 +366,6 @@ function WalletBridge({ children }: { children: ReactNode }) {
     privyError,
     runAction,
     setActiveWallet,
-    solanaWallets,
     status,
     wallets,
   ]);
@@ -394,39 +376,50 @@ function WalletBridge({ children }: { children: ReactNode }) {
 function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
   return (
     <PrivyProvider
-      appId={walletEnvironment.appId}
-      clientId={walletEnvironment.clientId}
+      appId={runtimeEnvironment.appId}
+      clientId={runtimeEnvironment.clientId}
       config={{
         loginMethods: ["wallet", "email"],
         supportedChains: [...supportedChains],
-        defaultChain: mainnet,
+        defaultChain: sepolia,
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
           solana: { createOnLogin: "off" },
           showWalletUIs: true,
         },
         externalWallets: {
-          solana: { connectors: toSolanaWalletConnectors() },
+          solana: { connectors: disabledSolanaWalletConnectors },
         },
         appearance: {
           theme: "dark",
           accentColor: "#ff961c",
-          walletChainType: "ethereum-and-solana",
+          walletChainType: "ethereum-only",
         },
-        plugins: [defaultSolanaRpcsPlugin()],
       }}
     >
-      <WagmiProvider config={wagmiConfig}>
-        <WalletBridge>{children}</WalletBridge>
-      </WagmiProvider>
+      <PrivyWagmiProvider config={wagmiConfig}>
+        <WalletBridge><BurntatoBridge>{children}</BurntatoBridge></WalletBridge>
+      </PrivyWagmiProvider>
     </PrivyProvider>
   );
 }
 
-function UnconfiguredWalletProviders({ children }: { children: ReactNode }) {
-  // The module-level defaultWalletState keeps a stable identity, so the app
-  // renders normally in a signed-out shape without wallet environment values.
-  return <WalletContext.Provider value={defaultWalletState}>{children}</WalletContext.Provider>;
+function PublicGameProviders({ children }: { children: ReactNode }) {
+  return (
+    <PublicWagmiProvider config={wagmiConfig}>
+      <WalletContext.Provider value={defaultWalletState}>
+        <BurntatoBridge>{children}</BurntatoBridge>
+      </WalletContext.Provider>
+    </PublicWagmiProvider>
+  );
+}
+
+function UnconfiguredProviders({ children }: { children: ReactNode }) {
+  return (
+    <WalletContext.Provider value={defaultWalletState}>
+      <BurntatoContext.Provider value={defaultBurntatoState}>{children}</BurntatoContext.Provider>
+    </WalletContext.Provider>
+  );
 }
 
 export function DAppProviders({ children }: { children: ReactNode }) {
@@ -434,10 +427,12 @@ export function DAppProviders({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {walletEnvironment.configured ? (
+      {runtimeEnvironment.walletConfigured ? (
         <ConfiguredWalletProviders>{children}</ConfiguredWalletProviders>
+      ) : runtimeEnvironment.gameConfigured ? (
+        <PublicGameProviders>{children}</PublicGameProviders>
       ) : (
-        <UnconfiguredWalletProviders>{children}</UnconfiguredWalletProviders>
+        <UnconfiguredProviders>{children}</UnconfiguredProviders>
       )}
     </QueryClientProvider>
   );

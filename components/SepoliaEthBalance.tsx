@@ -1,32 +1,31 @@
 "use client";
 
 import { formatUnits } from "viem";
-import { mainnet } from "viem/chains";
+import { sepolia } from "viem/chains";
 import { useBalance } from "wagmi";
 
 import { useWalletState } from "@/providers/wallet-context";
 
 /**
- * Read-only Ethereum mainnet ETH balance for the active wallet.
+ * Read-only Ethereum Sepolia ETH balance for the active wallet.
  *
  * A failed read renders as "Unavailable", never as zero — those are different
- * facts. The wagmi readout only mounts when Privy is configured, because the
- * Wagmi provider is mounted only in that case.
+ * facts. The readout mounts only when Privy has supplied an active wallet.
  */
-export function MainnetEthBalance() {
+export function SepoliaEthBalance() {
   const { configured, activeAddress, status } = useWalletState();
 
   if (!configured || !activeAddress || status !== "ready") {
     return <span className="balance-value">— ETH</span>;
   }
 
-  return <MainnetEthBalanceReadout address={activeAddress} />;
+  return <SepoliaEthBalanceReadout address={activeAddress} />;
 }
 
-function MainnetEthBalanceReadout({ address }: { address: string }) {
+function SepoliaEthBalanceReadout({ address }: { address: string }) {
   const { data, isPending, isError } = useBalance({
     address: address as `0x${string}`,
-    chainId: mainnet.id,
+    chainId: sepolia.id,
     query: { refetchInterval: 30_000 },
   });
 

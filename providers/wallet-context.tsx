@@ -21,21 +21,15 @@ export type EvmWalletSummary = {
   label: string;
 };
 
-export type SolanaWalletSummary = {
-  address: string;
-  label: string;
-};
-
 export type WalletState = {
   configured: boolean;
   status: WalletStatus;
   authenticated: boolean;
   evmWallets: readonly EvmWalletSummary[];
-  solanaWallets: readonly SolanaWalletSummary[];
   activeAddress: string | null;
   activeWalletKind: WalletKind | null;
   activeWalletLabel: string | null;
-  /** Ethereum-mainnet block-explorer URL for the active address, or null. */
+  /** Ethereum Sepolia block-explorer URL for the active address, or null. */
   explorerUrl: string | null;
   busyAction: WalletAction;
   /** Human-readable wallet feedback. Never contains provider internals. */
@@ -52,7 +46,6 @@ export const defaultWalletState: WalletState = {
   status: "unconfigured",
   authenticated: false,
   evmWallets: [],
-  solanaWallets: [],
   activeAddress: null,
   activeWalletKind: null,
   activeWalletLabel: null,
