@@ -20,7 +20,9 @@ import {
   buildSwapPlan,
   describeSwapError,
   minimumOutput,
+  quoteIsFresh,
   routerCommands,
+  transactionDeadline,
   type PoolKey,
   type SwapDirection,
 } from "@/lib/portal/router";
@@ -181,6 +183,8 @@ export function LivePortalScreen() {
         address: BURNTATO_DEPLOYMENT.diamond,
         abi: erc20Abi,
         functionName: "approve",
+        // POTATO intentionally requires its one Permit2 ERC-20 approval to be
+        // infinite; the signed Permit2 authorization below remains exact.
         args: [BURNTATO_DEPLOYMENT.permit2, maxUint256],
         account,
       });
@@ -188,7 +192,7 @@ export function LivePortalScreen() {
       setTransaction({ stage: "confirming", message: "Confirming POTATO approval…", hash });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Approval reverted");
-      setTransaction({ stage: "success", message: "POTATO is approved for exact Permit2 swap authorizations.", hash });
+      setTransaction({ stage: "success", message: "POTATO is approved for exact signed Permit2 swap limits.", hash });
       await refetchTokenAllowance();
     } catch (cause) {
       setTransaction({ stage: "error", message: describeSwapError(cause) });
@@ -202,8 +206,8 @@ export function LivePortalScreen() {
     transactionLock.current = true;
     try {
       const latestBlock = await publicClient.getBlock();
-      if (latestBlock.timestamp > quote.chainTimestamp + 120n || quote.amountIn !== amountIn) throw new Error("Quote deadline expired");
-      const deadline = latestBlock.timestamp + 300n;
+      if (!quoteIsFresh(quote.chainTimestamp, latestBlock.timestamp) || quote.amountIn !== amountIn) throw new Error("Quote deadline expired");
+      const deadline = transactionDeadline(latestBlock.timestamp);
       const swapPlan = buildSwapPlan(poolKey, direction, quote.amountIn, quote.minimumOut);
       let inputs: `0x${string}`[] = [swapPlan];
       if (direction === "sell") {

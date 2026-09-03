@@ -17,6 +17,15 @@ const planParams = parseAbiParameters("bytes actions,bytes[] params");
 export const V4_SWAP = "0x10" as Hex;
 export const PERMIT2_PERMIT_ALLOW_REVERT = "0x8a" as Hex;
 
+export function quoteIsFresh(quotedAt: bigint, currentTimestamp: bigint, maximumAge = 120n): boolean {
+  return currentTimestamp >= quotedAt && currentTimestamp <= quotedAt + maximumAge;
+}
+
+export function transactionDeadline(currentTimestamp: bigint, lifetime = 300n): bigint {
+  if (lifetime <= 0n || lifetime > 3_600n) throw new Error("Invalid transaction lifetime");
+  return currentTimestamp + lifetime;
+}
+
 export function minimumOutput(quoted: bigint, slippageBps: number): bigint {
   if (!Number.isInteger(slippageBps) || slippageBps < 1 || slippageBps > 5_000) throw new Error("Invalid slippage");
   return quoted * BigInt(10_000 - slippageBps) / 10_000n;
