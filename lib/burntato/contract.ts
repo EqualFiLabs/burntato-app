@@ -32,6 +32,7 @@ export const burntatoAbi = parseAbi([
   "function protocolConfig() view returns (ProtocolConfig)",
   "function getRound(uint256 roundId) view returns (Round)",
   "function currentEarnedEmission() view returns (uint256 baseEarned, uint256 treasuryEarned)",
+  "function canonicalPoolKey() view returns ((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) key)",
   "function purchasesPaused() view returns (bool)",
   "function commitmentsPaused() view returns (bool)",
   "function balanceOf(address account) view returns (uint256)",

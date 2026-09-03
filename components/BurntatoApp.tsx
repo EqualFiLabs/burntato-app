@@ -31,6 +31,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NetworkEthBalance } from "@/components/NetworkEthBalance";
 import { OperatorScreen } from "@/components/OperatorScreen";
+import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -680,7 +681,9 @@ function PortalTokenMark({ symbol }: { symbol: string }) {
   return <span className={`portal-token-mark is-${symbol.toLowerCase()}`}>{symbol.slice(0, 1)}</span>;
 }
 
-function PortalScreen({ announce }: { announce: (message: string) => void }) {
+// Retained only as an art-direction reference while the live Portal is qualified.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function PortalScreenPreview({ announce }: { announce: (message: string) => void }) {
   const wallet = useWalletState();
   const [mode, setMode] = useState<PortalMode>("swap");
   const [swapNetwork, setSwapNetwork] = useState<PortalSwapNetwork>("ethereum");
@@ -1383,13 +1386,8 @@ export function BurntatoApp() {
   const wallet = useWalletState();
   const game = useBurntatoState();
   const [screen, setScreen] = useState<Screen>("grab");
-  const [notice, setNotice] = useState("");
   const transactionNotice = game.latestTransaction?.message;
-  const displayedNotice = wallet.error ?? game.readError ?? game.historyError ?? transactionNotice ?? notice;
-
-  function announce(message: string) {
-    setNotice(message);
-  }
+  const displayedNotice = wallet.error ?? game.readError ?? game.historyError ?? transactionNotice;
 
   return (
     <div className={`phone-shell is-${screen}`}>
@@ -1397,7 +1395,7 @@ export function BurntatoApp() {
       {screen === "grab" && <GrabScreen />}
       {screen === "leaderboard" && <LeaderboardScreen />}
       {screen === "burn" && <BurnScreen />}
-      {screen === "portal" && <PortalScreen announce={announce} />}
+      {screen === "portal" && <LivePortalScreen />}
       {screen === "rewards" && <RewardsScreen />}
       {screen === "operators" && <OperatorScreen />}
       <BottomNavigation screen={screen} select={setScreen} />
@@ -1406,7 +1404,7 @@ export function BurntatoApp() {
         {displayedNotice === transactionNotice && game.latestTransaction?.hash && (
           <a href={`https://explorer.testnet.chain.robinhood.com/tx/${game.latestTransaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>
         )}
-        {(displayedNotice === transactionNotice || displayedNotice === notice) && displayedNotice && <button type="button" onClick={() => displayedNotice === transactionNotice ? game.dismissTransactionNotice() : setNotice("")} aria-label="Dismiss message">×</button>}
+        {displayedNotice === transactionNotice && displayedNotice && <button type="button" onClick={game.dismissTransactionNotice} aria-label="Dismiss message">×</button>}
       </div>
     </div>
   );

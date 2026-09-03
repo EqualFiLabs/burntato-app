@@ -6,7 +6,7 @@ Wagmi and Viem read the Robinhood testnet game every three seconds, anchor the c
 
 Copy `.env.example` to `.env.local` and set the credential-free `NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL`. To enable sign-in and transactions, also set the shared `NEXT_PUBLIC_PRIVY_APP_ID` and, when required by the Privy application, `NEXT_PUBLIC_PRIVY_CLIENT_ID`. Missing Privy configuration leaves the public game available in spectator mode. Never commit actual values, client secrets, delegated signer IDs, or authorization keys.
 
-Play can start/grab or settle a round. Once holder emission has matured, the holder can collect it and any connected account can permissionlessly finalize it for the recorded holder. Burn commits the active wallet's POTATO directly to the next recovery round. Rewards validates winner and recovery eligibility against contract state and claims one round at a time to the active wallet. The Portal still shows visual-only quotes and routes; no Uniswap, Jupiter, Across, or quote services are connected, and no additional chain runtime is configured for the preview.
+Play can start/grab or settle a round. Once holder emission has matured, the holder can collect it and any connected account can permissionlessly finalize it for the recorded holder. Burn commits the active wallet's POTATO directly to the next recovery round. Rewards validates winner and recovery eligibility against contract state and claims one round at a time to the active wallet. The Portal quotes live ETH/POTATO exact-input swaps through the deployed V4 Quoter and executes through Universal Router; POTATO sells use an exact Permit2 authorization. Cross-chain routes are explicitly unavailable.
 
 ## Run locally
 

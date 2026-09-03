@@ -3962,6 +3962,70 @@ button {
 .operator-help { padding: 0; background: none; color: #a99580; }
 .operator-transfer-warning { border: 1px solid rgba(255, 87, 42, 0.42); }
 
+.portal-live-hero {
+  min-height: 40cqw;
+  padding: 8cqw 6cqw 4cqw;
+  border-bottom: 0.2cqw solid rgba(255, 151, 28, 0.35);
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.95), rgba(5, 4, 3, 0.45)),
+    url("/scenes/portal-mobile.png") center 35% / cover;
+}
+
+.portal-live-hero p {
+  margin: 0 0 1cqw;
+  color: #ff9b20;
+  font-size: 2.5cqw;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.portal-live-hero h1 {
+  margin: 0;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 8cqw;
+  text-transform: uppercase;
+}
+
+.portal-live-hero span {
+  display: block;
+  max-width: 82cqw;
+  margin-top: 1cqw;
+  color: #d9c1a8;
+  font-size: 2.7cqw;
+}
+
+.live-portal-screen .portal-context-row strong {
+  display: flex;
+  min-height: 6.7cqw;
+  align-items: center;
+  color: #f8eadc;
+  font-size: 2.5cqw;
+}
+
+.portal-live-error,
+.portal-live-status,
+.portal-coming-soon {
+  display: flex;
+  margin: 2cqw 0;
+  padding: 2.4cqw;
+  gap: 2cqw;
+  align-items: center;
+  border-radius: 1.8cqw;
+  font-size: 2.45cqw;
+  line-height: 1.4;
+}
+
+.portal-live-error { color: #ffd2c9; background: rgba(181, 28, 12, 0.24); }
+.portal-live-status { color: #c8ffd7; background: rgba(29, 132, 64, 0.2); }
+.portal-live-status.is-error { color: #ffd2c9; background: rgba(181, 28, 12, 0.24); }
+.portal-live-status svg, .portal-coming-soon svg { width: 4cqw; height: 4cqw; flex: 0 0 auto; }
+.portal-live-status span { flex: 1; }
+.portal-live-status a { color: #ffd05a; font-weight: 900; }
+.portal-coming-soon { color: #d8c1aa; background: rgba(90, 70, 52, 0.25); }
+.portal-coming-soon span { display: flex; flex-direction: column; }
+.portal-coming-soon small { margin-top: 0.4cqw; color: #a9927c; }
+
 @media (min-width: 1024px) {
   .operator-screen { min-height: 100vh; padding: 0 0 80px 230px; }
   .operator-hero { min-height: 310px; padding: 86px 7vw 48px; border-width: 1px; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.96), rgba(5, 4, 3, 0.35)), url("/scenes/rewards-desktop.png"); }
@@ -3988,6 +4052,14 @@ button {
   .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: 13px; }
   .operator-callout, .operator-transfer-warning, .operator-help, .operator-inline-error, .operator-sync { margin: 14px 0; padding: 12px; border-radius: 9px; font-size: 12px; }
   .operator-help { padding: 0; }
+  .portal-live-hero { min-height: 300px; padding: 80px 7vw 42px; border-width: 1px; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.95), rgba(5, 4, 3, 0.35)), url("/scenes/portal-desktop.png"); }
+  .portal-live-hero p { margin-bottom: 8px; font-size: 13px; }
+  .portal-live-hero h1 { font-size: 58px; }
+  .portal-live-hero span { max-width: 680px; margin-top: 8px; font-size: 15px; }
+  .live-portal-screen .portal-context-row strong { min-height: 34px; font-size: 12px; }
+  .portal-live-error, .portal-live-status, .portal-coming-soon { margin: 10px 0; padding: 12px; gap: 10px; border-radius: 9px; font-size: 12px; }
+  .portal-live-status svg, .portal-coming-soon svg { width: 18px; height: 18px; }
+  .portal-coming-soon small { margin-top: 2px; }
 }
 
 @media (min-width: 1024px) {
