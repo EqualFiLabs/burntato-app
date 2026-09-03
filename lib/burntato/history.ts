@@ -58,34 +58,47 @@ function reviveIndexedValue(value: unknown): unknown {
 
 export async function fetchIndexedHistory(indexerUrl: string, fromBlock: bigint): Promise<IndexedHistory> {
   const baseUrl = indexerUrl.endsWith("/") ? indexerUrl : `${indexerUrl}/`;
-  const eventsUrl = new URL("events", baseUrl);
-  eventsUrl.searchParams.set("fromBlock", fromBlock.toString());
-  eventsUrl.searchParams.set("limit", "5000");
-  const [eventsResponse, statusResponse] = await Promise.all([
-    fetch(eventsUrl, { headers: { Accept: "application/json" } }),
-    fetch(new URL("status", baseUrl), { headers: { Accept: "application/json" } }),
-  ]);
-  if (!eventsResponse.ok || !statusResponse.ok) throw new Error(`Indexer returned ${eventsResponse.status}/${statusResponse.status}`);
-  const payload = await eventsResponse.json() as {
-    chainId?: number;
-    items?: Array<{ source?: string; name?: string; transactionHash?: string; logIndex?: number; blockNumber?: string; args?: unknown }>;
-  };
+  const statusResponse = await fetch(new URL("status", baseUrl), { headers: { Accept: "application/json" } });
+  if (!statusResponse.ok) throw new Error(`Indexer status returned ${statusResponse.status}`);
   const status = await statusResponse.json() as { robinhoodTestnet?: { id?: number; block?: { number?: number } } };
   const indexedBlock = status.robinhoodTestnet?.block?.number;
-  if (payload.chainId !== BURNTATO_DEPLOYMENT.chainId || status.robinhoodTestnet?.id !== BURNTATO_DEPLOYMENT.chainId || !Number.isSafeInteger(indexedBlock) || !Array.isArray(payload.items)) {
+  if (status.robinhoodTestnet?.id !== BURNTATO_DEPLOYMENT.chainId || !Number.isSafeInteger(indexedBlock)) {
     throw new Error("Indexer deployment mismatch");
   }
   const events: BurntatoEvent[] = [];
-  for (const item of payload.items) {
-    if (item.source !== "burntato" || !TRACKED_EVENTS.has(item.name as BurntatoEvent["name"])) continue;
-    if (!item.transactionHash?.startsWith("0x") || !/^\d+$/.test(item.blockNumber ?? "") || !Number.isInteger(item.logIndex)) continue;
-    events.push({
-      name: item.name as BurntatoEvent["name"],
-      blockNumber: BigInt(item.blockNumber!),
-      transactionHash: item.transactionHash as `0x${string}`,
-      logIndex: item.logIndex!,
-      args: reviveIndexedValue(item.args) as Record<string, unknown>,
-    });
+  let cursor: { blockNumber: string; logIndex: number } | null = null;
+  for (let page = 0; page < 100; page += 1) {
+    const eventsUrl = new URL("events", baseUrl);
+    eventsUrl.searchParams.set("fromBlock", fromBlock.toString());
+    eventsUrl.searchParams.set("limit", "5000");
+    if (cursor) {
+      eventsUrl.searchParams.set("afterBlock", cursor.blockNumber);
+      eventsUrl.searchParams.set("afterLogIndex", String(cursor.logIndex));
+    }
+    const eventsResponse = await fetch(eventsUrl, { headers: { Accept: "application/json" } });
+    if (!eventsResponse.ok) throw new Error(`Indexer events returned ${eventsResponse.status}`);
+    const payload = await eventsResponse.json() as {
+      chainId?: number;
+      nextCursor?: { blockNumber?: string; logIndex?: number } | null;
+      items?: Array<{ source?: string; name?: string; transactionHash?: string; logIndex?: number; blockNumber?: string; args?: unknown }>;
+    };
+    if (payload.chainId !== BURNTATO_DEPLOYMENT.chainId || !Array.isArray(payload.items)) throw new Error("Indexer deployment mismatch");
+    for (const item of payload.items) {
+      if (item.source !== "burntato" || !TRACKED_EVENTS.has(item.name as BurntatoEvent["name"])) continue;
+      if (!item.transactionHash?.startsWith("0x") || !/^\d+$/.test(item.blockNumber ?? "") || !Number.isInteger(item.logIndex)) continue;
+      events.push({
+        name: item.name as BurntatoEvent["name"],
+        blockNumber: BigInt(item.blockNumber!),
+        transactionHash: item.transactionHash as `0x${string}`,
+        logIndex: item.logIndex!,
+        args: reviveIndexedValue(item.args) as Record<string, unknown>,
+      });
+    }
+    const next = payload.nextCursor;
+    if (!next) break;
+    if (!/^\d+$/.test(next.blockNumber ?? "") || !Number.isSafeInteger(next.logIndex) || (cursor && next.blockNumber === cursor.blockNumber && next.logIndex === cursor.logIndex)) throw new Error("Invalid indexer cursor");
+    cursor = { blockNumber: next.blockNumber!, logIndex: next.logIndex! };
+    if (page === 99) throw new Error("Indexer pagination limit exceeded");
   }
   return {
     events: dedupeEvents(events),

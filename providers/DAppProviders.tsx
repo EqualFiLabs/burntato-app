@@ -46,7 +46,7 @@ type RuntimeEnvironment = {
  * Accepts only absolute, credential-free HTTP(S) URLs so a misconfigured
  * endpoint fails loudly instead of quietly degrading the wallet runtime.
  */
-function parsePublicRpcUrl(value: string | undefined, variableName: string, problems: string[]): string {
+export function parsePublicRpcUrl(value: string | undefined, variableName: string, problems: string[]): string {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) {
     problems.push(`${variableName} is not set`);
@@ -72,7 +72,7 @@ function parsePublicRpcUrl(value: string | undefined, variableName: string, prob
  * bundles. An indirect `process.env` object would leave the browser with
  * undefined values and cause a configured/unconfigured hydration mismatch.
  */
-function readRuntimeEnvironment(source: {
+export function readRuntimeEnvironment(source: {
   NEXT_PUBLIC_PRIVY_APP_ID?: string;
   NEXT_PUBLIC_PRIVY_CLIENT_ID?: string;
   NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL?: string;

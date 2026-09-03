@@ -2,10 +2,10 @@
 
 import { BadgeCheck, Coins, ExternalLink, RefreshCw, ShieldCheck, WalletCards } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { formatEther, formatUnits } from "viem";
+import { formatEther, formatUnits, type Address } from "viem";
 
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
-import { activationUpgradeCost, parseOperatorId, ZERO_ADDRESS } from "@/lib/operators/model";
+import { activationUpgradeCost, faucetEligibility, operatorRewardAction, parseOperatorId, ZERO_ADDRESS } from "@/lib/operators/model";
 import { useBurntatoState } from "@/providers/burntato-context";
 import { type OperatorAction, useOperatorState } from "@/providers/operator-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -45,15 +45,15 @@ export function OperatorScreen() {
   const account = wallet.activeAddress?.toLowerCase();
   const ownsToken = Boolean(account && operator.tokenOwner?.toLowerCase() === account);
   const registeredOwner = operator.routerRegistration.owner.toLowerCase() !== ZERO_ADDRESS.toLowerCase();
-  const registeredByWallet = Boolean(account && operator.routerRegistration.owner.toLowerCase() === account);
   const targetTier = selectedTargetTier <= operator.currentTier
     ? Math.min(4, operator.currentTier + 1)
     : selectedTargetTier;
   const upgradeCost = activationUpgradeCost(operator.tierCosts, operator.currentTier, targetTier);
-  const faucetReady = operator.chainNow >= operator.faucetNextClaimAt;
-  const faucetFunded = operator.faucetBalance >= operator.faucetClaimAmount;
+  const { ready: faucetReady, funded: faucetFunded } = faucetEligibility(operator.chainNow, operator.faucetNextClaimAt, operator.faucetBalance, operator.faucetClaimAmount);
   const purchaseApproved = operator.purchaseAllowance >= operator.purchaseQuote.staticsPrice;
   const activationApproved = operator.activationAllowance >= upgradeCost;
+  const purchaseNativeFunded = operator.nativeBalance >= operator.purchaseQuote.requiredNative;
+  const rewardsAction = operatorRewardAction(wallet.activeAddress as Address | null, operator.routerRegistration, operator.routerPreview);
 
   useEffect(() => {
     setOperatorId(parsedId);
@@ -137,7 +137,9 @@ export function OperatorScreen() {
                 <div><dt>Current owner</dt><dd title={operator.tokenOwner ?? undefined}>{operator.tokenInVault ? "Genesis Vault" : ownsToken ? "Your wallet" : operator.tokenOwner ? `${operator.tokenOwner.slice(0, 6)}…${operator.tokenOwner.slice(-4)}` : "Unavailable"}</dd></div>
                 <div><dt>STATICS price</dt><dd>{statics(operator.purchaseQuote.staticsPrice)}</dd></div>
                 <div><dt>Native required</dt><dd>{eth(operator.purchaseQuote.requiredNative)} ETH</dd></div>
+                <div><dt>Wallet ETH</dt><dd>{eth(operator.nativeBalance)} ETH</dd></div>
               </dl>
+              {!purchaseNativeFunded && <p className="operator-inline-error">The active wallet needs more Robinhood testnet ETH for the live purchase fee and gas.</p>}
               {operator.tokenInVault ? (
                 <div className="operator-sequence">
                   <button
@@ -151,7 +153,7 @@ export function OperatorScreen() {
                   <button
                     className="operator-action is-primary"
                     type="button"
-                    disabled={Boolean(readinessAction) || !purchaseApproved || operator.purchasesPaused || !operator.vaultFinalized || pending(operator, "purchase")}
+                    disabled={Boolean(readinessAction) || !purchaseApproved || !purchaseNativeFunded || operator.purchasesPaused || !operator.vaultFinalized || pending(operator, "purchase")}
                     onClick={() => void operator.purchase()}
                   >
                     {actionLabel(operator, "purchase", `2. Buy Operator #${parsedId}`)}
@@ -203,9 +205,9 @@ export function OperatorScreen() {
                 <div><dt>Router pending</dt><dd>{eth(operator.pendingRouterRevenue)} ETH</dd></div>
               </dl>
               {operator.routerPreview.transferDetected && <p className="operator-callout is-danger">Transfer or weight decrease detected. Sync invalidates this registration and forfeits {eth(operator.routerPreview.forfeitable)} ETH for redistribution.</p>}
-              {!registeredByWallet || operator.routerPreview.transferDetected ? (
+              {rewardsAction === "register" ? (
                 <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || pending(operator, "register-burntato")} onClick={() => void operator.registerBurntato()}>{actionLabel(operator, "register-burntato", registeredOwner ? "Invalidate old state and register" : "Register with Burntato")}</button>
-              ) : operator.routerPreview.currentWeight > operator.routerRegistration.weight ? (
+              ) : rewardsAction === "sync" ? (
                 <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || pending(operator, "sync-burntato")} onClick={() => void operator.syncBurntato()}>{actionLabel(operator, "sync-burntato", "Sync increased activation weight")}</button>
               ) : (
                 <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || operator.routerPreview.claimable === 0n || pending(operator, "claim-burntato")} onClick={() => void operator.claimBurntato()}>{actionLabel(operator, "claim-burntato", "Claim Operator ETH")}</button>

@@ -66,4 +66,26 @@ describe("durable indexer projection", () => {
       globalThis.fetch = previousFetch;
     }
   });
+
+  it("paginates with a stable event cursor and deduplicates retries", async () => {
+    const previousFetch = globalThis.fetch;
+    let eventsPage = 0;
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith("/status")) return new Response(JSON.stringify({ robinhoodTestnet: { id: 46_630, block: { number: 112_340_000 } } }));
+      eventsPage += 1;
+      const base = { source: "burntato", name: "RecoveryCommitted", transactionHash: `0x${"2".repeat(64)}`, logIndex: 1, blockNumber: "112339500", args: { roundId: "2", account: alice, amount: "100" } };
+      if (eventsPage === 1) return new Response(JSON.stringify({ chainId: 46_630, nextCursor: { blockNumber: "112339500", logIndex: 1 }, items: [base] }));
+      expect(url.searchParams.get("afterBlock")).toBe("112339500");
+      expect(url.searchParams.get("afterLogIndex")).toBe("1");
+      return new Response(JSON.stringify({ chainId: 46_630, nextCursor: null, items: [base] }));
+    };
+    try {
+      const result = await fetchIndexedHistory("https://indexer.example", 112_339_401n);
+      expect(result.events).toHaveLength(1);
+      expect(eventsPage).toBe(2);
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
 });

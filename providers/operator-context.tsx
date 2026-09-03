@@ -44,6 +44,7 @@ export type OperatorTransaction = {
 
 type OperatorSnapshot = {
   chainNow: bigint;
+  nativeBalance: bigint;
   staticsBalance: bigint;
   faucetBalance: bigint;
   faucetClaimAmount: bigint;
@@ -92,6 +93,7 @@ const emptyPreview: OperatorPreview = {
 
 const emptySnapshot: OperatorSnapshot = {
   chainNow: 0n,
+  nativeBalance: 0n,
   staticsBalance: 0n,
   faucetBalance: 0n,
   faucetClaimAmount: 200_000n * 10n ** 18n,
@@ -175,7 +177,8 @@ async function read(client: PublicClient, address: Address, abi: Abi, functionNa
 async function readOperatorSnapshot(client: PublicClient, account: Address | undefined, operatorId: bigint | null): Promise<OperatorSnapshot> {
   const block = await client.getBlock();
   const accountOrZero = account ?? ZERO_ADDRESS;
-  const [staticsBalance, faucetBalance, faucetClaimAmount, faucetNextClaimAt, purchaseQuote, purchaseAllowance, activationAllowance, purchasesPaused, vaultFinalized, tierCosts, totals, launchBase] = await Promise.all([
+  const [nativeBalance, staticsBalance, faucetBalance, faucetClaimAmount, faucetNextClaimAt, purchaseQuote, purchaseAllowance, activationAllowance, purchasesPaused, vaultFinalized, tierCosts, totals, launchBase] = await Promise.all([
+    client.getBalance({ address: accountOrZero }),
     read(client, BURNTATO_DEPLOYMENT.statics, erc20Abi, "balanceOf", [accountOrZero]),
     read(client, BURNTATO_DEPLOYMENT.statics, erc20Abi, "balanceOf", [BURNTATO_DEPLOYMENT.faucet]),
     read(client, BURNTATO_DEPLOYMENT.faucet, faucetAbi, "CLAIM_AMOUNT"),
@@ -244,6 +247,7 @@ async function readOperatorSnapshot(client: PublicClient, account: Address | und
 
   return {
     chainNow: block.timestamp,
+    nativeBalance,
     staticsBalance: staticsBalance as bigint,
     faucetBalance: faucetBalance as bigint,
     faucetClaimAmount: faucetClaimAmount as bigint,

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { getAbiItem, getAddress, toFunctionSelector } from "viem";
+import { getAbiItem, getAddress, toFunctionSelector, type Abi } from "viem";
 
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "./contract";
+import { activationRegistryAbi, faucetAbi, genesisDistributorAbi, genesisVaultAbi, operatorRewardsAbi } from "../operators/contracts";
+import { permit2Abi, universalRouterAbi, v4QuoterAbi } from "../portal/contracts";
 
 describe("Robinhood deployment parity", () => {
   it("pins the deployed chain, source, and checksummed contracts", () => {
@@ -16,6 +18,10 @@ describe("Robinhood deployment parity", () => {
       BURNTATO_DEPLOYMENT.genesisVault,
       BURNTATO_DEPLOYMENT.genesisLaunchDistributor,
       BURNTATO_DEPLOYMENT.faucet,
+      BURNTATO_DEPLOYMENT.hook,
+      BURNTATO_DEPLOYMENT.quoter,
+      BURNTATO_DEPLOYMENT.universalRouter,
+      BURNTATO_DEPLOYMENT.permit2,
     ]) {
       expect(getAddress(address)).toBe(address);
     }
@@ -48,5 +54,24 @@ describe("Robinhood deployment parity", () => {
       "roundTimeoutDecay",
       "minimumRoundTimeout",
     ]);
+  });
+
+  it("keeps every app write and integration selector stable", () => {
+    const selector = (abi: Abi, name: string) => {
+      const item = getAbiItem({ abi, name });
+      if (!item || item.type !== "function") throw new Error(`${name} is not a function`);
+      return toFunctionSelector(item);
+    };
+    expect(selector(faucetAbi, "claim")).toBe("0x4e71d92d");
+    expect(selector(genesisVaultAbi, "buyGenesis")).toBe("0xc12e4b23");
+    expect(selector(activationRegistryAbi, "activate")).toBe("0x4578f5f0");
+    expect(selector(operatorRewardsAbi, "register")).toBe("0xf207564e");
+    expect(selector(operatorRewardsAbi, "sync")).toBe("0xb1357bf9");
+    expect(selector(operatorRewardsAbi, "claim")).toBe("0xddd5e1b2");
+    expect(selector(genesisDistributorAbi, "registerGenesis")).toBe("0xb412922e");
+    expect(selector(genesisDistributorAbi, "claimGenesis")).toBe("0x813db3a2");
+    expect(selector(v4QuoterAbi, "quoteExactInputSingle")).toBe("0xaa9d21cb");
+    expect(selector(universalRouterAbi, "execute")).toBe("0x3593564c");
+    expect(selector(permit2Abi, "allowance")).toBe("0x927da105");
   });
 });

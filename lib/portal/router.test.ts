@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { decodeAbiParameters, parseAbiParameters, zeroAddress } from "viem";
 
-import { buildSwapPlan, minimumOutput, quoteIsFresh, routerCommands, transactionDeadline, type PoolKey } from "./router";
+import { buildSwapPlan, describeSwapError, minimumOutput, quoteIsFresh, routerCommands, transactionDeadline, type PoolKey } from "./router";
 
 const key: PoolKey = {
   currency0: zeroAddress,
@@ -36,5 +36,9 @@ describe("Robinhood V4 exact-input routing", () => {
     expect(quoteIsFresh(1_000n, 999n)).toBe(false);
     expect(transactionDeadline(1_000n)).toBe(1_300n);
     expect(() => transactionDeadline(1_000n, 3_601n)).toThrow();
+  });
+
+  it("explains the deployed POTATO Permit2 approval rule", () => {
+    expect(describeSwapError(new Error("Permit2AllowanceIsFixedAtInfinity()"))).toContain("infinite token approval");
   });
 });

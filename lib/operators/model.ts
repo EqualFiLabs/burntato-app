@@ -28,6 +28,18 @@ export type OperatorPreview = {
   rewardRemainder: bigint;
 };
 
+export type OperatorRewardAction = "register" | "sync" | "claim";
+
+export function operatorRewardAction(account: Address | null, registration: OperatorRegistration, preview: OperatorPreview): OperatorRewardAction {
+  const registeredByWallet = Boolean(account && registration.owner.toLowerCase() === account.toLowerCase());
+  if (!registeredByWallet || preview.transferDetected) return "register";
+  return preview.currentWeight > registration.weight ? "sync" : "claim";
+}
+
+export function faucetEligibility(chainNow: bigint, nextClaimAt: bigint, balance: bigint, claimAmount: bigint): { ready: boolean; funded: boolean } {
+  return { ready: chainNow >= nextClaimAt, funded: balance >= claimAmount };
+}
+
 export function parseOperatorId(value: string): bigint | null {
   if (!/^\d+$/.test(value.trim())) return null;
   const id = BigInt(value.trim());
@@ -47,6 +59,8 @@ export function describeOperatorError(error: unknown): string {
   if (normalized.includes("claimnotready")) return "This wallet is still inside the 24-hour faucet cooldown.";
   if (normalized.includes("genesisnotinvault")) return "That Operator is no longer available in the Genesis Vault.";
   if (normalized.includes("insufficientnative")) return "Your wallet does not have enough testnet ETH for the live purchase fee.";
+  if (normalized.includes("erc721nonexistenttoken")) return "That Operator token ID does not exist.";
+  if (normalized.includes("permit2allowanceisfixedatinfinity")) return "POTATO requires its Permit2 token approval to use the protocol-defined infinite allowance.";
   if (normalized.includes("insufficient") || normalized.includes("erc20")) return "Your STATICS balance or allowance is too low for this action.";
   if (normalized.includes("notgenesisowner") || normalized.includes("invalidoperatorowner")) return "The active wallet is not the current owner of this Operator.";
   if (normalized.includes("operatoralreadyregistered")) return "This Operator is already registered at its current weight.";

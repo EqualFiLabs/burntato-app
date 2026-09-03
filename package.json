@@ -13,8 +13,11 @@
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:fork": "vitest run lib/robinhood-fork-flow.test.ts",
+    "test:live": "vitest run lib/robinhood-live.test.ts",
     "typecheck": "tsc --noEmit --incremental false",
-    "verify": "npm run test && npm run lint && npm run typecheck && npm run build"
+    "typecheck:indexer": "npm --prefix indexer run typecheck",
+    "verify": "npm run test && npm run lint && npm run typecheck && npm run typecheck:indexer && npm run build"
   },
   "dependencies": {
     "@privy-io/react-auth": "3.37.0",

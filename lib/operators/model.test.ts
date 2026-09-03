@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { activationUpgradeCost, describeOperatorError, parseOperatorId } from "./model";
+import { ZERO_ADDRESS, activationUpgradeCost, describeOperatorError, faucetEligibility, operatorRewardAction, parseOperatorId } from "./model";
+
+const account = "0x1111111111111111111111111111111111111111" as const;
+const registration = { owner: account, weight: 10_000, rewardIndex: 0n, claimable: 0n, rewardRemainder: 0n };
+const preview = { currentOwner: account, currentWeight: 10_000, transferDetected: false, claimable: 0n, forfeitable: 0n, rewardRemainder: 0n };
 
 describe("Operator onboarding state", () => {
   it("accepts only deployed Operator token IDs", () => {
@@ -20,5 +24,17 @@ describe("Operator onboarding state", () => {
   it("turns faucet and ownership failures into specific guidance", () => {
     expect(describeOperatorError(new Error("FaucetUnderfunded(0, 1)"))).toContain("faucet");
     expect(describeOperatorError(new Error("InvalidOperatorOwner(1, a, b)"))).toContain("not the current owner");
+  });
+
+  it("derives faucet readiness and each receipt-bound reward action", () => {
+    expect(faucetEligibility(100n, 100n, 200n, 200n)).toEqual({ ready: true, funded: true });
+    expect(faucetEligibility(99n, 100n, 199n, 200n)).toEqual({ ready: false, funded: false });
+    expect(operatorRewardAction(account, { ...registration, owner: ZERO_ADDRESS }, preview)).toBe("register");
+    expect(operatorRewardAction(account, registration, { ...preview, currentWeight: 12_500 })).toBe("sync");
+    expect(operatorRewardAction(account, registration, preview)).toBe("claim");
+  });
+
+  it("forces re-registration after owner or weight invalidation", () => {
+    expect(operatorRewardAction(account, registration, { ...preview, currentOwner: "0x2222222222222222222222222222222222222222", transferDetected: true, forfeitable: 5n })).toBe("register");
   });
 });

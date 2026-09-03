@@ -53,6 +53,7 @@ export function describeSwapError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
   if (normalized.includes("rejected") || normalized.includes("denied") || normalized.includes("cancel")) return "The wallet request was cancelled.";
+  if (normalized.includes("permit2allowanceisfixedatinfinity")) return "POTATO requires one infinite token approval to Permit2; each signed swap authorization remains exact and short-lived.";
   if (normalized.includes("allowance") || normalized.includes("permit")) return "The POTATO Permit2 authorization is missing, expired, or was not accepted.";
   if (normalized.includes("slippage") || normalized.includes("minimum") || normalized.includes("too little")) return "The pool moved beyond your minimum received amount. Refresh the quote.";
   if (normalized.includes("insufficient")) return "Your wallet balance is too low for this swap and its gas.";

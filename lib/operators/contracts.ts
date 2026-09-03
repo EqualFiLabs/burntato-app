@@ -5,6 +5,15 @@ export const erc20Abi = parseAbi([
   "function allowance(address owner, address spender) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)",
   "event Approval(address indexed owner, address indexed spender, uint256 value)",
+  "error InsufficientBalance()",
+  "error InsufficientAllowance()",
+  "error InvalidPermit()",
+  "error PermitExpired()",
+  "error Permit2AllowanceIsFixedAtInfinity()",
+  "error ERC20InsufficientBalance(address sender,uint256 balance,uint256 needed)",
+  "error ERC20InsufficientAllowance(address spender,uint256 allowance,uint256 needed)",
+  "error ERC20InvalidReceiver(address receiver)",
+  "error ERC20InvalidSpender(address spender)",
 ]);
 
 export const faucetAbi = parseAbi([
@@ -22,6 +31,10 @@ export const operatorNftAbi = parseAbi([
   "function tokenURI(uint256 tokenId) view returns (string)",
   "function launchFinalized() view returns (bool)",
   "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
+  "error ERC721NonexistentToken(uint256 tokenId)",
+  "error ERC721IncorrectOwner(address sender,uint256 tokenId,address owner)",
+  "error ERC721InvalidReceiver(address receiver)",
+  "error ERC721InsufficientApproval(address operator,uint256 tokenId)",
 ]);
 
 export const genesisVaultAbi = parseAbi([
