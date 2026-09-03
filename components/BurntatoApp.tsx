@@ -483,7 +483,13 @@ function LeaderboardScreen() {
             </ol>
           </div>}
 
-          <p className="leaderboard-note">Built from Burntato events on Robinhood Chain Testnet{game.historyLoading ? " · Syncing…" : ""}</p>
+          <p className="leaderboard-note">
+            Burntato events on Robinhood Chain Testnet · {game.historySource === "indexer" ? "durable Ponder index" : "bounded direct-RPC fallback"}
+            {game.historySource === "indexer" && game.indexedBlock !== null && game.chainHead !== null && game.chainHead > game.indexedBlock
+              ? ` · ${String(game.chainHead - game.indexedBlock)} blocks behind`
+              : ""}
+            {game.historyLoading ? " · Syncing…" : ""}
+          </p>
         </section>
       </div>
     </main>

@@ -10,6 +10,7 @@ import {
   buildLeaderboard,
   candidateRoundIds,
   dedupeEvents,
+  fetchIndexedHistory,
   scanBurntatoEvents,
   type BurntatoEvent,
   type LeaderboardRow,
@@ -47,6 +48,9 @@ type BurntatoState = {
   history: BurntatoEvent[];
   historyLoading: boolean;
   historyError: string | null;
+  historySource: "indexer" | "rpc-fallback";
+  indexedBlock: bigint | null;
+  chainHead: bigint | null;
   leaderboard: LeaderboardRow[];
   rewards: RewardCandidate[];
   lifetimeClaimed: bigint;
@@ -85,6 +89,9 @@ export const defaultBurntatoState: BurntatoState = {
   history: [],
   historyLoading: false,
   historyError: null,
+  historySource: "rpc-fallback",
+  indexedBlock: null,
+  chainHead: null,
   leaderboard: [],
   rewards: [],
   lifetimeClaimed: 0n,
@@ -201,6 +208,9 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
   const [history, setHistory] = useState<BurntatoEvent[]>(initialHistoryCache.events);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historySource, setHistorySource] = useState<"indexer" | "rpc-fallback">("rpc-fallback");
+  const [indexedBlock, setIndexedBlock] = useState<bigint | null>(null);
+  const [chainHead, setChainHead] = useState<bigint | null>(null);
   const [rewards, setRewards] = useState<RewardCandidate[]>([]);
   const [transactions, setTransactions] = useState<Transactions>({});
   const [latestTransaction, setLatestTransaction] = useState<TransactionState | null>(null);
@@ -232,6 +242,23 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     setHistoryLoading(true);
     try {
       const latest = await publicClient.getBlockNumber();
+      setChainHead(latest);
+      const indexerUrl = process.env.NEXT_PUBLIC_BURNTATO_INDEXER_URL?.trim();
+      if (indexerUrl) {
+        try {
+          const indexed = await fetchIndexedHistory(indexerUrl, BURNTATO_DEPLOYMENT.deploymentBlock);
+          historyCacheRef.current = { events: indexed.events, lastScannedBlock: indexed.indexedBlock ?? BURNTATO_DEPLOYMENT.deploymentBlock - 1n };
+          setHistory(indexed.events);
+          setHistorySource("indexer");
+          setIndexedBlock(indexed.indexedBlock);
+          setHistoryError(null);
+          return;
+        } catch {
+          setHistoryError("Durable indexer unavailable; using the bounded direct-RPC fallback.");
+        }
+      }
+      setHistorySource("rpc-fallback");
+      setIndexedBlock(null);
       const from = scanToRef.current + 1n;
       if (from <= latest) {
         const next = await scanBurntatoEvents(publicClient as PublicClient, from, latest);
@@ -241,7 +268,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
         queryClient.setQueryData(historyCacheKey, historyCacheRef.current);
         scanToRef.current = latest;
       }
-      setHistoryError(null);
+      if (!indexerUrl) setHistoryError("Using bounded direct-RPC history because no durable indexer URL is configured.");
     } catch {
       setHistoryError("Robinhood testnet history is temporarily unavailable. Live game actions still work.");
     } finally {
@@ -350,6 +377,9 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     history,
     historyLoading,
     historyError,
+    historySource,
+    indexedBlock,
+    chainHead,
     leaderboard,
     rewards: account ? rewards : [],
     lifetimeClaimed,
@@ -365,7 +395,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     commit: (amount) => runTransaction("commit", { functionName: "commitRecovery", args: [amount] }),
     claim: (reward) => runTransaction(`${reward.kind}-${reward.roundId}`, { functionName: reward.kind === "winner" ? "claimWinner" : "claimRecovery", args: [reward.roundId, account] }),
     dismissTransactionNotice: () => setLatestTransaction(null),
-  }), [account, chainId, gameplayTransactionPending, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToRobinhood, transactions]);
+  }), [account, chainHead, chainId, gameplayTransactionPending, history, historyError, historyLoading, historySource, indexedBlock, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToRobinhood, transactions]);
 
   return <BurntatoContext.Provider value={value}>{children}</BurntatoContext.Provider>;
 }

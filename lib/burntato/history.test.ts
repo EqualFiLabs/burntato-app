@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildLeaderboard, candidateRoundIds, dedupeEvents, type BurntatoEvent } from "./history";
+import { buildLeaderboard, candidateRoundIds, dedupeEvents, fetchIndexedHistory, type BurntatoEvent } from "./history";
 
 const alice = "0x1111111111111111111111111111111111111111";
 const bob = "0x2222222222222222222222222222222222222222";
@@ -39,5 +39,31 @@ describe("event projection", () => {
       event("RoundSettled", 2, { roundId: 5n, winner: alice }),
     ], alice);
     expect(rounds).toEqual([5n, 4n]);
+  });
+});
+
+describe("durable indexer projection", () => {
+  it("validates the deployment and revives integer event arguments", async () => {
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = async (input) => new Response(JSON.stringify(String(input).endsWith("/status")
+      ? { robinhoodTestnet: { id: 46_630, block: { number: 112_339_500 } } }
+      : {
+          chainId: 46_630,
+          items: [{
+            source: "burntato",
+            name: "RecoveryCommitted",
+            transactionHash: `0x${"1".repeat(64)}`,
+            logIndex: 2,
+            blockNumber: "112339450",
+            args: { roundId: "2", account: alice, amount: "100" },
+          }],
+        }));
+    try {
+      const result = await fetchIndexedHistory("https://indexer.example/", 112_339_401n);
+      expect(result.indexedBlock).toBe(112_339_500n);
+      expect(result.events[0]?.args).toMatchObject({ roundId: 2n, amount: 100n });
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
   });
 });

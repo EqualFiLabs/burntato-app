@@ -32,6 +32,11 @@ export type RewardCandidate = {
   claimed: boolean;
 };
 
+export type IndexedHistory = {
+  events: BurntatoEvent[];
+  indexedBlock: bigint | null;
+};
+
 const TRACKED_EVENTS = new Set<BurntatoEvent["name"]>([
   "PotatoPurchased",
   "EmissionFinalized",
@@ -41,6 +46,52 @@ const TRACKED_EVENTS = new Set<BurntatoEvent["name"]>([
   "WinnerClaimed",
   "RecoveryClaimed",
 ]);
+
+function reviveIndexedValue(value: unknown): unknown {
+  if (typeof value === "string" && /^\d+$/.test(value)) return BigInt(value);
+  if (Array.isArray(value)) return value.map(reviveIndexedValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, reviveIndexedValue(item)]));
+  }
+  return value;
+}
+
+export async function fetchIndexedHistory(indexerUrl: string, fromBlock: bigint): Promise<IndexedHistory> {
+  const baseUrl = indexerUrl.endsWith("/") ? indexerUrl : `${indexerUrl}/`;
+  const eventsUrl = new URL("events", baseUrl);
+  eventsUrl.searchParams.set("fromBlock", fromBlock.toString());
+  eventsUrl.searchParams.set("limit", "5000");
+  const [eventsResponse, statusResponse] = await Promise.all([
+    fetch(eventsUrl, { headers: { Accept: "application/json" } }),
+    fetch(new URL("status", baseUrl), { headers: { Accept: "application/json" } }),
+  ]);
+  if (!eventsResponse.ok || !statusResponse.ok) throw new Error(`Indexer returned ${eventsResponse.status}/${statusResponse.status}`);
+  const payload = await eventsResponse.json() as {
+    chainId?: number;
+    items?: Array<{ source?: string; name?: string; transactionHash?: string; logIndex?: number; blockNumber?: string; args?: unknown }>;
+  };
+  const status = await statusResponse.json() as { robinhoodTestnet?: { id?: number; block?: { number?: number } } };
+  const indexedBlock = status.robinhoodTestnet?.block?.number;
+  if (payload.chainId !== BURNTATO_DEPLOYMENT.chainId || status.robinhoodTestnet?.id !== BURNTATO_DEPLOYMENT.chainId || !Number.isSafeInteger(indexedBlock) || !Array.isArray(payload.items)) {
+    throw new Error("Indexer deployment mismatch");
+  }
+  const events: BurntatoEvent[] = [];
+  for (const item of payload.items) {
+    if (item.source !== "burntato" || !TRACKED_EVENTS.has(item.name as BurntatoEvent["name"])) continue;
+    if (!item.transactionHash?.startsWith("0x") || !/^\d+$/.test(item.blockNumber ?? "") || !Number.isInteger(item.logIndex)) continue;
+    events.push({
+      name: item.name as BurntatoEvent["name"],
+      blockNumber: BigInt(item.blockNumber!),
+      transactionHash: item.transactionHash as `0x${string}`,
+      logIndex: item.logIndex!,
+      args: reviveIndexedValue(item.args) as Record<string, unknown>,
+    });
+  }
+  return {
+    events: dedupeEvents(events),
+    indexedBlock: BigInt(indexedBlock!),
+  };
+}
 
 export function eventKey(event: Pick<BurntatoEvent, "transactionHash" | "logIndex">): string {
   return `${event.transactionHash}-${event.logIndex}`;
