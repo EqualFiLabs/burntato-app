@@ -54,7 +54,7 @@ type BurntatoState = {
   latestTransaction: TransactionState | null;
   gameplayTransactionPending: boolean;
   networkSwitchBlocked: boolean;
-  switchToSepolia: () => void;
+  switchToRobinhood: () => void;
   refresh: () => Promise<void>;
   grab: () => Promise<void>;
   settle: () => Promise<void>;
@@ -92,7 +92,7 @@ export const defaultBurntatoState: BurntatoState = {
   latestTransaction: null,
   gameplayTransactionPending: false,
   networkSwitchBlocked: false,
-  switchToSepolia: () => undefined,
+  switchToRobinhood: () => undefined,
   refresh: async () => undefined,
   grab: async () => undefined,
   settle: async () => undefined,
@@ -220,7 +220,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
       setReadError(null);
     } catch {
       if (requestId !== refreshRequestRef.current) return;
-      setReadError("Live Sepolia game state is temporarily unavailable.");
+      setReadError("Live Robinhood testnet game state is temporarily unavailable.");
     } finally {
       if (requestId === refreshRequestRef.current) setLoading(false);
     }
@@ -243,7 +243,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
       }
       setHistoryError(null);
     } catch {
-      setHistoryError("Sepolia history is temporarily unavailable. Live game actions still work.");
+      setHistoryError("Robinhood testnet history is temporarily unavailable. Live game actions still work.");
     } finally {
       scanningRef.current = false;
       setHistoryLoading(false);
@@ -291,12 +291,12 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
         value: request.value,
       } as never);
       const hash = await writeContractAsync(simulation.request as never);
-      const confirmingState: TransactionState = { stage: "confirming", message: "Confirming on Sepolia…", hash };
+      const confirmingState: TransactionState = { stage: "confirming", message: "Confirming on Robinhood testnet…", hash };
       setTransactions((current) => ({ ...current, [action]: confirmingState }));
       setLatestTransaction(confirmingState);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Transaction reverted");
-      const successState: TransactionState = { stage: "success", message: "Confirmed on Sepolia.", hash };
+      const successState: TransactionState = { stage: "success", message: "Confirmed on Robinhood testnet.", hash };
       setTransactions((current) => ({ ...current, [action]: successState }));
       setLatestTransaction(successState);
       await refresh();
@@ -311,15 +311,15 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     }
   }, [account, publicClient, refresh, scanHistory, writeContractAsync]);
 
-  const switchToSepolia = useCallback(() => {
+  const switchToRobinhood = useCallback(() => {
     if (!canStartTransaction("network", inFlightActionsRef.current)) return;
     inFlightActionsRef.current.add("network");
-    const switchingState: TransactionState = { stage: "wallet", message: "Approve the Sepolia network switch…" };
+    const switchingState: TransactionState = { stage: "wallet", message: "Approve the Robinhood testnet network switch…" };
     setTransactions((current) => ({ ...current, network: switchingState }));
     setLatestTransaction(switchingState);
     void switchChainAsync({ chainId: BURNTATO_DEPLOYMENT.chainId })
       .then(() => {
-        const successState: TransactionState = { stage: "success", message: "Connected to Ethereum Sepolia." };
+        const successState: TransactionState = { stage: "success", message: "Connected to Robinhood Chain Testnet." };
         setTransactions((current) => ({ ...current, network: successState }));
         setLatestTransaction(successState);
       })
@@ -357,7 +357,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     latestTransaction,
     gameplayTransactionPending,
     networkSwitchBlocked,
-    switchToSepolia,
+    switchToRobinhood,
     refresh,
     grab: () => runTransaction("grab", { functionName: "buyPotato", value: snapshot.currentRound?.nextPrice ?? snapshot.protocolConfig?.startingPrice ?? 0n }),
     settle: () => runTransaction("settle", { functionName: "settleRound" }),
@@ -365,7 +365,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     commit: (amount) => runTransaction("commit", { functionName: "commitRecovery", args: [amount] }),
     claim: (reward) => runTransaction(`${reward.kind}-${reward.roundId}`, { functionName: reward.kind === "winner" ? "claimWinner" : "claimRecovery", args: [reward.roundId, account] }),
     dismissTransactionNotice: () => setLatestTransaction(null),
-  }), [account, chainId, gameplayTransactionPending, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToSepolia, transactions]);
+  }), [account, chainId, gameplayTransactionPending, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToRobinhood, transactions]);
 
   return <BurntatoContext.Provider value={value}>{children}</BurntatoContext.Provider>;
 }

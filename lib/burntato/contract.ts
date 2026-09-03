@@ -1,15 +1,32 @@
 import { parseAbi, type Address } from "viem";
 
 export const BURNTATO_DEPLOYMENT = {
-  chainId: 11_155_111,
-  diamond: "0xdaD8812ac9F829c09808cBaB98b316042D9C7142" as Address,
-  deploymentBlock: 11_518_114n,
-  sourceCommit: "5d5dd21",
+  network: "Robinhood Chain Testnet",
+  chainId: 46_630,
+  explorer: "https://explorer.testnet.chain.robinhood.com",
+  diamond: "0x1FA9a3c895e802670b35a9d577D42d4dE20e4818" as Address,
+  deploymentBlock: 112_339_401n,
+  sourceCommit: "07688de3193492aca399c8bbadc9321162e5f726",
+  operatorRewardsRouter: "0x09ac7A514db0bBf0B2E3630ace9C30b17393E24D" as Address,
+  hook: "0x5b7a45802d5a6076b510D2d9D9EC175a19EE2444" as Address,
+  poolId: "0xd0bb2fb1266e97d81cf260a1b4d12d21eee323dd0189265483baf9b8987fd91b" as `0x${string}`,
+  statics: "0xcDe1F22F70DB6C42c7C0050e6F3B53d03a2006eD" as Address,
+  operatorNft: "0x8BB2E39abAE7346293Ff084fd4D104b064BEbC71" as Address,
+  activationRegistry: "0xcE4D413915B4C6dE7DfD486d233596Da35c5cFbD" as Address,
+  genesisVault: "0xa5Cb1f90C70310Af1E5466DdFBB57f3F2353Ef58" as Address,
+  genesisLaunchDistributor: "0xfE07863397a331b35B9D1fB5Ea14130eB870bA06" as Address,
+  faucet: "0xd2e561B46a2de6713F53d954C0415447100d2955" as Address,
+  staticsPoolId: "0xf31e4b5ca452b221f9fb5f3aff4b1b0c178e37cf179db73fe521ef59a55ae625" as `0x${string}`,
+  weth: "0x33e4191705c386532ba27cBF171Db86919200B94" as Address,
+  poolManager: "0x8366a39CC670B4001A1121B8F6A443A643e40951" as Address,
+  quoter: "0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94" as Address,
+  universalRouter: "0x8876789976dEcBfCbBbe364623C63652db8C0904" as Address,
+  permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3" as Address,
 } as const;
 
 export const burntatoAbi = parseAbi([
-  "struct ProtocolConfig { uint256 startingPrice; uint16 priceIncreaseBps; uint256 roundTimeout; uint256 roundEmissionBudget; uint16 emissionStepBps; uint256 emissionVestingDuration; uint16 winnerBps; uint16 recoveryBps; uint16 treasuryBps; uint16 recoveryBurnBps; uint16 recoveryTreasuryBps; uint16 buybackBps; uint256 roundTimeoutDecay; uint256 minimumRoundTimeout; }",
-  "struct RoundConfig { uint256 startingPrice; uint16 priceIncreaseBps; uint256 roundTimeout; uint256 roundEmissionBudget; uint16 emissionStepBps; uint256 emissionVestingDuration; uint16 winnerBps; uint16 recoveryBps; uint16 treasuryBps; uint16 recoveryBurnBps; uint16 recoveryTreasuryBps; uint16 buybackBps; uint256 roundTimeoutDecay; uint256 minimumRoundTimeout; }",
+  "struct ProtocolConfig { uint256 startingPrice; uint16 priceIncreaseBps; uint256 roundTimeout; uint256 roundEmissionBudget; uint16 emissionStepBps; uint256 emissionVestingDuration; uint16 winnerBps; uint16 recoveryBps; uint16 treasuryBps; uint16 recoveryBurnBps; uint16 recoveryTreasuryBps; uint16 buybackBps; uint16 operatorPurchaseBps; uint256 roundTimeoutDecay; uint256 minimumRoundTimeout; }",
+  "struct RoundConfig { uint256 startingPrice; uint16 priceIncreaseBps; uint256 roundTimeout; uint256 roundEmissionBudget; uint16 emissionStepBps; uint256 emissionVestingDuration; uint16 winnerBps; uint16 recoveryBps; uint16 treasuryBps; uint16 recoveryBurnBps; uint16 recoveryTreasuryBps; uint16 buybackBps; uint16 operatorPurchaseBps; uint256 roundTimeoutDecay; uint256 minimumRoundTimeout; }",
   "struct Round { uint256 roundId; RoundConfig config; address currentHolder; uint256 holderSince; uint256 deadline; uint64 purchaseIndex; uint256 nextPrice; uint256 holderMaxReward; uint256 holderEarned; uint256 remainingEmission; uint256 emittedPotato; uint256 treasuryEmissionBudget; uint256 holderTreasuryMaxReward; uint256 holderTreasuryEarned; uint256 remainingTreasuryEmission; uint256 treasuryEmittedPotato; uint256 treasuryReleasedPotato; uint256 winnerPool; uint256 recoveryPool; uint256 recoveryCarryIn; uint256 totalCommitted; bool holderEmissionFinalized; bool activated; bool settled; }",
   "function currentRoundId() view returns (uint256)",
   "function protocolConfig() view returns (ProtocolConfig)",

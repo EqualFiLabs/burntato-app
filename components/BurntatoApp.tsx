@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { SepoliaEthBalance } from "@/components/SepoliaEthBalance";
+import { NetworkEthBalance } from "@/components/NetworkEthBalance";
 import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -223,7 +223,7 @@ function AppHeader() {
       <div className="header-actions">
         <span className="balance-pill" title="Read-only Ethereum balance for the active wallet">
           <EthereumMark small />
-          <SepoliaEthBalance />
+          <NetworkEthBalance />
           <span className="tiny-plus" aria-hidden="true"><Plus /></span>
         </span>
         {connected ? (
@@ -474,7 +474,7 @@ function LeaderboardScreen() {
             </ol>
           </div>}
 
-          <p className="leaderboard-note">Built from Burntato events on Ethereum Sepolia{game.historyLoading ? " · Syncing…" : ""}</p>
+          <p className="leaderboard-note">Built from Burntato events on Robinhood Chain Testnet{game.historyLoading ? " · Syncing…" : ""}</p>
         </section>
       </div>
     </main>
@@ -565,7 +565,7 @@ function RewardsScreen() {
                       </span>
                       <span className="reward-row-action">
                         <strong>{formatEth(reward.amount)} ETH</strong>
-                        <button type="button" disabled={pending || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToSepolia()}>
+                        <button type="button" disabled={pending || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToRobinhood()}>
                           {pending
                             ? "Confirming…"
                             : game.correctNetwork
@@ -1037,8 +1037,8 @@ function GrabScreen() {
     actionLabel = wallet.busyAction === "login" ? "Signing in…" : "Sign in to play";
     action = wallet.login;
   } else if (!game.correctNetwork) {
-    actionLabel = "Switch to Sepolia";
-    action = game.switchToSepolia;
+    actionLabel = "Switch to Robinhood";
+    action = game.switchToRobinhood;
   } else if (game.phase === "expired") {
     actionLabel = transactionLabel(game, "settle", "Settle Round");
     action = () => void game.settle();
@@ -1065,7 +1065,7 @@ function GrabScreen() {
             className="secondary-game-action"
             type="button"
             disabled={game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked}
-            onClick={() => game.correctNetwork ? void game.collect() : game.switchToSepolia()}
+            onClick={() => game.correctNetwork ? void game.collect() : game.switchToRobinhood()}
           >
             {game.correctNetwork
               ? transactionLabel(
@@ -1075,7 +1075,7 @@ function GrabScreen() {
                     ? `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
                     : "Finalize holder emission"
                 )
-              : transactionLabel(game, "network", "Switch to Sepolia")}
+              : transactionLabel(game, "network", "Switch to Robinhood")}
           </button>
         )}
         <div className="round-card timer-card">
@@ -1128,8 +1128,8 @@ function BurnScreen() {
     actionLabel = wallet.busyAction === "login" ? "Signing in…" : "Sign in to commit";
     action = wallet.login;
   } else if (!game.correctNetwork) {
-    actionLabel = "Switch to Sepolia";
-    action = game.switchToSepolia;
+    actionLabel = "Switch to Robinhood";
+    action = game.switchToRobinhood;
   } else if (game.currentRoundId === 0n) {
     actionLabel = "Start round in Play first";
     action = () => undefined;
@@ -1394,7 +1394,7 @@ export function BurntatoApp() {
       <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
         <span>{displayedNotice}</span>
         {displayedNotice === transactionNotice && game.latestTransaction?.hash && (
-          <a href={`https://sepolia.etherscan.io/tx/${game.latestTransaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>
+          <a href={`https://explorer.testnet.chain.robinhood.com/tx/${game.latestTransaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>
         )}
         {(displayedNotice === transactionNotice || displayedNotice === notice) && displayedNotice && <button type="button" onClick={() => displayedNotice === transactionNotice ? game.dismissTransactionNotice() : setNotice("")} aria-label="Dismiss message">×</button>}
       </div>

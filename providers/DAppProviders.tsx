@@ -15,9 +15,9 @@ import {
 import { createConfig, useSetActiveWallet, WagmiProvider as PrivyWagmiProvider } from "@privy-io/wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "viem";
-import { sepolia } from "viem/chains";
 import { useAccount, WagmiProvider as PublicWagmiProvider } from "wagmi";
 
+import { robinhoodTestnet } from "@/lib/burntato/chain";
 import {
   defaultWalletState,
   WalletContext,
@@ -29,16 +29,16 @@ import {
 } from "./wallet-context";
 import { BurntatoBridge, BurntatoContext, defaultBurntatoState } from "./burntato-context";
 
-const SEPOLIA_RPC_VARIABLE = "NEXT_PUBLIC_SEPOLIA_RPC_URL";
+const ROBINHOOD_RPC_VARIABLE = "NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL";
 
 type RuntimeEnvironment = {
-  /** Public game reads need only a valid Sepolia RPC. */
+  /** Public game reads need only a valid Robinhood testnet RPC. */
   gameConfigured: boolean;
   /** Wallet identity additionally needs a Privy App ID. */
   walletConfigured: boolean;
   appId: string;
   clientId: string | undefined;
-  sepoliaRpcUrl: string;
+  robinhoodRpcUrl: string;
 };
 
 /**
@@ -74,12 +74,16 @@ function parsePublicRpcUrl(value: string | undefined, variableName: string, prob
 function readRuntimeEnvironment(source: {
   NEXT_PUBLIC_PRIVY_APP_ID?: string;
   NEXT_PUBLIC_PRIVY_CLIENT_ID?: string;
-  NEXT_PUBLIC_SEPOLIA_RPC_URL?: string;
+  NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL?: string;
 }): RuntimeEnvironment {
   const problems: string[] = [];
   const appId = source.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
   const clientId = source.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? "";
-  const sepoliaRpcUrl = parsePublicRpcUrl(source.NEXT_PUBLIC_SEPOLIA_RPC_URL, SEPOLIA_RPC_VARIABLE, problems);
+  const robinhoodRpcUrl = parsePublicRpcUrl(
+    source.NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL,
+    ROBINHOOD_RPC_VARIABLE,
+    problems,
+  );
   const gameConfigured = problems.length === 0;
 
   const environment: RuntimeEnvironment = {
@@ -87,12 +91,12 @@ function readRuntimeEnvironment(source: {
     walletConfigured: gameConfigured && appId.length > 0,
     appId,
     clientId: clientId.length > 0 ? clientId : undefined,
-    sepoliaRpcUrl,
+    robinhoodRpcUrl,
   };
 
   if (problems.length > 0) {
     console.warn(
-      `Burntato game data is unavailable: ${problems.join("; ")}. Set the public Sepolia RPC URL to enable live reads.`
+      `Burntato game data is unavailable: ${problems.join("; ")}. Set the public Robinhood testnet RPC URL to enable live reads.`
     );
   }
   return environment;
@@ -101,15 +105,15 @@ function readRuntimeEnvironment(source: {
 const runtimeEnvironment = readRuntimeEnvironment({
   NEXT_PUBLIC_PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID,
   NEXT_PUBLIC_PRIVY_CLIENT_ID: process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID,
-  NEXT_PUBLIC_SEPOLIA_RPC_URL: process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL,
+  NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL: process.env.NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL,
 });
 
-const supportedChains = [sepolia] as const;
+const supportedChains = [robinhoodTestnet] as const;
 
 const wagmiConfig = createConfig({
   chains: supportedChains,
   transports: {
-    [sepolia.id]: http(runtimeEnvironment.sepoliaRpcUrl),
+    [robinhoodTestnet.id]: http(runtimeEnvironment.robinhoodRpcUrl),
   },
 });
 
@@ -192,7 +196,7 @@ function resolveActiveWallet(
 
 function explorerUrlFor(address: string | null): string | null {
   if (!address) return null;
-  const explorer = sepolia.blockExplorers?.default.url;
+  const explorer = robinhoodTestnet.blockExplorers?.default.url;
   return explorer ? `${explorer}/address/${address}` : null;
 }
 
@@ -381,7 +385,7 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
       config={{
         loginMethods: ["wallet", "email"],
         supportedChains: [...supportedChains],
-        defaultChain: sepolia,
+        defaultChain: robinhoodTestnet,
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
           solana: { createOnLogin: "off" },

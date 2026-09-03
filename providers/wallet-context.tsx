@@ -29,7 +29,7 @@ export type WalletState = {
   activeAddress: string | null;
   activeWalletKind: WalletKind | null;
   activeWalletLabel: string | null;
-  /** Ethereum Sepolia block-explorer URL for the active address, or null. */
+  /** Robinhood testnet block-explorer URL for the active address, or null. */
   explorerUrl: string | null;
   busyAction: WalletAction;
   /** Human-readable wallet feedback. Never contains provider internals. */

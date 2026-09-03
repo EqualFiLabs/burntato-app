@@ -18,6 +18,7 @@ function round(overrides: Partial<BurntatoRound> = {}): BurntatoRound {
       recoveryBurnBps: 0,
       recoveryTreasuryBps: 0,
       buybackBps: 0,
+      operatorPurchaseBps: 0,
       roundTimeoutDecay: 0n,
       minimumRoundTimeout: 0n,
     },

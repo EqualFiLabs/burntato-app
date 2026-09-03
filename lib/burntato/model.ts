@@ -13,6 +13,7 @@ export type RoundConfig = {
   recoveryBurnBps: number;
   recoveryTreasuryBps: number;
   buybackBps: number;
+  operatorPurchaseBps: number;
   roundTimeoutDecay: bigint;
   minimumRoundTimeout: bigint;
 };
@@ -101,6 +102,6 @@ export function describeBurntatoError(error: unknown): string {
   if (normalized.includes("alreadyclaimed")) return "This reward has already been claimed.";
   if (normalized.includes("vestingincomplete")) return "This POTATO emission is still vesting.";
   if (normalized.includes("unauthorizedwinner")) return "Only the round winner can claim this reward.";
-  if (normalized.includes("chain") || normalized.includes("network")) return "Switch to Ethereum Sepolia and try again.";
+  if (normalized.includes("chain") || normalized.includes("network")) return "Switch to Robinhood Chain Testnet and try again.";
   return "The transaction could not be completed. Refresh the game state and try again.";
 }
