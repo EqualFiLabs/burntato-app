@@ -1,18 +1,72 @@
 # Burntato App
 
-Consumer interface for Burntato across mobile and desktop. Play, Burn, Rewards, and Leaderboard are connected to the Robinhood Chain Testnet deployment at `0x1FA9a3c895e802670b35a9d577D42d4dE20e4818` (deployment block `112339401`, source commit `07688de3193492aca399c8bbadc9321162e5f726`).
+Burntato is a live consumer application for the deployed Robinhood Chain Testnet game, Operator rewards, and ETH/POTATO V4 market. Every displayed game value, balance, quote, fee, eligibility decision, and reward comes from the configured chain or is labeled unavailable. Testnet assets have no represented USD value.
 
-Wagmi and Viem read the Robinhood testnet game every three seconds, anchor the countdown to the latest block timestamp, simulate writes before opening the wallet, and wait for transaction receipts before refreshing state. Privy supplies shared app identity and wallet selection when configured, while signed-out spectators can still see the live game, leaderboard, and history. The active-wallet header shows testnet ETH.
+The application supports public read-only spectator mode. Adding a Privy App ID enables EVM wallet sign-in and transactions; Solana wallet creation and discovery remain disabled. Writes are simulated first, locked through receipt confirmation, and refreshed from current onchain state.
 
-Copy `.env.example` to `.env.local` and set the credential-free `NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL`. To enable sign-in and transactions, also set the shared `NEXT_PUBLIC_PRIVY_APP_ID` and, when required by the Privy application, `NEXT_PUBLIC_PRIVY_CLIENT_ID`. Missing Privy configuration leaves the public game available in spectator mode. Never commit actual values, client secrets, delegated signer IDs, or authorization keys.
+## Local setup
 
-Play can start/grab or settle a round. Once holder emission has matured, the holder can collect it and any connected account can permissionlessly finalize it for the recorded holder. Burn commits the active wallet's POTATO directly to the next recovery round. Rewards validates winner and recovery eligibility against contract state and claims one round at a time to the active wallet. The Portal quotes live ETH/POTATO exact-input swaps through the deployed V4 Quoter and executes through Universal Router; POTATO sells use an exact Permit2 authorization. Cross-chain routes are explicitly unavailable.
-
-## Run locally
+Requirements: Node.js 22+, npm 10+.
 
 ```bash
-npm install
+npm ci
+npm ci --prefix indexer
+cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000` and use the navigation to move between screens. With only the Robinhood testnet RPC configured, live public data works while wallet controls remain inactive. This deployment uses test ETH and test POTATO, so the UI intentionally does not show fiat values for game assets.
+`NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL` must be an absolute credential-free HTTP(S) endpoint. `NEXT_PUBLIC_PRIVY_APP_ID` and `NEXT_PUBLIC_PRIVY_CLIENT_ID` are optional public identifiers; never put Privy secrets, delegated signer material, authorization keys, private keys, or credential-bearing RPC URLs in frontend variables.
+
+To run the durable history service locally:
+
+```bash
+cp indexer/.env.example indexer/.env.local
+npm --prefix indexer run dev
+```
+
+Set `NEXT_PUBLIC_BURNTATO_INDEXER_URL` to its public origin. Ponder owns `/health`, `/ready`, and `/status`; `/events` supplies deterministic event history, and `/burntato/deployment` reports the source identity. Hosted instances need a dedicated RPC provider, `DATABASE_URL`, and a schema owned only by this deployment. Never reuse a schema belonging to another Ponder app.
+
+## Product paths
+
+- Play starts/grabs or settles a round and permissionlessly materializes matured holder emission.
+- Burn commits wallet POTATO to the next recovery round.
+- Rewards independently verifies and claims winner/recovery positions by round.
+- Leaderboard derives from the durable event index, with a labeled bounded direct-RPC fallback.
+- Operators claims the 200,000 STATICS test bundle, purchases a Vault-held Genesis NFT, raises activation, registers separately with Burntato and the Genesis Launch Distributor, and claims live rewards.
+- Portal executes live exact-input ETH/POTATO V4 swaps. Buys use V4 swap/settle/take. Sells use POTATO’s required infinite ERC-20 Permit2 approval followed by an exact, short-lived signed Permit2 authorization. Cross-chain routes and ETH/STATICS routing are explicitly unavailable.
+
+Registered Operators receive 15% of direct game purchases and 40% of the pool’s 1% bilateral swap fee. An owner change or activation-weight decrease invalidates the Burntato registration; forfeited rewards redistribute to other valid Operators, or Treasury when no valid registered weight remains. Activation increases remain valid after sync.
+
+## Deployed Robinhood system
+
+Chain ID `46630`; Burntato source commit `07688de3193492aca399c8bbadc9321162e5f726`; Burntato deployment block `112339401`.
+
+| Contract | Address |
+| --- | --- |
+| Burntato Diamond / POTATO | [`0x1FA9…4818`](https://explorer.testnet.chain.robinhood.com/address/0x1FA9a3c895e802670b35a9d577D42d4dE20e4818) |
+| Operator rewards router | [`0x09ac…E24D`](https://explorer.testnet.chain.robinhood.com/address/0x09ac7A514db0bBf0B2E3630ace9C30b17393E24D) |
+| Burntato hook | [`0x5b7a…2444`](https://explorer.testnet.chain.robinhood.com/address/0x5b7a45802d5a6076b510D2d9D9EC175a19EE2444) |
+| STATICS | [`0xcDe1…06eD`](https://explorer.testnet.chain.robinhood.com/address/0xcDe1F22F70DB6C42c7C0050e6F3B53d03a2006eD) |
+| Operator NFT | [`0x8BB2…bC71`](https://explorer.testnet.chain.robinhood.com/address/0x8BB2E39abAE7346293Ff084fd4D104b064BEbC71) |
+| Activation Registry | [`0xcE4D…cFbD`](https://explorer.testnet.chain.robinhood.com/address/0xcE4D413915B4C6dE7DfD486d233596Da35c5cFbD) |
+| Genesis Vault | [`0xa5Cb…Ef58`](https://explorer.testnet.chain.robinhood.com/address/0xa5Cb1f90C70310Af1E5466DdFBB57f3F2353Ef58) |
+| Genesis Launch Distributor | [`0xfE07…8A06`](https://explorer.testnet.chain.robinhood.com/address/0xfE07863397a331b35B9D1fB5Ea14130eB870bA06) |
+| 200K STATICS faucet | [`0xd2e5…2955`](https://explorer.testnet.chain.robinhood.com/address/0xd2e561B46a2de6713F53d954C0415447100d2955) |
+| V4 Quoter | [`0x8Dc1…8F94`](https://explorer.testnet.chain.robinhood.com/address/0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94) |
+| Universal Router | [`0x8876…0904`](https://explorer.testnet.chain.robinhood.com/address/0x8876789976dEcBfCbBbe364623C63652db8C0904) |
+| Permit2 | [`0x0000…BA3`](https://explorer.testnet.chain.robinhood.com/address/0x000000000022D473030F116dDEE9F6B43aC78BA3) |
+
+The deployment’s ownerless faucet currently holds exactly one 200,000 STATICS claim. Do not consume it during routine testing. Before a multi-user beta, fund it with `tester count × 200,000 STATICS + chosen buffer` and arrange Robinhood testnet ETH distribution; no official public ETH faucet is documented.
+
+## Verification
+
+```bash
+npm run verify
+BURNTATO_LIVE_RPC_URL=https://rpc.testnet.chain.robinhood.com npm run test:live
+# Start an isolated Anvil fork on port 8547 first:
+BURNTATO_FORK_RPC_URL=http://127.0.0.1:8547 npm run test:fork
+npm audit --omit=dev --audit-level=high
+npm --prefix indexer audit --omit=dev --audit-level=high
+```
+
+The default suite skips environment-bound live/fork cases. See [`docs/VALIDATION.md`](docs/VALIDATION.md) for proof boundaries and launch prerequisites.
