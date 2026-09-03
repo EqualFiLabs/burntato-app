@@ -3749,126 +3749,111 @@ button {
 }
 
 .operator-screen {
-  min-height: calc(100svh - 24cqw);
-  padding-bottom: 25cqw;
+  position: relative;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.operator-backdrop {
+  position: absolute;
+  inset: 0;
   background:
-    radial-gradient(circle at 50% 0, rgba(255, 122, 18, 0.24), transparent 28rem),
-    #050403;
+    linear-gradient(180deg, rgba(0, 0, 0, 0.04), transparent 30%, rgba(0, 0, 0, 0.82) 75%, rgba(0, 0, 0, 0.94)),
+    url("/scenes/rewards-mobile.png") center 32% / cover;
 }
 
-.operator-hero {
-  min-height: 43cqw;
-  padding: 8cqw 6cqw 5cqw;
-  border-bottom: 0.2cqw solid rgba(255, 151, 28, 0.35);
+.operator-controls {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  padding: 35cqw 4.2cqw 1.4cqw;
+}
+
+.operator-hub {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+  padding: 2.8cqw;
+  overflow-y: auto;
+  border: 0.24cqw solid rgba(255, 166, 52, 0.42);
+  border-radius: 3.4cqw;
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.96), rgba(5, 4, 3, 0.5)),
-    url("/scenes/rewards-mobile.png") center 42% / cover;
+    radial-gradient(circle at 85% 0, rgba(255, 112, 30, 0.12), transparent 32%),
+    linear-gradient(145deg, rgba(29, 22, 15, 0.96), rgba(9, 8, 7, 0.98) 62%, rgba(20, 14, 9, 0.96));
+  box-shadow: inset 0 0.2cqw rgba(255, 255, 255, 0.04), 0 1.2cqw 3cqw rgba(0, 0, 0, 0.78);
+  flex-direction: column;
+  backdrop-filter: blur(9px);
+  scrollbar-color: rgba(255, 148, 25, 0.42) transparent;
+  scrollbar-width: thin;
 }
 
-.operator-hero p,
-.operator-card-heading small {
-  margin: 0 0 1cqw;
-  color: #ff9b20;
-  font-size: 2.5cqw;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.operator-heading {
+  display: flex;
+  min-height: 9.3cqw;
+  align-items: center;
 }
 
-.operator-hero h1 {
-  max-width: 78cqw;
-  margin: 0;
-  font-family: Impact, "Arial Black", sans-serif;
-  font-size: 8cqw;
-  line-height: 0.98;
-  text-transform: uppercase;
-}
-
-.operator-hero > span {
-  display: block;
-  max-width: 82cqw;
-  margin-top: 2cqw;
-  color: #dec5aa;
-  font-size: 2.9cqw;
-  line-height: 1.45;
-}
-
-.operator-content {
+.operator-heading-icon {
   display: grid;
-  max-width: 920px;
-  margin: 0 auto;
-  padding: 4cqw 4.5cqw;
-  gap: 3cqw;
+  width: 8.4cqw;
+  height: 8.4cqw;
+  margin-right: 2.1cqw;
+  flex: 0 0 auto;
+  border: 0.24cqw solid rgba(255, 159, 48, 0.42);
+  border-radius: 2.3cqw;
+  color: #ffac2f;
+  background: radial-gradient(circle at 35% 25%, rgba(177, 92, 32, 0.3), rgba(35, 19, 9, 0.92));
+  place-items: center;
 }
 
-.operator-contracts {
-  display: flex;
-  gap: 2cqw;
-  flex-wrap: wrap;
+.operator-heading-icon svg { width: 4.8cqw; height: 4.8cqw; }
+.operator-heading > div { min-width: 0; }
+.operator-heading p,
+.operator-heading h1 { margin: 0; }
+.operator-heading p {
+  color: #e69c56;
+  font-size: 2.1cqw;
+  font-weight: 900;
+  letter-spacing: 0.24cqw;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.operator-heading h1 {
+  margin-top: 0.6cqw;
+  font-family: Impact, "Arial Black", sans-serif;
+  font-size: 4.7cqw;
+  letter-spacing: 0.04cqw;
+  line-height: 1;
 }
 
-.operator-contracts a {
-  display: inline-flex;
-  padding: 1.6cqw 2.2cqw;
-  gap: 1cqw;
-  align-items: center;
-  border: 0.16cqw solid rgba(255, 154, 28, 0.38);
+.operator-count {
+  margin-left: auto;
+  padding: 1.15cqw 1.75cqw;
+  border: 0.2cqw solid rgba(255, 165, 36, 0.42);
   border-radius: 999px;
-  color: #ffd89c;
-  background: rgba(27, 18, 10, 0.9);
-  font-size: 2.45cqw;
-  font-weight: 800;
-  text-decoration: none;
+  color: #ffb034;
+  background: rgba(65, 35, 13, 0.78);
+  font-size: 2.15cqw;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
-.operator-contracts svg {
-  width: 2.8cqw;
-  height: 2.8cqw;
-}
-
-.operator-readiness {
-  min-height: 12cqw;
-  border-radius: 2.6cqw;
-  font-size: 3.3cqw;
-}
-
-.operator-card {
-  padding: 4cqw;
-  border: 0.2cqw solid rgba(214, 151, 82, 0.35);
-  border-radius: 3cqw;
-  background: linear-gradient(145deg, rgba(34, 23, 14, 0.98), rgba(10, 8, 6, 0.99));
-  box-shadow: 0 1.2cqw 2.5cqw rgba(0, 0, 0, 0.55);
-}
-
-.operator-card-heading {
-  display: flex;
-  gap: 2.5cqw;
-  align-items: center;
-}
-
-.operator-card-heading > svg {
-  width: 8cqw;
-  height: 8cqw;
-  padding: 1.6cqw;
-  border-radius: 2cqw;
-  color: #ff9b20;
-  background: rgba(255, 139, 17, 0.1);
-}
-
-.operator-card-heading small {
-  display: block;
-  margin: 0 0 0.3cqw;
-  font-size: 2cqw;
-}
-
-.operator-card-heading h2 {
-  margin: 0;
-  font-size: 4.1cqw;
+.operator-intro {
+  margin: 2cqw 0 0;
+  color: #c9b6a1;
+  font-size: 2.35cqw;
+  line-height: 1.4;
 }
 
 .operator-metrics {
   display: grid;
-  margin: 3cqw 0;
+  min-height: 14cqw;
+  margin: 2.4cqw 0;
   overflow: hidden;
   border: 0.15cqw solid rgba(215, 157, 93, 0.25);
   border-radius: 2cqw;
@@ -3887,14 +3872,13 @@ button {
 
 .operator-token-field {
   display: grid;
-  margin-top: 3cqw;
+  margin-top: 2.5cqw;
   gap: 1cqw;
   color: #dfc3a5;
   font-size: 2.5cqw;
   font-weight: 800;
 }
 
-.operator-token-field input,
 .operator-token-field select {
   width: 100%;
   min-height: 10cqw;
@@ -3907,17 +3891,11 @@ button {
   font-size: 3.4cqw;
 }
 
-.operator-token-field input:focus-visible,
 .operator-token-field select:focus-visible,
 .operator-action:focus-visible,
-.operator-contracts a:focus-visible {
+.operator-contract-link:focus-visible {
   outline: 3px solid #ffd05a;
   outline-offset: 2px;
-}
-
-.operator-sequence {
-  display: grid;
-  gap: 1.8cqw;
 }
 
 .operator-action {
@@ -3933,6 +3911,16 @@ button {
   cursor: pointer;
 }
 
+.operator-readiness {
+  display: flex;
+  margin-top: 2.5cqw;
+  gap: 1.5cqw;
+  align-items: center;
+  justify-content: center;
+}
+
+.operator-readiness svg { width: 4cqw; height: 4cqw; }
+
 .operator-action.is-primary {
   border-color: #ff6a12;
   color: #fff;
@@ -3941,13 +3929,11 @@ button {
 
 .operator-action:disabled { opacity: 0.52; cursor: not-allowed; }
 
-.operator-callout,
 .operator-transfer-warning,
-.operator-help,
 .operator-inline-error,
 .operator-sync {
-  margin: 2.5cqw 0;
-  padding: 2.4cqw;
+  margin: 2.2cqw 0;
+  padding: 2.1cqw;
   border-radius: 1.8cqw;
   color: #dcc5ae;
   background: rgba(92, 58, 24, 0.22);
@@ -3955,12 +3941,36 @@ button {
   line-height: 1.45;
 }
 
-.operator-callout.is-danger,
 .operator-inline-error,
 .operator-transfer-warning { color: #ffd2c9; background: rgba(181, 28, 12, 0.24); }
-.operator-callout.is-success { color: #c8ffd7; background: rgba(29, 132, 64, 0.2); }
-.operator-help { padding: 0; background: none; color: #a99580; }
 .operator-transfer-warning { border: 1px solid rgba(255, 87, 42, 0.42); }
+
+.operator-empty {
+  display: grid;
+  min-height: 24cqw;
+  margin-top: 2.4cqw;
+  padding: 3cqw;
+  color: #c9b6a1;
+  text-align: center;
+  place-items: center;
+}
+
+.operator-empty svg { width: 5cqw; height: 5cqw; color: #ffab2e; }
+.operator-empty strong { color: #fff0dc; font-size: 3.1cqw; }
+.operator-empty span { font-size: 2.35cqw; }
+
+.operator-contract-link {
+  display: inline-flex;
+  margin: 2.2cqw auto 0;
+  gap: 1cqw;
+  align-items: center;
+  color: #a99580;
+  font-size: 2.15cqw;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.operator-contract-link svg { width: 2.8cqw; height: 2.8cqw; }
 
 .portal-live-hero {
   min-height: 40cqw;
@@ -4027,31 +4037,58 @@ button {
 .portal-coming-soon small { margin-top: 0.4cqw; color: #a9927c; }
 
 @media (min-width: 1024px) {
-  .operator-screen { min-height: 100vh; padding: 0 0 80px 230px; }
-  .operator-hero { min-height: 310px; padding: 86px 7vw 48px; border-width: 1px; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.96), rgba(5, 4, 3, 0.35)), url("/scenes/rewards-desktop.png"); }
-  .operator-hero p { margin-bottom: 8px; font-size: 13px; }
-  .operator-hero h1 { max-width: 660px; font-size: 58px; }
-  .operator-hero > span { max-width: 680px; margin-top: 14px; font-size: 16px; }
-  .operator-content { padding: 30px 40px; gap: 22px; }
-  .operator-contracts { gap: 10px; }
-  .operator-contracts a { padding: 8px 12px; gap: 6px; border-width: 1px; font-size: 12px; }
-  .operator-contracts svg { width: 13px; height: 13px; }
-  .operator-readiness { min-height: 52px; border-radius: 12px; font-size: 15px; }
-  .operator-card { padding: 24px; border-width: 1px; border-radius: 16px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55); }
-  .operator-card-heading { gap: 14px; }
-  .operator-card-heading > svg { width: 42px; height: 42px; padding: 9px; border-radius: 10px; }
-  .operator-card-heading small { margin-bottom: 2px; font-size: 10px; }
-  .operator-card-heading h2 { font-size: 22px; }
-  .operator-metrics { margin: 18px 0; border-width: 1px; border-radius: 10px; }
+  .operator-backdrop {
+    inset: 16px 20px 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 157, 47, 0.24);
+    border-radius: 24px;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.05), rgba(5, 4, 3, 0.28) 55%, rgba(0, 0, 0, 0.72)),
+      url("/scenes/rewards-desktop.png") center / cover;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.68), 0 0 30px rgba(255, 71, 0, 0.08);
+  }
+  .operator-controls {
+    position: absolute;
+    top: 50%;
+    right: clamp(30px, 3.4vw, 52px);
+    display: flex;
+    width: clamp(430px, 42%, 500px);
+    height: clamp(470px, 72%, 580px);
+    padding: 0;
+    transform: translateY(-45%);
+  }
+  .operator-hub {
+    padding: 18px;
+    border-width: 1px;
+    border-radius: 22px;
+    box-shadow: inset 0 1px rgba(255, 255, 255, 0.04), inset 0 0 18px rgba(255, 150, 27, 0.07), 0 20px 48px rgba(0, 0, 0, 0.68);
+    align-self: stretch;
+    flex: 1;
+    container-type: inline-size;
+  }
+  .operator-heading { min-height: 48px; }
+  .operator-heading-icon { width: 42px; height: 42px; margin-right: 12px; border-width: 1px; border-radius: 12px; }
+  .operator-heading-icon svg { width: 24px; height: 24px; }
+  .operator-heading p { font-size: 10px; letter-spacing: 1.2px; }
+  .operator-heading h1 { margin-top: 3px; font-size: 25px; letter-spacing: 0.2px; }
+  .operator-count { padding: 6px 9px; border-width: 1px; font-size: 11px; }
+  .operator-intro { margin-top: 12px; font-size: 12px; }
+  .operator-metrics { min-height: 74px; margin: 14px 0; border-width: 1px; border-radius: 10px; }
   .operator-metrics div { padding: 12px; border-width: 1px; }
   .operator-metrics dt { font-size: 11px; }
   .operator-metrics dd { margin-top: 5px; font-size: 15px; }
-  .operator-token-field { margin-top: 18px; gap: 6px; font-size: 12px; }
-  .operator-token-field input, .operator-token-field select { min-height: 46px; padding: 0 14px; border-width: 1px; border-radius: 10px; font-size: 15px; }
-  .operator-sequence { gap: 10px; }
+  .operator-token-field { margin-top: 14px; gap: 6px; font-size: 12px; }
+  .operator-token-field select { min-height: 46px; padding: 0 14px; border-width: 1px; border-radius: 10px; font-size: 15px; }
   .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: 13px; }
-  .operator-callout, .operator-transfer-warning, .operator-help, .operator-inline-error, .operator-sync { margin: 14px 0; padding: 12px; border-radius: 9px; font-size: 12px; }
-  .operator-help { padding: 0; }
+  .operator-readiness { margin-top: 14px; gap: 8px; }
+  .operator-readiness svg { width: 18px; height: 18px; }
+  .operator-transfer-warning, .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: 11px; }
+  .operator-empty { min-height: 130px; margin-top: 14px; padding: 16px; }
+  .operator-empty svg { width: 26px; height: 26px; }
+  .operator-empty strong { font-size: 15px; }
+  .operator-empty span { font-size: 12px; }
+  .operator-contract-link { margin-top: 12px; gap: 5px; font-size: 10px; }
+  .operator-contract-link svg { width: 13px; height: 13px; }
   .portal-live-hero { min-height: 300px; padding: 80px 7vw 42px; border-width: 1px; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.95), rgba(5, 4, 3, 0.35)), url("/scenes/portal-desktop.png"); }
   .portal-live-hero p { margin-bottom: 8px; font-size: 13px; }
   .portal-live-hero h1 { font-size: 58px; }

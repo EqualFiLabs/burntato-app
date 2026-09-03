@@ -332,7 +332,7 @@ export function LivePortalScreen() {
           <button className="primary-action portal-primary-action" type="button" disabled={primaryDisabled} onClick={primaryAction}><WalletCards aria-hidden="true" /><span>{primaryLabel}</span></button>
           {transaction && <div className={`portal-live-status is-${transaction.stage}`} role="status" aria-live="polite"><Check aria-hidden="true" /><span>{transaction.message}</span>{transaction.hash && <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>}</div>}
           <div className="portal-coming-soon"><Clock3 aria-hidden="true" /><span><strong>Bridge coming soon</strong><small>Base, Arbitrum, and Solana routes are intentionally unavailable.</small></span></div>
-          <p className="portal-footnote">Need more STATICS after the test faucet? ETH ↔ STATICS routing is not included yet. Higher activation tiers stay disabled when your live STATICS balance is insufficient.</p>
+          <p className="portal-footnote">This portal routes only ETH ↔ POTATO through the deployed Burntato pool.</p>
         </section>
       </div>
     </main>

@@ -32,10 +32,12 @@ Set `NEXT_PUBLIC_BURNTATO_INDEXER_URL` to its public origin. Ponder owns `/healt
 - Burn commits wallet POTATO to the next recovery round.
 - Rewards independently verifies and claims winner/recovery positions by round.
 - Leaderboard derives from the durable event index, with a labeled bounded direct-RPC fallback.
-- Operators claims the 200,000 STATICS test bundle, purchases a Vault-held Genesis NFT, raises activation, registers separately with Burntato and the Genesis Launch Distributor, and claims live rewards.
+- Operators reads the connected wallet's current Statics Operator ownership, lets the user select an owned token from a dropdown, and registers, syncs, or claims Burntato revenue.
 - Portal executes live exact-input ETH/POTATO V4 swaps. Buys use V4 swap/settle/take. Sells use POTATO’s required infinite ERC-20 Permit2 approval followed by an exact, short-lived signed Permit2 authorization. Cross-chain routes and ETH/STATICS routing are explicitly unavailable.
 
 Registered Operators receive 15% of direct game purchases and 40% of the pool’s 1% bilateral swap fee. An owner change or activation-weight decrease invalidates the Burntato registration; forfeited rewards redistribute to other valid Operators, or Treasury when no valid registered weight remains. Activation increases remain valid after sync.
+
+Operator acquisition, activation, and STATICS faucet access belong to the Statics application and are intentionally not exposed by Burntato.
 
 ## Deployed Robinhood system
 
@@ -46,17 +48,10 @@ Chain ID `46630`; Burntato source commit `07688de3193492aca399c8bbadc9321162e5f7
 | Burntato Diamond / POTATO | [`0x1FA9…4818`](https://explorer.testnet.chain.robinhood.com/address/0x1FA9a3c895e802670b35a9d577D42d4dE20e4818) |
 | Operator rewards router | [`0x09ac…E24D`](https://explorer.testnet.chain.robinhood.com/address/0x09ac7A514db0bBf0B2E3630ace9C30b17393E24D) |
 | Burntato hook | [`0x5b7a…2444`](https://explorer.testnet.chain.robinhood.com/address/0x5b7a45802d5a6076b510D2d9D9EC175a19EE2444) |
-| STATICS | [`0xcDe1…06eD`](https://explorer.testnet.chain.robinhood.com/address/0xcDe1F22F70DB6C42c7C0050e6F3B53d03a2006eD) |
 | Operator NFT | [`0x8BB2…bC71`](https://explorer.testnet.chain.robinhood.com/address/0x8BB2E39abAE7346293Ff084fd4D104b064BEbC71) |
-| Activation Registry | [`0xcE4D…cFbD`](https://explorer.testnet.chain.robinhood.com/address/0xcE4D413915B4C6dE7DfD486d233596Da35c5cFbD) |
-| Genesis Vault | [`0xa5Cb…Ef58`](https://explorer.testnet.chain.robinhood.com/address/0xa5Cb1f90C70310Af1E5466DdFBB57f3F2353Ef58) |
-| Genesis Launch Distributor | [`0xfE07…8A06`](https://explorer.testnet.chain.robinhood.com/address/0xfE07863397a331b35B9D1fB5Ea14130eB870bA06) |
-| 200K STATICS faucet | [`0xd2e5…2955`](https://explorer.testnet.chain.robinhood.com/address/0xd2e561B46a2de6713F53d954C0415447100d2955) |
 | V4 Quoter | [`0x8Dc1…8F94`](https://explorer.testnet.chain.robinhood.com/address/0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94) |
 | Universal Router | [`0x8876…0904`](https://explorer.testnet.chain.robinhood.com/address/0x8876789976dEcBfCbBbe364623C63652db8C0904) |
 | Permit2 | [`0x0000…BA3`](https://explorer.testnet.chain.robinhood.com/address/0x000000000022D473030F116dDEE9F6B43aC78BA3) |
-
-The deployment’s ownerless faucet currently holds exactly one 200,000 STATICS claim. Do not consume it during routine testing. Before a multi-user beta, fund it with `tester count × 200,000 STATICS + chosen buffer` and arrange Robinhood testnet ETH distribution; no official public ETH faucet is documented.
 
 ## Verification
 

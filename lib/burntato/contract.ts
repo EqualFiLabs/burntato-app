@@ -12,6 +12,7 @@ export const BURNTATO_DEPLOYMENT = {
   poolId: "0xd0bb2fb1266e97d81cf260a1b4d12d21eee323dd0189265483baf9b8987fd91b" as `0x${string}`,
   statics: "0xcDe1F22F70DB6C42c7C0050e6F3B53d03a2006eD" as Address,
   operatorNft: "0x8BB2E39abAE7346293Ff084fd4D104b064BEbC71" as Address,
+  operatorNftDeploymentBlock: 112_330_669n,
   activationRegistry: "0xcE4D413915B4C6dE7DfD486d233596Da35c5cFbD" as Address,
   genesisVault: "0xa5Cb1f90C70310Af1E5466DdFBB57f3F2353Ef58" as Address,
   genesisLaunchDistributor: "0xfE07863397a331b35B9D1fB5Ea14130eB870bA06" as Address,
