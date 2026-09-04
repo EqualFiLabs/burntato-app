@@ -3,6 +3,7 @@ import { parseAbi, type Address } from "viem";
 export const BURNTATO_DEPLOYMENT = {
   network: "Robinhood Chain Testnet",
   chainId: 46_630,
+  deploymentId: "robinhood-testnet-46630-low-cost",
   explorer: "https://explorer.testnet.chain.robinhood.com",
   diamond: "0x5e59B7d841199cD4316b0a081d6530fc7Ae4F28F" as Address,
   deploymentBlock: 113_055_786n,

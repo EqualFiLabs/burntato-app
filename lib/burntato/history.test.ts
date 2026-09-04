@@ -49,6 +49,7 @@ describe("durable indexer projection", () => {
       ? { robinhoodTestnet: { id: 46_630, block: { number: 112_339_500 } } }
       : {
           chainId: 46_630,
+          deployment: "robinhood-testnet-46630-low-cost",
           items: [{
             source: "burntato",
             name: "RecoveryCommitted",
@@ -75,15 +76,27 @@ describe("durable indexer projection", () => {
       if (url.pathname.endsWith("/status")) return new Response(JSON.stringify({ robinhoodTestnet: { id: 46_630, block: { number: 112_340_000 } } }));
       eventsPage += 1;
       const base = { source: "burntato", name: "RecoveryCommitted", transactionHash: `0x${"2".repeat(64)}`, logIndex: 1, blockNumber: "112339500", args: { roundId: "2", account: alice, amount: "100" } };
-      if (eventsPage === 1) return new Response(JSON.stringify({ chainId: 46_630, nextCursor: { blockNumber: "112339500", logIndex: 1 }, items: [base] }));
+      if (eventsPage === 1) return new Response(JSON.stringify({ chainId: 46_630, deployment: "robinhood-testnet-46630-low-cost", nextCursor: { blockNumber: "112339500", logIndex: 1 }, items: [base] }));
       expect(url.searchParams.get("afterBlock")).toBe("112339500");
       expect(url.searchParams.get("afterLogIndex")).toBe("1");
-      return new Response(JSON.stringify({ chainId: 46_630, nextCursor: null, items: [base] }));
+      return new Response(JSON.stringify({ chainId: 46_630, deployment: "robinhood-testnet-46630-low-cost", nextCursor: null, items: [base] }));
     };
     try {
       const result = await fetchIndexedHistory("https://indexer.example", 112_339_401n);
       expect(result.events).toHaveLength(1);
       expect(eventsPage).toBe(2);
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
+  it("rejects an indexer serving the superseded Burntato deployment", async () => {
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = async (input) => new Response(JSON.stringify(String(input).endsWith("/status")
+      ? { robinhoodTestnet: { id: 46_630, block: { number: 113_055_900 } } }
+      : { chainId: 46_630, deployment: "robinhood-testnet-46630", nextCursor: null, items: [] }));
+    try {
+      await expect(fetchIndexedHistory("https://indexer.example", 113_055_786n)).rejects.toThrow("Indexer deployment mismatch");
     } finally {
       globalThis.fetch = previousFetch;
     }

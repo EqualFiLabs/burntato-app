@@ -5,11 +5,12 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 const app = new Hono();
+const deployment = "robinhood-testnet-46630-low-cost";
 app.use("*", cors({ origin: process.env.PONDER_ALLOWED_ORIGIN || "*" }));
 
 async function status() {
   const [row] = await db.select({ events: count(), indexedBlock: max(indexedEvent.blockNumber) }).from(indexedEvent);
-  return { chainId: 46_630, deployment: "robinhood-testnet-46630-low-cost", events: Number(row?.events ?? 0), indexedBlock: row?.indexedBlock?.toString() ?? null };
+  return { chainId: 46_630, deployment, events: Number(row?.events ?? 0), indexedBlock: row?.indexedBlock?.toString() ?? null };
 }
 
 // Ponder owns /ready and /status for process and sync health. This route adds
@@ -40,6 +41,7 @@ app.get("/events", async (context) => {
   context.header("Cache-Control", "public, max-age=2, stale-while-revalidate=5");
   return context.json({
     chainId: 46_630,
+    deployment,
     nextCursor: rows.length === limit && last ? { blockNumber: last.blockNumber.toString(), logIndex: last.logIndex } : null,
     items: rows.map((row) => ({
       source: row.source,

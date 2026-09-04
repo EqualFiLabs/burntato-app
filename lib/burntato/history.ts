@@ -79,10 +79,15 @@ export async function fetchIndexedHistory(indexerUrl: string, fromBlock: bigint)
     if (!eventsResponse.ok) throw new Error(`Indexer events returned ${eventsResponse.status}`);
     const payload = await eventsResponse.json() as {
       chainId?: number;
+      deployment?: string;
       nextCursor?: { blockNumber?: string; logIndex?: number } | null;
       items?: Array<{ source?: string; name?: string; transactionHash?: string; logIndex?: number; blockNumber?: string; args?: unknown }>;
     };
-    if (payload.chainId !== BURNTATO_DEPLOYMENT.chainId || !Array.isArray(payload.items)) throw new Error("Indexer deployment mismatch");
+    if (
+      payload.chainId !== BURNTATO_DEPLOYMENT.chainId
+      || payload.deployment !== BURNTATO_DEPLOYMENT.deploymentId
+      || !Array.isArray(payload.items)
+    ) throw new Error("Indexer deployment mismatch");
     for (const item of payload.items) {
       if (item.source !== "burntato" || !TRACKED_EVENTS.has(item.name as BurntatoEvent["name"])) continue;
       if (!item.transactionHash?.startsWith("0x") || !/^\d+$/.test(item.blockNumber ?? "") || !Number.isInteger(item.logIndex)) continue;
