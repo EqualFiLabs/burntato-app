@@ -40,6 +40,11 @@ describe.skipIf(!liveRpcUrl)("deployed Robinhood readbacks", () => {
       client.readContract({ address: BURNTATO_DEPLOYMENT.genesisLaunchDistributor, abi: genesisDistributorAbi, functionName: "finalized" }),
     ]);
     expect(roundId).toBe(0n);
+    expect(protocol.startingPrice).toBe(10_000_000_000_000n);
+    expect(protocol.priceIncreaseBps).toBe(100);
+    expect(protocol.roundTimeout).toBe(600n);
+    expect(protocol.roundTimeoutDecay).toBe(60n);
+    expect(protocol.minimumRoundTimeout).toBe(60n);
     expect(protocol.operatorPurchaseBps).toBe(1_500);
     expect(protocol.winnerBps + protocol.recoveryBps + protocol.treasuryBps + protocol.buybackBps + protocol.operatorPurchaseBps).toBe(10_000);
     expect(purchasesPaused).toBe(false);

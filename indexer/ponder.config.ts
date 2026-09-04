@@ -60,14 +60,14 @@ export default createConfig({
     Burntato: {
       chain: "robinhoodTestnet",
       abi: burntatoAbi,
-      address: "0x1FA9a3c895e802670b35a9d577D42d4dE20e4818",
-      startBlock: 112_339_401,
+      address: "0x5e59B7d841199cD4316b0a081d6530fc7Ae4F28F",
+      startBlock: 113_055_786,
     },
     OperatorRouter: {
       chain: "robinhoodTestnet",
       abi: operatorAbi,
-      address: "0x09ac7A514db0bBf0B2E3630ace9C30b17393E24D",
-      startBlock: 112_339_401,
+      address: "0xd4F279C7DfA2756aF90933ac4632D61eBA7eEFF6",
+      startBlock: 113_055_786,
     },
     Faucet: {
       chain: "robinhoodTestnet",

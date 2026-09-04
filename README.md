@@ -41,13 +41,16 @@ Operator acquisition, activation, and STATICS faucet access belong to the Static
 
 ## Deployed Robinhood system
 
-Chain ID `46630`; Burntato source commit `07688de3193492aca399c8bbadc9321162e5f726`; Burntato deployment block `112339401`.
+Chain ID `46630`; Burntato source commit
+`1e3a49389baffd1aaff9c3bafbdf55e68d489200`; Burntato deployment block
+`113055786`. Hot Potato purchases start at `0.00001 ETH`, increase by 1%, and
+reset from ten minutes down to a one-minute floor.
 
 | Contract | Address |
 | --- | --- |
-| Burntato Diamond / POTATO | [`0x1FA9…4818`](https://explorer.testnet.chain.robinhood.com/address/0x1FA9a3c895e802670b35a9d577D42d4dE20e4818) |
-| Operator rewards router | [`0x09ac…E24D`](https://explorer.testnet.chain.robinhood.com/address/0x09ac7A514db0bBf0B2E3630ace9C30b17393E24D) |
-| Burntato hook | [`0x5b7a…2444`](https://explorer.testnet.chain.robinhood.com/address/0x5b7a45802d5a6076b510D2d9D9EC175a19EE2444) |
+| Burntato Diamond / POTATO | [`0x5e59…F28F`](https://explorer.testnet.chain.robinhood.com/address/0x5e59B7d841199cD4316b0a081d6530fc7Ae4F28F) |
+| Operator rewards router | [`0xd4F2…EFF6`](https://explorer.testnet.chain.robinhood.com/address/0xd4F279C7DfA2756aF90933ac4632D61eBA7eEFF6) |
+| Burntato hook | [`0xe699…A444`](https://explorer.testnet.chain.robinhood.com/address/0xe699242c924449e2CbD88919ED419Eb82f85A444) |
 | Operator NFT | [`0x8BB2…bC71`](https://explorer.testnet.chain.robinhood.com/address/0x8BB2E39abAE7346293Ff084fd4D104b064BEbC71) |
 | V4 Quoter | [`0x8Dc1…8F94`](https://explorer.testnet.chain.robinhood.com/address/0x8Dc178eFB8111BB0973Dd9d722ebeFF267c98F94) |
 | Universal Router | [`0x8876…0904`](https://explorer.testnet.chain.robinhood.com/address/0x8876789976dEcBfCbBbe364623C63652db8C0904) |

@@ -8,8 +8,8 @@ import { permit2Abi, universalRouterAbi, v4QuoterAbi } from "../portal/contracts
 describe("Robinhood deployment parity", () => {
   it("pins the deployed chain, source, and checksummed contracts", () => {
     expect(BURNTATO_DEPLOYMENT.chainId).toBe(46_630);
-    expect(BURNTATO_DEPLOYMENT.deploymentBlock).toBe(112_339_401n);
-    expect(BURNTATO_DEPLOYMENT.sourceCommit).toBe("07688de3193492aca399c8bbadc9321162e5f726");
+    expect(BURNTATO_DEPLOYMENT.deploymentBlock).toBe(113_055_786n);
+    expect(BURNTATO_DEPLOYMENT.sourceCommit).toBe("1e3a49389baffd1aaff9c3bafbdf55e68d489200");
     for (const address of [
       BURNTATO_DEPLOYMENT.diamond,
       BURNTATO_DEPLOYMENT.operatorRewardsRouter,
