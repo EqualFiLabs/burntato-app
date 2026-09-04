@@ -63,7 +63,7 @@ describe("round presentation", () => {
   });
 
   it("preserves low-cost testnet purchase prices", () => {
-    expect(formatEth(10_000_000_000_000n, 8)).toBe("0.00001");
+    expect(formatEth(10_000_000_000_000n)).toBe("0.00001");
   });
 });
 

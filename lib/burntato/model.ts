@@ -68,7 +68,7 @@ export function formatCountdown(seconds: number): string {
   return [hours, minutes, secs].map((part) => String(part).padStart(2, "0")).join(":");
 }
 
-export function formatEth(value: bigint, maximumFractionDigits = 4): string {
+export function formatEth(value: bigint, maximumFractionDigits = 8): string {
   return Number(formatEther(value)).toLocaleString("en-US", { maximumFractionDigits });
 }
 
