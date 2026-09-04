@@ -1,17 +1,14 @@
 "use client";
 
 import { BadgeCheck, ExternalLink, WalletCards } from "lucide-react";
-import { formatEther, type Address } from "viem";
+import { type Address } from "viem";
 
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
+import { formatEth } from "@/lib/burntato/model";
 import { operatorRewardAction, ZERO_ADDRESS } from "@/lib/operators/model";
 import { useBurntatoState } from "@/providers/burntato-context";
 import { type OperatorAction, useOperatorState } from "@/providers/operator-context";
 import { useWalletState } from "@/providers/wallet-context";
-
-function eth(value: bigint): string {
-  return Number(formatEther(value)).toLocaleString("en-US", { maximumFractionDigits: 6 });
-}
 
 function pending(operator: ReturnType<typeof useOperatorState>, action: OperatorAction): boolean {
   const stage = operator.transactions[action]?.stage;
@@ -92,7 +89,7 @@ export function OperatorScreen() {
                   <dl className="operator-metrics" aria-label="Selected Operator rewards">
                     <div><dt>Current weight</dt><dd>{operator.routerPreview.currentWeight ? `${operator.routerPreview.currentWeight / 100}%` : "—"}</dd></div>
                     <div><dt>Registered</dt><dd>{operator.routerRegistration.weight ? `${operator.routerRegistration.weight / 100}%` : "No"}</dd></div>
-                    <div><dt>Claimable</dt><dd>{eth(operator.routerPreview.claimable)} ETH</dd></div>
+                    <div><dt>Claimable</dt><dd>{formatEth(operator.routerPreview.claimable)} ETH</dd></div>
                   </dl>
 
                   {operator.routerPreview.transferDetected && (
