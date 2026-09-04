@@ -650,7 +650,7 @@ function GrabScreen() {
   const isHolder = Boolean(wallet.activeAddress && game.currentRound?.currentHolder.toLowerCase() === wallet.activeAddress.toLowerCase());
   const vestingMature = Boolean(game.currentRound && game.chainNow >= game.currentRound.holderSince + game.currentRound.config.emissionVestingDuration);
   const canFinalizeEmission = Boolean(game.currentRound && vestingMature && !game.currentRound.holderEmissionFinalized);
-  let actionLabel = `Grab for ${formatEth(price)} ETH`;
+  let actionLabel = `Grab for ${formatEth(price, 8)} ETH`;
   let action: () => void = () => void game.grab();
   if (wallet.status === "unconfigured") {
     actionLabel = "Wallet sign-in unavailable";

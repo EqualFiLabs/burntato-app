@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clampAmount, countdownSeconds, deriveRoundPhase, describeBurntatoError, formatCountdown, shareBps, type BurntatoRound } from "./model";
+import { clampAmount, countdownSeconds, deriveRoundPhase, describeBurntatoError, formatCountdown, formatEth, shareBps, type BurntatoRound } from "./model";
 
 function round(overrides: Partial<BurntatoRound> = {}): BurntatoRound {
   return {
@@ -60,6 +60,10 @@ describe("round presentation", () => {
     expect(countdownSeconds(3_700n, 1n)).toBe(3_699);
     expect(formatCountdown(3_699)).toBe("01:01:39");
     expect(countdownSeconds(10n, 11n)).toBe(0);
+  });
+
+  it("preserves low-cost testnet purchase prices", () => {
+    expect(formatEth(10_000_000_000_000n, 8)).toBe("0.00001");
   });
 });
 
