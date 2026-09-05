@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { clampAmount, countdownSeconds, deriveRoundPhase, describeBurntatoError, formatCountdown, formatEth, shareBps, type BurntatoRound } from "./model";
+import {
+  clampAmount,
+  countdownSeconds,
+  deriveRoundPhase,
+  describeBurntatoError,
+  formatCountdown,
+  formatEth,
+  projectedRecoveryPayout,
+  recoveryPositionShareBps,
+  shareBps,
+  type BurntatoRound,
+} from "./model";
 
 function round(overrides: Partial<BurntatoRound> = {}): BurntatoRound {
   return {
@@ -72,6 +83,18 @@ describe("commitment controls", () => {
     expect(clampAmount(-1n, 100n)).toBe(0n);
     expect(clampAmount(120n, 100n)).toBe(100n);
     expect(shareBps(25n, 75n)).toBe(2_500n);
+  });
+
+  it("projects live recovery positions with settlement-compatible floor rounding", () => {
+    expect(recoveryPositionShareBps(8_000n, 128_400n)).toBe(623n);
+    expect(projectedRecoveryPayout(675n, 8_000n, 128_400n)).toBe(42n);
+  });
+
+  it("returns zero for incomplete recovery position state", () => {
+    expect(recoveryPositionShareBps(8_000n, 0n)).toBe(0n);
+    expect(projectedRecoveryPayout(675n, 8_000n, 0n)).toBe(0n);
+    expect(projectedRecoveryPayout(675n, 0n, 128_400n)).toBe(0n);
+    expect(projectedRecoveryPayout(0n, 8_000n, 128_400n)).toBe(0n);
   });
 });
 

@@ -1670,6 +1670,10 @@ button {
   grid-template-columns: 13.5cqw minmax(0, 1fr) auto;
 }
 
+.position-row.is-detailed {
+  grid-template-columns: 13.5cqw minmax(0, 1fr);
+}
+
 .position-status {
   display: flex;
   min-height: 5.2cqw;
@@ -1719,6 +1723,67 @@ button {
   font-size: 2.5cqw;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.position-row > div > em,
+.position-live-heading em {
+  margin-top: 0.25cqw;
+  overflow: hidden;
+  color: #9f8b74;
+  font-size: 1.55cqw;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position-live-content {
+  gap: 0.75cqw;
+}
+
+.position-live-heading > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.position-live-metrics {
+  display: grid;
+  margin: 0;
+  gap: 0.65cqw;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.position-live-metrics > div {
+  min-width: 0;
+  padding: 0.55cqw 0.7cqw;
+  border-radius: 0.8cqw;
+  background: rgba(12, 10, 8, 0.48);
+}
+
+.position-live-metrics dt {
+  overflow: hidden;
+  color: #9f8b74;
+  font-size: 1.35cqw;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position-live-metrics dd {
+  margin: 0.2cqw 0 0;
+  overflow: hidden;
+  color: #f8ead5;
+  font-size: 1.65cqw;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position-live-content > p {
+  margin: 0;
+  color: #84cd67;
+  font-size: 1.35cqw;
+  font-weight: 800;
 }
 
 .position-row > span:last-child {
@@ -3288,6 +3353,10 @@ button {
     grid-template-columns: 72px minmax(0, 1fr) auto;
   }
 
+  .position-row.is-detailed {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
   .position-status {
     min-height: 28px;
     gap: 5px;
@@ -3308,6 +3377,35 @@ button {
   .position-row > div strong {
     margin-top: 3px;
     font-size: 13px;
+  }
+
+  .position-row > div > em,
+  .position-live-heading em {
+    margin-top: 2px;
+    font-size: 8px;
+  }
+
+  .position-live-content {
+    gap: 4px;
+  }
+
+  .position-live-metrics {
+    gap: 4px;
+  }
+
+  .position-live-metrics > div {
+    padding: 3px 4px;
+    border-radius: 5px;
+  }
+
+  .position-live-metrics dt,
+  .position-live-content > p {
+    font-size: 7px;
+  }
+
+  .position-live-metrics dd {
+    margin-top: 1px;
+    font-size: 9px;
   }
 
   .position-row > span:last-child strong {

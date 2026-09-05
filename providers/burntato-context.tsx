@@ -43,6 +43,8 @@ type BurntatoState = {
   targetRoundId: bigint;
   ownCommitment: bigint;
   totalCommitment: bigint;
+  activeRecoveryCommitment: bigint;
+  activeRecoveryTotalCommitment: bigint;
   loading: boolean;
   readError: string | null;
   history: BurntatoEvent[];
@@ -84,6 +86,8 @@ export const defaultBurntatoState: BurntatoState = {
   targetRoundId: 1n,
   ownCommitment: 0n,
   totalCommitment: 0n,
+  activeRecoveryCommitment: 0n,
+  activeRecoveryTotalCommitment: 0n,
   loading: false,
   readError: null,
   history: [],
@@ -113,7 +117,8 @@ const BurntatoContext = createContext<BurntatoState>(defaultBurntatoState);
 
 type Snapshot = Pick<BurntatoState,
   "chainNow" | "currentRoundId" | "currentRound" | "protocolConfig" | "currentEmission" |
-  "purchasesPaused" | "commitmentsPaused" | "potatoBalance" | "targetRoundId" | "ownCommitment" | "totalCommitment"
+  "purchasesPaused" | "commitmentsPaused" | "potatoBalance" | "targetRoundId" | "ownCommitment" | "totalCommitment" |
+  "activeRecoveryCommitment" | "activeRecoveryTotalCommitment"
 >;
 
 const emptySnapshot: Snapshot = {
@@ -128,6 +133,8 @@ const emptySnapshot: Snapshot = {
   targetRoundId: 1n,
   ownCommitment: 0n,
   totalCommitment: 0n,
+  activeRecoveryCommitment: 0n,
+  activeRecoveryTotalCommitment: 0n,
 };
 
 function contractRequest(functionName: string, args?: readonly unknown[]) {
@@ -148,12 +155,14 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
   ]);
   const currentRoundId = roundIdRaw as bigint;
   const targetRoundId = currentRoundId + 1n;
-  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw] = await Promise.all([
+  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, activeOwnRaw, activeTotalRaw] = await Promise.all([
     currentRoundId === 0n ? Promise.resolve(null) : readContract(client, "getRound", [currentRoundId]),
     currentRoundId === 0n ? Promise.resolve([0n, 0n] as const) : readContract(client, "currentEarnedEmission"),
     account ? readContract(client, "balanceOf", [account]) : Promise.resolve(0n),
     account ? readContract(client, "recoveryCommitment", [targetRoundId, account]) : Promise.resolve(0n),
     readContract(client, "totalRecoveryCommitment", [targetRoundId]),
+    account && currentRoundId !== 0n ? readContract(client, "recoveryCommitment", [currentRoundId, account]) : Promise.resolve(0n),
+    account && currentRoundId !== 0n ? readContract(client, "totalRecoveryCommitment", [currentRoundId]) : Promise.resolve(0n),
   ]);
   return {
     chainNow: block.timestamp,
@@ -167,6 +176,8 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     targetRoundId,
     ownCommitment: ownRaw as bigint,
     totalCommitment: totalRaw as bigint,
+    activeRecoveryCommitment: activeOwnRaw as bigint,
+    activeRecoveryTotalCommitment: activeTotalRaw as bigint,
   };
 }
 
