@@ -39,7 +39,7 @@ export function RecoveryPositions({
   return (
     <div className="reward-list">
       {hasActiveRecovery && <article className="position-row is-detailed">
-        <span className="position-status is-live"><span /> Live</span>
+        <span className="position-status is-live"><span aria-hidden="true" /> Live</span>
         <div className="position-live-content">
           <div className="position-live-heading">
             <span>
