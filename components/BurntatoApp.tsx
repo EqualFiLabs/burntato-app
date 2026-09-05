@@ -27,6 +27,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { NetworkEthBalance } from "@/components/NetworkEthBalance";
 import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
+import { RecoveryPositions } from "@/components/RecoveryPositions";
 import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -589,21 +590,15 @@ function RewardsScreen() {
             )}
 
             {tab === "positions" && (
-              <div className="reward-list">
-                {game.ownCommitment > 0n ? <article className="position-row">
-                  <span className="position-status is-live"><span /> Earning</span>
-                  <div>
-                    <small>Recovery Market · Round #{game.targetRoundId.toString()}</small>
-                    <strong>{formatPotato(game.ownCommitment)} POTATO committed</strong>
-                  </div>
-                  <span><small>Your share</small><strong>{game.totalCommitment === 0n ? "0.00" : (Number(game.ownCommitment * 10_000n / game.totalCommitment) / 100).toFixed(2)}%</strong></span>
-                </article>
-                : <div className="onchain-empty"><PieChart aria-hidden="true" /><strong>No active recovery position</strong><span>Your next-round commitment will appear here.</span></div>}
-                {game.ownCommitment > 0n && <div className="position-note">
-                  <PieChart aria-hidden="true" />
-                  <span><strong>{formatPotato(game.ownCommitment)} POTATO active</strong><small>Across one recovery position</small></span>
-                </div>}
-              </div>
+              <RecoveryPositions
+                currentRoundId={game.currentRoundId}
+                currentRecoveryPool={game.currentRound?.recoveryPool ?? 0n}
+                activeCommitment={game.activeRecoveryCommitment}
+                activeTotalCommitment={game.activeRecoveryTotalCommitment}
+                targetRoundId={game.targetRoundId}
+                queuedCommitment={game.ownCommitment}
+                queuedTotalCommitment={game.totalCommitment}
+              />
             )}
 
             {tab === "history" && (

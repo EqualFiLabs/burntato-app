@@ -85,6 +85,16 @@ export function shareBps(amount: bigint, totalBefore: bigint): bigint {
   return total === 0n ? 0n : (amount * 10_000n) / total;
 }
 
+export function recoveryPositionShareBps(commitment: bigint, totalCommitment: bigint): bigint {
+  return commitment === 0n || totalCommitment === 0n ? 0n : (commitment * 10_000n) / totalCommitment;
+}
+
+export function projectedRecoveryPayout(recoveryPool: bigint, commitment: bigint, totalCommitment: bigint): bigint {
+  return recoveryPool === 0n || commitment === 0n || totalCommitment === 0n
+    ? 0n
+    : (recoveryPool * commitment) / totalCommitment;
+}
+
 export function describeBurntatoError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
