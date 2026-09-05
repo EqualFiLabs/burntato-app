@@ -12,14 +12,26 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:fork": "vitest run lib/robinhood-fork-flow.test.ts",
+    "test:live": "vitest run lib/robinhood-live.test.ts",
     "typecheck": "tsc --noEmit --incremental false",
-    "verify": "npm run lint && npm run typecheck && npm run build"
+    "typecheck:indexer": "npm --prefix indexer run typecheck",
+    "verify": "npm run test && npm run lint && npm run typecheck && npm run typecheck:indexer && npm run build"
   },
   "dependencies": {
+    "@privy-io/react-auth": "3.37.0",
+    "@privy-io/wagmi": "4.0.16",
+    "@solana-program/memo": "0.10.0",
+    "@stripe/stripe-js": "1.54.2",
+    "@tanstack/react-query": "5.101.4",
     "lucide-react": "1.27.0",
     "next": "16.3.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "viem": "2.55.10",
+    "wagmi": "3.7.6",
+    "ws": "8.21.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -27,6 +39,11 @@
     "@types/react-dom": "^19.0.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "axios": "1.19.0",
+    "ws@8": "8.21.3"
   }
 }

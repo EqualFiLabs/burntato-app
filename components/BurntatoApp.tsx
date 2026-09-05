@@ -3,12 +3,16 @@
 import { getImageProps } from "next/image";
 import {
   ArrowLeftRight,
+  BadgeCheck,
   Check,
   ChevronDown,
+  Copy,
+  ExternalLink,
   Flame,
   Gift,
   History,
   Home,
+  LogOut,
   Menu,
   Minus,
   PieChart,
@@ -18,9 +22,16 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-type Screen = "grab" | "burn" | "leaderboard" | "rewards";
+import { NetworkEthBalance } from "@/components/NetworkEthBalance";
+import { OperatorScreen } from "@/components/OperatorScreen";
+import { LivePortalScreen } from "@/components/LivePortalScreen";
+import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
+import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
+import { useWalletState } from "@/providers/wallet-context";
+
+type Screen = "grab" | "burn" | "portal" | "leaderboard" | "rewards" | "operators";
 type RewardsTab = "ready" | "positions" | "history";
 type LeaderboardMetric = "earned" | "wins" | "hold" | "recovery";
 type LeaderboardPeriod = "all-time" | "round";
@@ -40,7 +51,6 @@ type LeaderboardEntry = {
   isYou?: boolean;
 };
 
-const potatoBalance = 42_690;
 const numberFormat = new Intl.NumberFormat("en-US");
 
 const heroSources: Record<Screen, {
@@ -61,11 +71,23 @@ const heroSources: Record<Screen, {
     mobileWidth: 941,
     mobileHeight: 1672,
   },
+  portal: {
+    mobile: "/scenes/portal-mobile.png",
+    desktop: "/scenes/portal-desktop.png",
+    mobileWidth: 864,
+    mobileHeight: 1821,
+  },
   rewards: {
     mobile: "/scenes/rewards-mobile.png",
     desktop: "/scenes/rewards-desktop.png",
     mobileWidth: 864,
     mobileHeight: 1821,
+  },
+  operators: {
+    mobile: "/scenes/rewards-mobile.png",
+    desktop: "/scenes/rewards-desktop.png",
+    mobileWidth: 938,
+    mobileHeight: 600,
   },
   leaderboard: {
     mobile: "/scenes/leaderboard-mobile.png",
@@ -74,108 +96,6 @@ const heroSources: Record<Screen, {
     mobileHeight: 1821,
   },
 };
-
-const leaderboardEntries: LeaderboardEntry[] = [
-  {
-    name: "Blaze",
-    address: "0xA7...E91C",
-    earned: 182_450,
-    roundEarned: 15_200,
-    wins: 12,
-    roundWins: 1,
-    hold: 8_340,
-    roundHold: 4_860,
-    recovery: 6.842,
-    roundRecovery: 0.62,
-    committed: 128_000,
-    trend: 0,
-  },
-  {
-    name: "SpudKing",
-    address: "0x31...B44D",
-    earned: 156_800,
-    roundEarned: 11_850,
-    wins: 9,
-    roundWins: 0,
-    hold: 7_220,
-    roundHold: 3_920,
-    recovery: 8.214,
-    roundRecovery: 0.94,
-    committed: 151_400,
-    trend: 1,
-  },
-  {
-    name: "Tuber",
-    address: "0xC4...19F2",
-    earned: 129_640,
-    roundEarned: 13_100,
-    wins: 8,
-    roundWins: 1,
-    hold: 9_180,
-    roundHold: 5_240,
-    recovery: 5.128,
-    roundRecovery: 0.48,
-    committed: 94_500,
-    trend: -1,
-  },
-  {
-    name: "You",
-    address: "0x8f...a7c9",
-    earned: 84_250,
-    roundEarned: 9_420,
-    wins: 3,
-    roundWins: 0,
-    hold: 6_540,
-    roundHold: 4_110,
-    recovery: 4.825,
-    roundRecovery: 0.78,
-    committed: 82_000,
-    trend: 2,
-    isYou: true,
-  },
-  {
-    name: "Mash",
-    address: "0x72...0EA1",
-    earned: 78_920,
-    roundEarned: 8_760,
-    wins: 5,
-    roundWins: 0,
-    hold: 5_980,
-    roundHold: 2_960,
-    recovery: 3.942,
-    roundRecovery: 0.36,
-    committed: 71_250,
-    trend: 1,
-  },
-  {
-    name: "Crispy",
-    address: "0xD9...8C36",
-    earned: 71_340,
-    roundEarned: 7_140,
-    wins: 4,
-    roundWins: 0,
-    hold: 7_860,
-    roundHold: 3_440,
-    recovery: 4.106,
-    roundRecovery: 0.41,
-    committed: 76_800,
-    trend: -2,
-  },
-  {
-    name: "GoldEye",
-    address: "0x55...CA82",
-    earned: 64_180,
-    roundEarned: 10_320,
-    wins: 2,
-    roundWins: 0,
-    hold: 4_820,
-    roundHold: 2_410,
-    recovery: 2.774,
-    roundRecovery: 0.52,
-    committed: 59_600,
-    trend: 3,
-  },
-];
 
 const leaderboardMetrics: { id: LeaderboardMetric; label: string }[] = [
   { id: "earned", label: "Earned" },
@@ -215,28 +135,6 @@ function leaderboardSecondary(entry: LeaderboardEntry, metric: LeaderboardMetric
   return `${numberFormat.format(entry.committed)} POTATO committed${period === "round" ? " this round" : ""}`;
 }
 
-const claimableRewards = [
-  {
-    id: "winner-127",
-    kind: "winner",
-    label: "Hot Potato Winner",
-    round: 127,
-    amount: 0.0125,
-    detail: "Final holder reward",
-  },
-  {
-    id: "recovery-126",
-    kind: "recovery",
-    label: "Recovery Reward",
-    round: 126,
-    amount: 0.008,
-    detail: "Your recovery share",
-  },
-] as const;
-
-type ClaimableReward = (typeof claimableRewards)[number];
-type ClaimableRewardId = ClaimableReward["id"];
-
 function EthereumMark({ small = false }: { small?: boolean }) {
   return (
     <span className={small ? "eth-mark is-small" : "eth-mark"} aria-hidden="true">
@@ -266,21 +164,160 @@ function Brand() {
   );
 }
 
-function AppHeader({ announce }: { announce: (message: string) => void }) {
+function shortAddress(address: string): string {
+  return `${address.slice(0, 4)}...${address.slice(-4)}`;
+}
+
+function AppHeader() {
+  const wallet = useWalletState();
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const walletControlRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const activeAddress = wallet.activeAddress;
+  const connected = wallet.status === "ready" && activeAddress !== null;
+
+  useEffect(() => {
+    if (!panelOpen) return;
+    panelRef.current?.focus();
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node | null;
+      if (walletControlRef.current && target && !walletControlRef.current.contains(target)) {
+        setPanelOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setPanelOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [panelOpen]);
+
+  async function copyAddress() {
+    const succeeded = await wallet.copyActiveAddress();
+    setCopied(succeeded);
+    if (succeeded) window.setTimeout(() => setCopied(false), 2000);
+  }
+
+  function closePanel() {
+    setPanelOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  const unavailableTitle = wallet.configured
+    ? undefined
+    : "Set the public wallet environment variables to enable sign in.";
+
   return (
     <header className="app-header">
       <Brand />
       <div className="header-actions">
-        <button className="balance-pill" type="button" onClick={() => announce("Balance controls will connect in the next phase.")}>
+        <span className="balance-pill" title="Read-only Ethereum balance for the active wallet">
           <EthereumMark small />
-          <span>0.125 ETH</span>
-          <span className="tiny-plus"><Plus /></span>
-        </button>
-        <button className="wallet-pill" type="button" onClick={() => announce("Wallet connection is intentionally visual-only.")}>
-          <WalletCards aria-hidden="true" />
-          <span>0x8f...a7c9</span>
-          <ChevronDown aria-hidden="true" />
-        </button>
+          <NetworkEthBalance />
+          <span className="tiny-plus" aria-hidden="true"><Plus /></span>
+        </span>
+        {connected ? (
+          <div className="wallet-control" ref={walletControlRef}>
+            <button
+              ref={triggerRef}
+              className="wallet-pill"
+              type="button"
+              aria-haspopup="dialog"
+              aria-expanded={panelOpen}
+              aria-controls="account-panel"
+              onClick={() => setPanelOpen((open) => !open)}
+            >
+              <WalletCards aria-hidden="true" />
+              <span>{shortAddress(activeAddress)}</span>
+              <ChevronDown aria-hidden="true" />
+            </button>
+            {panelOpen && (
+              <div
+                className="account-menu"
+                id="account-panel"
+                role="dialog"
+                aria-label="Account"
+                ref={panelRef}
+                tabIndex={-1}
+              >
+                <div className="account-menu-heading">
+                  <strong>{wallet.activeWalletLabel}</strong>
+                  <span>{shortAddress(activeAddress)}</span>
+                </div>
+                <button type="button" onClick={() => void copyAddress()}>
+                  <Copy aria-hidden="true" />
+                  <span>{copied ? "Copied" : "Copy address"}</span>
+                </button>
+                {wallet.explorerUrl && (
+                  <a href={wallet.explorerUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink aria-hidden="true" />
+                    <span>View on explorer</span>
+                  </a>
+                )}
+                <button
+                  type="button"
+                  disabled={wallet.busyAction !== null}
+                  onClick={() => {
+                    closePanel();
+                    wallet.connectExternalWallet();
+                  }}
+                >
+                  <WalletCards aria-hidden="true" />
+                  <span>Connect external wallet</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={wallet.busyAction !== null}
+                  onClick={() => {
+                    closePanel();
+                    wallet.logout();
+                  }}
+                >
+                  <LogOut aria-hidden="true" />
+                  <span>{wallet.busyAction === "logout" ? "Signing out…" : "Sign out"}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : wallet.status === "wallet-missing" ? (
+          <button
+            className="wallet-pill"
+            type="button"
+            disabled={wallet.busyAction !== null}
+            onClick={wallet.connectExternalWallet}
+          >
+            <WalletCards aria-hidden="true" />
+            <span>{wallet.busyAction === "connect-external" ? "Connecting…" : "Add wallet"}</span>
+          </button>
+        ) : (
+          <button
+            className="wallet-pill"
+            disabled={!wallet.configured || wallet.status === "loading" || wallet.busyAction !== null}
+            aria-busy={wallet.status === "loading" || wallet.busyAction === "login"}
+            title={unavailableTitle}
+            onClick={wallet.login}
+          >
+            <WalletCards aria-hidden="true" />
+            <span>
+              {wallet.status === "loading"
+                ? "Preparing…"
+                : wallet.busyAction === "login"
+                  ? "Signing in…"
+                  : "Sign in"}
+            </span>
+          </button>
+        )}
       </div>
     </header>
   );
@@ -323,12 +360,32 @@ function Hero({ screen }: { screen: Screen }) {
 }
 
 function LeaderboardScreen() {
+  const game = useBurntatoState();
+  const wallet = useWalletState();
   const [metric, setMetric] = useState<LeaderboardMetric>("earned");
   const [period, setPeriod] = useState<LeaderboardPeriod>("all-time");
+  const leaderboardEntries = useMemo<LeaderboardEntry[]>(() => game.leaderboard.map((row) => {
+    const isYou = wallet.activeAddress?.toLowerCase() === row.address.toLowerCase();
+    return {
+      name: isYou ? "You" : shortAddress(row.address),
+      address: shortAddress(row.address),
+      earned: Number(row.earned) / 1e18,
+      roundEarned: Number(row.roundEarned) / 1e18,
+      wins: row.wins,
+      roundWins: row.roundWins,
+      hold: Number(row.hold),
+      roundHold: Number(row.roundHold),
+      recovery: Number(row.recovery) / 1e18,
+      roundRecovery: Number(row.roundRecovery) / 1e18,
+      committed: Number(period === "round" ? row.roundCommitted : row.committed) / 1e18,
+      trend: 0,
+      isYou,
+    };
+  }), [game.leaderboard, period, wallet.activeAddress]);
   const ranked = [...leaderboardEntries].sort(
     (a, b) => leaderboardValue(b, metric, period) - leaderboardValue(a, metric, period),
   );
-  const podium = [ranked[1], ranked[0], ranked[2]];
+  const podium = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
 
   return (
     <main className="screen-content leaderboard-screen">
@@ -341,7 +398,7 @@ function LeaderboardScreen() {
               <p>Hall of Flame</p>
               <h1 id="leaderboard-title">Leaderboard</h1>
             </div>
-            <span className="leaderboard-live"><i aria-hidden="true" /> Round #127</span>
+            <span className="leaderboard-live"><i aria-hidden="true" /> Round #{game.currentRoundId.toString()}</span>
           </div>
 
           <div className="leaderboard-period" role="group" aria-label="Leaderboard period">
@@ -377,7 +434,7 @@ function LeaderboardScreen() {
             ))}
           </div>
 
-          <div className="leaderboard-podium" aria-label="Top three players">
+          {ranked.length > 0 ? <div className="leaderboard-podium" aria-label="Top three players">
             {podium.map((entry) => {
               const rank = ranked.indexOf(entry) + 1;
               return (
@@ -390,9 +447,9 @@ function LeaderboardScreen() {
                 </article>
               );
             })}
-          </div>
+          </div> : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No finalized play yet</strong><span>The first finalized hold or settlement will appear here.</span></div>}
 
-          <div className="leaderboard-list-wrap">
+          {ranked.length > 3 && <div className="leaderboard-list-wrap">
             <div className="leaderboard-list-heading">
               <span>Rank</span>
               <span>Player</span>
@@ -416,9 +473,15 @@ function LeaderboardScreen() {
                 </li>
               ))}
             </ol>
-          </div>
+          </div>}
 
-          <p className="leaderboard-note">Mock standings · Event-indexed in the connected phase</p>
+          <p className="leaderboard-note">
+            Burntato events on Robinhood Chain Testnet · {game.historySource === "indexer" ? "durable Ponder index" : "bounded direct-RPC fallback"}
+            {game.historySource === "indexer" && game.indexedBlock !== null && game.chainHead !== null && game.chainHead > game.indexedBlock
+              ? ` · ${String(game.chainHead - game.indexedBlock)} blocks behind`
+              : ""}
+            {game.historyLoading ? " · Syncing…" : ""}
+          </p>
         </section>
       </div>
     </main>
@@ -431,19 +494,17 @@ const rewardsTabs: { id: RewardsTab; label: string }[] = [
   { id: "history", label: "History" },
 ];
 
-function RewardsScreen({
-  claimedRewards,
-  onClaim,
-}: {
-  claimedRewards: ClaimableRewardId[];
-  onClaim: (reward: ClaimableReward) => void;
-}) {
+function RewardsScreen() {
+  const game = useBurntatoState();
+  const wallet = useWalletState();
   const [tab, setTab] = useState<RewardsTab>("ready");
-  const claimableEth = claimableRewards.reduce(
-    (total, reward) => total + (claimedRewards.includes(reward.id) ? 0 : reward.amount),
-    0,
-  );
-  const readyCount = claimableRewards.length - claimedRewards.length;
+  const readyRewards = game.rewards.filter((reward) => !reward.claimed && reward.amount > 0n);
+  const claimableEth = readyRewards.reduce((total, reward) => total + reward.amount, 0n);
+  const ownLeaderboardRow = game.leaderboard.find((row) => row.address.toLowerCase() === wallet.activeAddress?.toLowerCase());
+  const claimedEvents = game.history.filter((event) => {
+    if (!wallet.activeAddress || (event.name !== "WinnerClaimed" && event.name !== "RecoveryClaimed")) return false;
+    return String(event.args.account ?? event.args.winner).toLowerCase() === wallet.activeAddress.toLowerCase();
+  }).reverse();
 
   return (
     <main className="screen-content rewards-screen">
@@ -456,8 +517,8 @@ function RewardsScreen({
               <p>Reward vault</p>
               <h1 id="rewards-title">Your Rewards</h1>
             </div>
-            <span className={readyCount ? "ready-badge" : "ready-badge is-clear"}>
-              {readyCount ? `${readyCount} ready` : "All claimed"}
+            <span className={readyRewards.length ? "ready-badge" : "ready-badge is-clear"}>
+              {readyRewards.length ? `${readyRewards.length} ready` : "All claimed"}
             </span>
           </div>
 
@@ -466,14 +527,14 @@ function RewardsScreen({
               <span className="summary-symbol"><EthereumMark /></span>
               <span>
                 <small>Claimable now</small>
-                <strong>{claimableEth.toFixed(4)} <em>ETH</em></strong>
+                <strong>{formatEth(claimableEth)} <em>ETH</em></strong>
               </span>
             </div>
             <div className="reward-summary-card is-earned">
               <PotatoCoin />
               <span>
                 <small>Lifetime earned</small>
-                <strong>12,450 <em>POTATO</em></strong>
+                <strong>{formatPotato(ownLeaderboardRow?.earned ?? 0n)} <em>POTATO</em></strong>
               </span>
             </div>
           </div>
@@ -495,71 +556,67 @@ function RewardsScreen({
           <div className="rewards-tab-panel">
             {tab === "ready" && (
               <div className="reward-list">
-                {claimableRewards.map((reward) => {
-                  const claimed = claimedRewards.includes(reward.id);
+                {readyRewards.map((reward) => {
+                  const action = `${reward.kind}-${reward.roundId}` as TransactionAction;
+                  const transaction = game.transactions[action];
+                  const pending = transaction?.stage === "wallet" || transaction?.stage === "confirming";
                   return (
-                    <article className={claimed ? "reward-row is-claimed" : "reward-row"} key={reward.id}>
+                    <article className="reward-row" key={reward.id}>
                       <span className={`reward-type-icon is-${reward.kind}`}>
                         {reward.kind === "winner" ? <Trophy aria-hidden="true" /> : <Gift aria-hidden="true" />}
                       </span>
                       <span className="reward-row-copy">
-                        <small>Round #{reward.round}</small>
-                        <strong>{reward.label}</strong>
-                        <em>{reward.detail}</em>
+                        <small>Round #{reward.roundId.toString()}</small>
+                        <strong>{reward.kind === "winner" ? "Hot Potato Winner" : "Recovery Reward"}</strong>
+                        <em>{reward.kind === "winner" ? "Final holder reward" : "Your recovery share"}</em>
                       </span>
                       <span className="reward-row-action">
-                        <strong>{reward.amount.toFixed(4)} ETH</strong>
-                        <button type="button" disabled={claimed} onClick={() => onClaim(reward)}>
-                          {claimed ? <><Check aria-hidden="true" /> Claimed</> : "Claim"}
+                        <strong>{formatEth(reward.amount)} ETH</strong>
+                        <button type="button" disabled={pending || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToRobinhood()}>
+                          {pending
+                            ? "Confirming…"
+                            : game.correctNetwork
+                              ? "Claim"
+                              : transactionLabel(game, "network", "Switch network")}
                         </button>
                       </span>
                     </article>
                   );
                 })}
-                <p className="reward-footnote">Rewards are claimed one round at a time.</p>
+                {readyRewards.length === 0 && <div className="onchain-empty"><Gift aria-hidden="true" /><strong>No rewards ready</strong><span>Settled winner and recovery rewards will appear here.</span></div>}
+                <p className="reward-footnote">Rewards are validated onchain and claimed one round at a time.</p>
               </div>
             )}
 
             {tab === "positions" && (
               <div className="reward-list">
-                <article className="position-row">
+                {game.ownCommitment > 0n ? <article className="position-row">
                   <span className="position-status is-live"><span /> Earning</span>
                   <div>
-                    <small>Recovery Market · Round #128</small>
-                    <strong>8,000 POTATO committed</strong>
+                    <small>Recovery Market · Round #{game.targetRoundId.toString()}</small>
+                    <strong>{formatPotato(game.ownCommitment)} POTATO committed</strong>
                   </div>
-                  <span><small>Your share</small><strong>6.23%</strong></span>
+                  <span><small>Your share</small><strong>{game.totalCommitment === 0n ? "0.00" : (Number(game.ownCommitment * 10_000n / game.totalCommitment) / 100).toFixed(2)}%</strong></span>
                 </article>
-                <article className="position-row">
-                  <span className="position-status is-next"><Timer aria-hidden="true" /> Next</span>
-                  <div>
-                    <small>Recovery Market · Round #129</small>
-                    <strong>2,500 POTATO committed</strong>
-                  </div>
-                  <span><small>Est. share</small><strong>1.84%</strong></span>
-                </article>
-                <div className="position-note">
+                : <div className="onchain-empty"><PieChart aria-hidden="true" /><strong>No active recovery position</strong><span>Your next-round commitment will appear here.</span></div>}
+                {game.ownCommitment > 0n && <div className="position-note">
                   <PieChart aria-hidden="true" />
-                  <span><strong>10,500 POTATO active</strong><small>Across two recovery positions</small></span>
-                </div>
+                  <span><strong>{formatPotato(game.ownCommitment)} POTATO active</strong><small>Across one recovery position</small></span>
+                </div>}
               </div>
             )}
 
             {tab === "history" && (
               <div className="reward-list">
-                <article className="history-row">
+                {claimedEvents.map((event) => <article className="history-row" key={`${event.transactionHash}-${event.logIndex}`}>
                   <span className="history-check"><Check aria-hidden="true" /></span>
-                  <span><small>Round #125 · Winner reward</small><strong>0.0100 ETH</strong></span>
+                  <span><small>Round #{String(event.args.roundId)} · {event.name === "WinnerClaimed" ? "Winner" : "Recovery"} reward</small><strong>{formatEth(event.args.amount as bigint)} ETH</strong></span>
                   <em>Claimed</em>
-                </article>
-                <article className="history-row">
-                  <span className="history-check"><Check aria-hidden="true" /></span>
-                  <span><small>Round #124 · Recovery reward</small><strong>0.0065 ETH</strong></span>
-                  <em>Claimed</em>
-                </article>
+                </article>)}
+                {claimedEvents.length === 0 && <div className="onchain-empty"><History aria-hidden="true" /><strong>No claim history</strong><span>Confirmed claims from this wallet will appear here.</span></div>}
                 <div className="history-total">
                   <History aria-hidden="true" />
-                  <span><small>Lifetime ETH claimed</small><strong>0.1485 ETH</strong></span>
+                  <span><small>Lifetime ETH claimed</small><strong>{formatEth(game.lifetimeClaimed)} ETH</strong></span>
                 </div>
               </div>
             )}
@@ -570,28 +627,97 @@ function RewardsScreen({
   );
 }
 
-function GrabScreen({ announce }: { announce: (message: string) => void }) {
+function transactionLabel(game: ReturnType<typeof useBurntatoState>, action: TransactionAction, idle: string): string {
+  const stage = game.transactions[action]?.stage;
+  if (stage === "wallet") return "Confirm in wallet…";
+  if (stage === "confirming") return "Confirming…";
+  return idle;
+}
+
+function LiveCountdown({ deadline, anchor }: { deadline: bigint; anchor: bigint }) {
+  const [now, setNow] = useState(anchor);
+  useEffect(() => {
+    const interval = window.setInterval(() => setNow((current) => current + 1n), 1_000);
+    return () => window.clearInterval(interval);
+  }, []);
+  return <>{formatCountdown(countdownSeconds(deadline, now))}</>;
+}
+
+function GrabScreen() {
+  const game = useBurntatoState();
+  const wallet = useWalletState();
+  const price = game.currentRound?.nextPrice ?? game.protocolConfig?.startingPrice ?? 0n;
+  const isHolder = Boolean(wallet.activeAddress && game.currentRound?.currentHolder.toLowerCase() === wallet.activeAddress.toLowerCase());
+  const vestingMature = Boolean(game.currentRound && game.chainNow >= game.currentRound.holderSince + game.currentRound.config.emissionVestingDuration);
+  const canFinalizeEmission = Boolean(game.currentRound && vestingMature && !game.currentRound.holderEmissionFinalized);
+  let actionLabel = `Grab for ${formatEth(price)} ETH`;
+  let action: () => void = () => void game.grab();
+  if (wallet.status === "unconfigured") {
+    actionLabel = "Wallet sign-in unavailable";
+    action = () => undefined;
+  } else if (wallet.status !== "ready") {
+    actionLabel = wallet.busyAction === "login" ? "Signing in…" : "Sign in to play";
+    action = wallet.login;
+  } else if (!game.correctNetwork) {
+    actionLabel = "Switch to Robinhood";
+    action = game.switchToRobinhood;
+  } else if (game.phase === "expired") {
+    actionLabel = transactionLabel(game, "settle", "Settle Round");
+    action = () => void game.settle();
+  } else {
+    actionLabel = transactionLabel(game, "grab", actionLabel);
+  }
+  const grabDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
+    wallet.status === "ready" && game.correctNetwork && (
+      game.loading || (game.phase !== "expired" && game.purchasesPaused)
+    )
+  );
+
   return (
     <main className="screen-content grab-screen">
       <Hero screen="grab" />
       <section className="grab-actions" aria-label="Current Hot Potato round">
-        <button className="primary-action grab-button" type="button" onClick={() => announce("Grab Tato is a visual preview—no transaction was sent.")}>
+        <button className="primary-action grab-button" type="button" disabled={grabDisabled} onClick={action}>
           <Flame aria-hidden="true" />
-          <span>Grab Tato</span>
+          <span>{actionLabel}</span>
           <Flame aria-hidden="true" />
         </button>
+        {wallet.status === "ready" && canFinalizeEmission && (
+          <button
+            className="secondary-game-action"
+            type="button"
+            disabled={game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked}
+            onClick={() => game.correctNetwork ? void game.collect() : game.switchToRobinhood()}
+          >
+            {game.correctNetwork
+              ? transactionLabel(
+                  game,
+                  "collect",
+                  isHolder
+                    ? `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
+                    : "Finalize holder emission"
+                )
+              : transactionLabel(game, "network", "Switch to Robinhood")}
+          </button>
+        )}
         <div className="round-card timer-card">
           <span className="metric-icon timer-icon"><Timer aria-hidden="true" /></span>
           <div className="metric-copy">
-            <span className="metric-label">Time Left in Round</span>
-            <strong className="digital-value">01:42:37</strong>
+            <span className="metric-label">
+              {game.phase === "unstarted"
+                ? `Round #${game.currentRoundId} · Status`
+                : isHolder
+                  ? `${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO earned`
+                  : `Round #${game.currentRoundId} · Time left`}
+            </span>
+            <strong className="digital-value">{game.phase === "unstarted" ? "READY TO START" : game.phase === "settled" ? "SETTLED" : game.currentRound ? <LiveCountdown key={game.chainNow.toString()} deadline={game.currentRound.deadline} anchor={game.chainNow} /> : "--:--:--"}</strong>
           </div>
         </div>
         <div className="round-card pot-card">
           <span className="metric-icon eth-icon"><EthereumMark /></span>
           <div className="metric-copy">
-            <span className="metric-label">Current Pot</span>
-            <strong>12.345 ETH</strong>
+            <span className="metric-label" title={game.currentRound?.currentHolder}>Current Pot · {game.phase === "unstarted" ? "No holder" : game.currentRound ? shortAddress(game.currentRound.currentHolder) : "—"}</span>
+            <strong>{formatEth(game.currentRound?.winnerPool ?? 0n)} ETH</strong>
           </div>
           <span className="coin-stack" aria-hidden="true">
             <span /><span /><span />
@@ -602,13 +728,39 @@ function GrabScreen({ announce }: { announce: (message: string) => void }) {
   );
 }
 
-function BurnScreen({ announce }: { announce: (message: string) => void }) {
-  const [amount, setAmount] = useState(2_500);
-  const yourShare = amount === 0 ? 0 : (amount / (128_400 + amount)) * 100;
+function BurnScreen() {
+  const game = useBurntatoState();
+  const wallet = useWalletState();
+  const unit = 10n ** 18n;
+  const [amount, setAmount] = useState(0n);
+  const totalAfter = game.totalCommitment + amount;
+  const yourShare = totalAfter === 0n ? 0 : Number((game.ownCommitment + amount) * 10_000n / totalAfter) / 100;
+  const amountRangeValue = game.potatoBalance === 0n ? 0 : Number(amount * 10_000n / game.potatoBalance);
 
   function setPercentage(percent: number) {
-    setAmount(Math.round(potatoBalance * percent));
+    setAmount(game.potatoBalance * BigInt(Math.round(percent * 100)) / 100n);
   }
+
+  let actionLabel = transactionLabel(game, "commit", "Commit POTATO");
+  let action: () => void = () => void game.commit(amount);
+  if (wallet.status === "unconfigured") {
+    actionLabel = "Wallet sign-in unavailable";
+    action = () => undefined;
+  } else if (wallet.status !== "ready") {
+    actionLabel = wallet.busyAction === "login" ? "Signing in…" : "Sign in to commit";
+    action = wallet.login;
+  } else if (!game.correctNetwork) {
+    actionLabel = "Switch to Robinhood";
+    action = game.switchToRobinhood;
+  } else if (game.currentRoundId === 0n) {
+    actionLabel = "Start round in Play first";
+    action = () => undefined;
+  }
+  const commitDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
+    wallet.status === "ready" && game.correctNetwork && (
+      amount === 0n || game.currentRoundId === 0n || game.commitmentsPaused || game.loading
+    )
+  );
 
   return (
     <main className="screen-content burn-screen">
@@ -623,7 +775,7 @@ function BurnScreen({ announce }: { announce: (message: string) => void }) {
             </div>
             <div className="target-round">
               <span>Target Round</span>
-              <strong>#128</strong>
+              <strong>#{game.targetRoundId.toString()}</strong>
             </div>
           </div>
 
@@ -632,51 +784,52 @@ function BurnScreen({ announce }: { announce: (message: string) => void }) {
               <PotatoCoin />
               <div>
                 <span>Available POTATO</span>
-                <strong>42,690 POTATO</strong>
+                <strong>{formatPotato(game.potatoBalance)} POTATO</strong>
               </div>
             </div>
             <div className="amount-stepper">
-              <button type="button" aria-label="Decrease amount" onClick={() => setAmount((value) => Math.max(0, value - 100))}>
+              <button type="button" aria-label="Decrease amount" onClick={() => setAmount((value) => value > 100n * unit ? value - 100n * unit : 0n)}>
                 <Minus />
               </button>
               <div>
-                <strong>{numberFormat.format(amount)}</strong>
+                <strong>{formatPotato(amount, 0)}</strong>
                 <span>POTATO</span>
               </div>
-              <button type="button" aria-label="Increase amount" onClick={() => setAmount((value) => Math.min(potatoBalance, value + 100))}>
+              <button type="button" aria-label="Increase amount" onClick={() => setAmount((value) => value + 100n * unit > game.potatoBalance ? game.potatoBalance : value + 100n * unit)}>
                 <Plus />
               </button>
             </div>
             <div className="quick-amounts">
               <button type="button" onClick={() => setPercentage(0.25)}>25%</button>
               <button type="button" onClick={() => setPercentage(0.5)}>50%</button>
-              <button className={amount === potatoBalance ? "is-selected" : ""} type="button" onClick={() => setPercentage(1)}>Max</button>
+              <button className={amount === game.potatoBalance ? "is-selected" : ""} type="button" onClick={() => setPercentage(1)}>Max</button>
             </div>
             <input
               className="amount-range"
               type="range"
               min="0"
-              max={potatoBalance}
-              step="10"
-              value={amount}
+              max="10000"
+              step="1"
+              value={amountRangeValue}
               aria-label="POTATO commitment amount"
-              onChange={(event) => setAmount(Number(event.target.value))}
+              onChange={(event) => setAmount(game.potatoBalance * BigInt(event.target.value) / 10_000n)}
             />
           </div>
-          <button className="primary-action burn-button" type="button" onClick={() => announce(`Visual preview: ${numberFormat.format(amount)} POTATO was not submitted.`)}>
+          <p className="burn-warning">Commitments are irrevocable. Settlement burns the configured portion of committed POTATO.</p>
+          <button className="primary-action burn-button" type="button" disabled={commitDisabled} onClick={action}>
             <Flame aria-hidden="true" />
-            <span>Burn POTATO</span>
+            <span>{actionLabel}</span>
             <Flame aria-hidden="true" />
           </button>
         </section>
         <section className="burn-stats" aria-label="Recovery Market summary">
           <div className="burn-stat">
             <span className="stat-icon fire"><Flame /></span>
-            <span><small>Total Committed</small><strong>128,400</strong><em>POTATO</em></span>
+            <span><small>Total Committed</small><strong>{formatPotato(game.totalCommitment)}</strong><em>POTATO</em></span>
           </div>
           <div className="burn-stat">
             <span className="stat-icon ethereum"><EthereumMark /></span>
-            <span><small>Recovery Pool</small><strong>6.75</strong><em>ETH</em></span>
+            <span><small>Your Commitment</small><strong>{formatPotato(game.ownCommitment)}</strong><em>POTATO</em></span>
           </div>
           <div className="burn-stat">
             <span className="stat-icon share"><PieChart /></span>
@@ -691,8 +844,9 @@ function BurnScreen({ announce }: { announce: (message: string) => void }) {
 const destinationNavigation = [
   { id: "grab", label: "Play", Icon: Home, screen: "grab" },
   { id: "burn", label: "Burn", Icon: Flame, screen: "burn" },
-  { id: "swap", label: "Swap", Icon: ArrowLeftRight, screen: null },
+  { id: "portal", label: "Portal", Icon: ArrowLeftRight, screen: "portal" },
   { id: "rewards", label: "Rewards", Icon: Gift, screen: "rewards" },
+  { id: "operators", label: "Operators", Icon: BadgeCheck, screen: "operators" },
   { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
 ] as const;
 
@@ -703,7 +857,8 @@ const mobileNavigation = [
   destinationNavigation[3],
 ] as const;
 
-function BottomNavigation({ screen, select, announce }: { screen: Screen; select: (screen: Screen) => void; announce: (message: string) => void }) {
+function BottomNavigation({ screen, select }: { screen: Screen; select: (screen: Screen) => void }) {
+  const game = useBurntatoState();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDialogElement>(null);
 
@@ -730,8 +885,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
   }, [menuOpen]);
 
   function chooseDestination(destination: (typeof destinationNavigation)[number]) {
-    if (destination.screen) select(destination.screen);
-    else announce("Swap is a visual navigation placeholder until the market interface is added.");
+    select(destination.screen);
     setMenuOpen(false);
   }
 
@@ -760,7 +914,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
             );
           })}
           <button
-            className={menuOpen || screen === "leaderboard" ? "nav-item is-active" : "nav-item"}
+            className={menuOpen || screen === "leaderboard" || screen === "operators" ? "nav-item is-active" : "nav-item"}
             type="button"
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation-menu"
@@ -791,7 +945,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
 
         <div className="sidebar-round" aria-hidden="true">
           <span className="sidebar-round-flame"><Flame /></span>
-          <span><small>Live round</small><strong>#127</strong></span>
+          <span><small>Live round</small><strong>#{game.currentRoundId.toString()}</strong></span>
         </div>
       </nav>
 
@@ -832,7 +986,7 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
         </nav>
         <div className="mobile-menu-round" aria-hidden="true">
           <span className="sidebar-round-flame"><Flame /></span>
-          <span><small>Live round</small><strong>#127</strong></span>
+          <span><small>Live round</small><strong>#{game.currentRoundId.toString()}</strong></span>
         </div>
       </dialog>
     </>
@@ -840,32 +994,28 @@ function BottomNavigation({ screen, select, announce }: { screen: Screen; select
 }
 
 export function BurntatoApp() {
+  const wallet = useWalletState();
+  const game = useBurntatoState();
   const [screen, setScreen] = useState<Screen>("grab");
-  const [notice, setNotice] = useState("");
-  const [claimedRewards, setClaimedRewards] = useState<ClaimableRewardId[]>([]);
-
-  function announce(message: string) {
-    setNotice(message);
-  }
-
-  function claimReward(reward: ClaimableReward) {
-    setClaimedRewards((current) => current.includes(reward.id) ? current : [...current, reward.id]);
-    announce(`Visual preview: ${reward.amount.toFixed(4)} ETH from round #${reward.round} marked as claimed.`);
-  }
+  const transactionNotice = game.latestTransaction?.message;
+  const displayedNotice = wallet.error ?? game.readError ?? game.historyError ?? transactionNotice;
 
   return (
     <div className={`phone-shell is-${screen}`}>
-      <AppHeader announce={announce} />
-      {screen === "grab" && <GrabScreen announce={announce} />}
+      <AppHeader />
+      {screen === "grab" && <GrabScreen />}
       {screen === "leaderboard" && <LeaderboardScreen />}
-      {screen === "burn" && <BurnScreen announce={announce} />}
-      {screen === "rewards" && (
-        <RewardsScreen claimedRewards={claimedRewards} onClaim={claimReward} />
-      )}
-      <BottomNavigation screen={screen} select={setScreen} announce={announce} />
-      <div className={notice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
-        <span>{notice}</span>
-        {notice && <button type="button" onClick={() => setNotice("")} aria-label="Dismiss message">×</button>}
+      {screen === "burn" && <BurnScreen />}
+      {screen === "portal" && <LivePortalScreen />}
+      {screen === "rewards" && <RewardsScreen />}
+      {screen === "operators" && <OperatorScreen />}
+      <BottomNavigation screen={screen} select={setScreen} />
+      <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
+        <span>{displayedNotice}</span>
+        {displayedNotice === transactionNotice && game.latestTransaction?.hash && (
+          <a href={`https://explorer.testnet.chain.robinhood.com/tx/${game.latestTransaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>
+        )}
+        {displayedNotice === transactionNotice && displayedNotice && <button type="button" onClick={game.dismissTransactionNotice} aria-label="Dismiss message">×</button>}
       </div>
     </div>
   );

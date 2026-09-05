@@ -5,3 +5,7 @@ out/
 .DS_Store
 /AGENTS.md
 /CLAUDE.md
+
+# env files (can be customized by build mode)
+.env*
+!.env.example
