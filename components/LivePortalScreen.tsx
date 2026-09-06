@@ -14,6 +14,7 @@ import {
 import { useAccount, useBalance, usePublicClient, useReadContract, useSignTypedData, useWriteContract } from "wagmi";
 
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
+import { ScreenHero } from "@/components/ScreenHero";
 import { erc20Abi } from "@/lib/operators/contracts";
 import { hookAbi, permit2Abi, universalRouterAbi, v4QuoterAbi } from "@/lib/portal/contracts";
 import {
@@ -291,16 +292,12 @@ export function LivePortalScreen() {
 
   return (
     <main className="screen-content portal-screen live-portal-screen">
-      <section className="portal-live-hero">
-        <p>Robinhood Chain Testnet</p>
-        <h1>Burntato Portal</h1>
-        <span>Swap ETH and POTATO. Testnet assets only.</span>
-      </section>
+      <ScreenHero screen="portal" />
       <div className="portal-controls">
         <section className="portal-hub" aria-labelledby="live-portal-title">
           <div className="portal-heading">
             <span className="portal-heading-icon"><ArrowLeftRight aria-hidden="true" /></span>
-            <div><p>Trade POTATO</p><h2 id="live-portal-title">ETH ↔ POTATO</h2></div>
+            <div><p>Robinhood Chain Testnet</p><h2 id="live-portal-title">ETH ↔ POTATO</h2></div>
           </div>
           <div className="portal-context-row">
             <label><span>Wallet</span><strong>{account ? shortAddress(account) : "Not connected"}</strong></label>

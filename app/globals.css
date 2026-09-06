@@ -1983,7 +1983,7 @@ button {
 }
 
 .portal-heading p,
-.portal-heading h1 {
+.portal-heading h2 {
   margin: 0;
 }
 
@@ -1996,7 +1996,7 @@ button {
   text-transform: uppercase;
 }
 
-.portal-heading h1 {
+.portal-heading h2 {
   margin-top: 0.55cqw;
   font-family: Impact, "Arial Black", sans-serif;
   font-size: 4.7cqw;
@@ -4070,39 +4070,6 @@ button {
 
 .operator-contract-link svg { width: 2.8cqw; height: 2.8cqw; }
 
-.portal-live-hero {
-  min-height: 40cqw;
-  padding: 8cqw 6cqw 4cqw;
-  border-bottom: 0.2cqw solid rgba(255, 151, 28, 0.35);
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.95), rgba(5, 4, 3, 0.45)),
-    url("/scenes/portal-mobile.png") center 35% / cover;
-}
-
-.portal-live-hero p {
-  margin: 0 0 1cqw;
-  color: #ff9b20;
-  font-size: 2.5cqw;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.portal-live-hero h1 {
-  margin: 0;
-  font-family: Impact, "Arial Black", sans-serif;
-  font-size: 8cqw;
-  text-transform: uppercase;
-}
-
-.portal-live-hero span {
-  display: block;
-  max-width: 82cqw;
-  margin-top: 1cqw;
-  color: #d9c1a8;
-  font-size: 2.7cqw;
-}
-
 .live-portal-screen .portal-context-row strong {
   display: flex;
   min-height: 6.7cqw;
@@ -4187,10 +4154,6 @@ button {
   .operator-empty span { font-size: 12px; }
   .operator-contract-link { margin-top: 12px; gap: 5px; font-size: 10px; }
   .operator-contract-link svg { width: 13px; height: 13px; }
-  .portal-live-hero { min-height: 300px; padding: 80px 7vw 42px; border-width: 1px; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.95), rgba(5, 4, 3, 0.35)), url("/scenes/portal-desktop.png"); }
-  .portal-live-hero p { margin-bottom: 8px; font-size: 13px; }
-  .portal-live-hero h1 { font-size: 58px; }
-  .portal-live-hero span { max-width: 680px; margin-top: 8px; font-size: 15px; }
   .live-portal-screen .portal-context-row strong { min-height: 34px; font-size: 12px; }
   .portal-live-error, .portal-live-status, .portal-coming-soon { margin: 10px 0; padding: 12px; gap: 10px; border-radius: 9px; font-size: 12px; }
   .portal-live-status svg, .portal-coming-soon svg { width: 18px; height: 18px; }
