@@ -217,7 +217,7 @@ function AppHeader() {
 
   const unavailableTitle = wallet.configured
     ? undefined
-    : "Set the public wallet environment variables to enable sign in.";
+    : "Sign in is temporarily unavailable.";
 
   return (
     <header className="app-header">
@@ -448,7 +448,9 @@ function LeaderboardScreen() {
                 </article>
               );
             })}
-          </div> : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No finalized play yet</strong><span>The first finalized hold or settlement will appear here.</span></div>}
+          </div> : game.historyLoading
+            ? <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>Loading leaderboard…</strong><span>Results will appear shortly.</span></div>
+            : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No completed play yet</strong><span>The first completed hold or round will appear here.</span></div>}
 
           {ranked.length > 3 && <div className="leaderboard-list-wrap">
             <div className="leaderboard-list-heading">
@@ -476,13 +478,6 @@ function LeaderboardScreen() {
             </ol>
           </div>}
 
-          <p className="leaderboard-note">
-            Burntato events on Robinhood Chain Testnet · {game.historySource === "indexer" ? "durable Ponder index" : "bounded direct-RPC fallback"}
-            {game.historySource === "indexer" && game.indexedBlock !== null && game.chainHead !== null && game.chainHead > game.indexedBlock
-              ? ` · ${String(game.chainHead - game.indexedBlock)} blocks behind`
-              : ""}
-            {game.historyLoading ? " · Syncing…" : ""}
-          </p>
         </section>
       </div>
     </main>
@@ -585,7 +580,6 @@ function RewardsScreen() {
                   );
                 })}
                 {readyRewards.length === 0 && <div className="onchain-empty"><Gift aria-hidden="true" /><strong>No rewards ready</strong><span>Settled winner and recovery rewards will appear here.</span></div>}
-                <p className="reward-footnote">Rewards are validated onchain and claimed one round at a time.</p>
               </div>
             )}
 
@@ -677,7 +671,7 @@ function GrabScreen() {
           <span>{actionLabel}</span>
           <Flame aria-hidden="true" />
         </button>
-        {wallet.status === "ready" && canFinalizeEmission && (
+        {wallet.status === "ready" && isHolder && canFinalizeEmission && (
           <button
             className="secondary-game-action"
             type="button"
@@ -688,9 +682,7 @@ function GrabScreen() {
               ? transactionLabel(
                   game,
                   "collect",
-                  isHolder
-                    ? `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
-                    : "Finalize holder emission"
+                  `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
                 )
               : transactionLabel(game, "network", "Switch to Robinhood")}
           </button>
@@ -810,7 +802,7 @@ function BurnScreen() {
               onChange={(event) => setAmount(game.potatoBalance * BigInt(event.target.value) / 10_000n)}
             />
           </div>
-          <p className="burn-warning">Commitments are irrevocable. Settlement burns the configured portion of committed POTATO.</p>
+          <p className="burn-warning">This commitment cannot be undone. When the round ends, part of the committed POTATO is burned.</p>
           <button className="primary-action burn-button" type="button" disabled={commitDisabled} onClick={action}>
             <Flame aria-hidden="true" />
             <span>{actionLabel}</span>

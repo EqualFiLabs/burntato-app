@@ -49,7 +49,7 @@ export function OperatorScreen() {
           <div className="operator-heading">
             <span className="operator-heading-icon"><BadgeCheck aria-hidden="true" /></span>
             <div>
-              <p>Revenue rail</p>
+              <p>Earn from every Grab</p>
               <h1 id="operator-title">Operator Rewards</h1>
             </div>
             {wallet.status === "ready" && (
@@ -93,16 +93,16 @@ export function OperatorScreen() {
                   </dl>
 
                   {operator.routerPreview.transferDetected && (
-                    <p className="operator-inline-error">Transfer or weight decrease detected. Registering again invalidates the old state and redistributes its unpaid revenue.</p>
+                    <p className="operator-inline-error">This Operator changed owners or lost activation weight. Register it again to continue. Unclaimed rewards from the previous registration will be shared with other Operators.</p>
                   )}
 
                   {rewardsAction === "register" ? (
                     <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || actionPending || operator.loading} onClick={() => void operator.registerBurntato()}>
-                      {actionLabel(operator, "register-burntato", registeredOwner ? "Invalidate old state and register" : "Register for rewards")}
+                      {actionLabel(operator, "register-burntato", registeredOwner ? "Register current ownership" : "Register for rewards")}
                     </button>
                   ) : rewardsAction === "sync" ? (
                     <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || actionPending || operator.loading} onClick={() => void operator.syncBurntato()}>
-                      {actionLabel(operator, "sync-burntato", "Sync increased weight")}
+                      {actionLabel(operator, "sync-burntato", "Update reward weight")}
                     </button>
                   ) : (
                     <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || actionPending || operator.loading || operator.routerPreview.claimable === 0n} onClick={() => void operator.claimBurntato()}>
@@ -110,17 +110,17 @@ export function OperatorScreen() {
                     </button>
                   )}
 
-                  <p className="operator-transfer-warning">Transfers or activation-weight decreases invalidate registration and redistribute unpaid revenue. Weight increases are safe after syncing.</p>
+                  <p className="operator-transfer-warning">Selling this Operator or reducing its activation weight ends its reward registration. Unclaimed rewards are shared with other Operators. If its activation weight increases, update the reward weight here.</p>
                 </>
               )}
             </>
           )}
 
           {operator.error && <p className="operator-inline-error" role="alert">{operator.error}</p>}
-          {selected && operator.loading && <p className="operator-sync" role="status">Refreshing reward state…</p>}
+          {selected && operator.loading && <p className="operator-sync" role="status">Updating rewards…</p>}
 
           <a className="operator-contract-link" href={`${BURNTATO_DEPLOYMENT.explorer}/address/${BURNTATO_DEPLOYMENT.operatorRewardsRouter}`} target="_blank" rel="noopener noreferrer">
-            Rewards contract <ExternalLink aria-hidden="true" />
+            View rewards contract <ExternalLink aria-hidden="true" />
           </a>
         </section>
       </div>

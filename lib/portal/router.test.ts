@@ -38,7 +38,7 @@ describe("Robinhood V4 exact-input routing", () => {
     expect(() => transactionDeadline(1_000n, 3_601n)).toThrow();
   });
 
-  it("explains the deployed POTATO Permit2 approval rule", () => {
-    expect(describeSwapError(new Error("Permit2AllowanceIsFixedAtInfinity()"))).toContain("infinite token approval");
+  it("explains the POTATO approval rule without exposing routing internals", () => {
+    expect(describeSwapError(new Error("Permit2AllowanceIsFixedAtInfinity()"))).toBe("POTATO needs a one-time approval before it can be swapped.");
   });
 });

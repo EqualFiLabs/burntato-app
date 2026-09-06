@@ -53,11 +53,11 @@ export function describeSwapError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
   if (normalized.includes("rejected") || normalized.includes("denied") || normalized.includes("cancel")) return "The wallet request was cancelled.";
-  if (normalized.includes("permit2allowanceisfixedatinfinity")) return "POTATO requires one infinite token approval to Permit2; each signed swap authorization remains exact and short-lived.";
-  if (normalized.includes("allowance") || normalized.includes("permit")) return "The POTATO Permit2 authorization is missing, expired, or was not accepted.";
+  if (normalized.includes("permit2allowanceisfixedatinfinity")) return "POTATO needs a one-time approval before it can be swapped.";
+  if (normalized.includes("allowance") || normalized.includes("permit")) return "Your POTATO approval is missing or expired. Approve POTATO and try again.";
   if (normalized.includes("slippage") || normalized.includes("minimum") || normalized.includes("too little")) return "The pool moved beyond your minimum received amount. Refresh the quote.";
   if (normalized.includes("insufficient")) return "Your wallet balance is too low for this swap and its gas.";
   if (normalized.includes("deadline") || normalized.includes("expired")) return "This quote expired. Refresh it before swapping.";
-  if (normalized.includes("external") || normalized.includes("buy")) return "External POTATO buys are not currently enabled.";
+  if (normalized.includes("external") || normalized.includes("buy")) return "Buying POTATO is temporarily unavailable.";
   return "The swap could not be completed. Refresh the live quote and try again.";
 }
