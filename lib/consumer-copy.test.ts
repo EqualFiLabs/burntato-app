@@ -39,4 +39,11 @@ describe("consumer-facing copy", () => {
       expect(source).not.toContain(phrase);
     }
   });
+
+  it("describes the pre-swap wallet permission accurately", () => {
+    const portalSource = readFileSync(resolve(process.cwd(), "components/LivePortalScreen.tsx"), "utf8");
+
+    expect(portalSource).toContain("Confirm permission for this POTATO swap in your wallet.");
+    expect(portalSource).not.toContain("Confirm this POTATO swap in your wallet.");
+  });
 });

@@ -210,7 +210,7 @@ export function LivePortalScreen() {
       const swapPlan = buildSwapPlan(poolKey, direction, quote.amountIn, quote.minimumOut);
       let inputs: `0x${string}`[] = [swapPlan];
       if (direction === "sell") {
-        setTransaction({ stage: "signing", message: "Confirm this POTATO swap in your wallet." });
+        setTransaction({ stage: "signing", message: "Confirm permission for this POTATO swap in your wallet." });
         const allowance = await publicClient.readContract({
           address: BURNTATO_DEPLOYMENT.permit2,
           abi: permit2Abi,
