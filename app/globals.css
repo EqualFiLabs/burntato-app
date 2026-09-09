@@ -2834,7 +2834,6 @@ button {
     line-height: 1.1;
     overflow-wrap: anywhere;
     text-align: center;
-    text-overflow: clip;
     white-space: normal;
   }
 
@@ -2842,7 +2841,6 @@ button {
     overflow: visible;
     line-height: 1.2;
     overflow-wrap: anywhere;
-    text-overflow: clip;
     white-space: normal;
   }
 }
@@ -3108,8 +3106,7 @@ button {
   .portal-bridge-arrival small,
   .portal-review small,
   .portal-activity small,
-  .portal-activity em,
-  .portal-footnote {
+  .portal-activity em {
     font-size: var(--font-micro);
   }
 
