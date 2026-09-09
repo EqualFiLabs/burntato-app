@@ -7,6 +7,15 @@
   --orange: #ff961c;
   --orange-bright: #ffb12d;
   --red: #f0190d;
+  --font-micro: clamp(11px, 2.35cqw, 12px);
+  --font-caption: clamp(12px, 2.5cqw, 13px);
+  --font-body-small: clamp(13px, 2.7cqw, 14px);
+  --font-control: clamp(12px, 2.6cqw, 14px);
+  --font-value-small: clamp(14px, 3cqw, 16px);
+  --text-muted-warm: #b8a590;
+  --text-muted-warm-subtle: #a99988;
+  --text-muted-portal: #aaa0b0;
+  --text-muted-portal-subtle: #988f9d;
 }
 
 * {
@@ -130,7 +139,7 @@ button {
   border-radius: 1.8cqw;
   background: linear-gradient(180deg, #1b1814, #100e0c);
   box-shadow: inset 0 0.12cqw rgba(255, 255, 255, 0.035);
-  font-size: 2.34cqw;
+  font-size: var(--font-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -384,7 +393,7 @@ button {
 .metric-label {
   margin-bottom: 0.7cqw;
   color: #e2c7ac;
-  font-size: 2.82cqw;
+  font-size: var(--font-caption);
   font-weight: 800;
 }
 
@@ -491,7 +500,7 @@ button {
 .burn-title-row p {
   margin: 0.8cqw 0 0;
   color: #d9b38e;
-  font-size: 2.5cqw;
+  font-size: var(--font-body-small);
   font-weight: 700;
 }
 
@@ -511,7 +520,7 @@ button {
 
 .target-round span {
   color: #e3c19e;
-  font-size: 2.25cqw;
+  font-size: var(--font-caption);
 }
 
 .target-round strong {
@@ -545,7 +554,7 @@ button {
 
 .available-balance span:not(.potato-coin) {
   color: #e1c9af;
-  font-size: 2.28cqw;
+  font-size: var(--font-caption);
   font-weight: 700;
 }
 
@@ -632,7 +641,7 @@ button {
 .amount-stepper span {
   margin-top: 0.65cqw;
   color: #d8b494;
-  font-size: 2.45cqw;
+  font-size: var(--font-caption);
   font-weight: 800;
 }
 
@@ -650,7 +659,7 @@ button {
   border-right: 0.14cqw solid rgba(190, 128, 68, 0.24);
   color: #bda181;
   background: rgba(23, 17, 12, 0.72);
-  font-size: 2.62cqw;
+  font-size: var(--font-control);
   font-weight: 800;
   cursor: pointer;
 }
@@ -741,8 +750,8 @@ button {
 
 .burn-stat small {
   overflow: hidden;
-  color: #e2c8ab;
-  font-size: 1.9cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-caption);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -758,7 +767,7 @@ button {
 .burn-stat em {
   margin-top: 0.25cqw;
   color: #ff991a;
-  font-size: 1.75cqw;
+  font-size: var(--font-micro);
   font-style: normal;
   font-weight: 900;
 }
@@ -901,7 +910,7 @@ button {
 
 .leaderboard-heading p {
   color: #e2a13c;
-  font-size: 2cqw;
+  font-size: var(--font-micro);
   font-weight: 900;
   letter-spacing: 0.22cqw;
   line-height: 1;
@@ -926,7 +935,7 @@ button {
   border-radius: 999px;
   color: #9bdc72;
   background: rgba(22, 57, 17, 0.58);
-  font-size: 1.85cqw;
+  font-size: var(--font-micro);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -961,7 +970,7 @@ button {
 
 .leaderboard-period button {
   border-right: 0.14cqw solid rgba(191, 135, 73, 0.22);
-  font-size: 2.1cqw;
+  font-size: var(--font-control);
 }
 
 .leaderboard-period button:last-child {
@@ -986,7 +995,7 @@ button {
   overflow: hidden;
   border: 0.16cqw solid rgba(187, 133, 77, 0.24);
   border-radius: 1.4cqw;
-  font-size: 1.85cqw;
+  font-size: var(--font-control);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1054,7 +1063,7 @@ button {
   left: 0.8cqw;
   color: #ffb638;
   font-family: "Courier New", monospace;
-  font-size: 2cqw;
+  font-size: var(--font-caption);
   font-weight: 950;
 }
 
@@ -1067,7 +1076,7 @@ button {
   color: #3b1802;
   background: radial-gradient(circle at 35% 25%, #ffd05b, #ee850b 65%, #9a3500);
   box-shadow: 0 0 1cqw rgba(255, 139, 14, 0.24);
-  font-size: 2.5cqw;
+  font-size: var(--font-caption);
   font-weight: 950;
   place-items: center;
 }
@@ -1076,15 +1085,15 @@ button {
   max-width: 100%;
   margin-top: 0.6cqw;
   overflow: hidden;
-  font-size: 2.15cqw;
+  font-size: var(--font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .podium-card > small {
   margin-top: 0.1cqw;
-  color: #8f8376;
-  font-size: 1.45cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-micro);
 }
 
 .podium-card > em {
@@ -1092,7 +1101,7 @@ button {
   margin-top: 0.55cqw;
   overflow: hidden;
   color: #ffb12d;
-  font-size: 1.65cqw;
+  font-size: var(--font-caption);
   font-style: normal;
   font-weight: 950;
   text-overflow: ellipsis;
@@ -1112,8 +1121,8 @@ button {
   min-height: 4.6cqw;
   padding: 0 1.3cqw;
   align-items: center;
-  color: #776c61;
-  font-size: 1.55cqw;
+  color: var(--text-muted-warm-subtle);
+  font-size: var(--font-micro);
   font-weight: 900;
   letter-spacing: 0.08cqw;
   text-transform: uppercase;
@@ -1160,14 +1169,14 @@ button {
 .list-rank {
   color: #b8a085;
   font-family: "Courier New", monospace;
-  font-size: 2.25cqw;
+  font-size: var(--font-caption);
   font-weight: 950;
 }
 
 .player-avatar.is-small {
   width: 4.8cqw;
   height: 4.8cqw;
-  font-size: 2cqw;
+  font-size: var(--font-micro);
 }
 
 .leaderboard-player,
@@ -1182,7 +1191,7 @@ button {
   overflow: hidden;
   gap: 0.8cqw;
   align-items: center;
-  font-size: 2.25cqw;
+  font-size: var(--font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1192,7 +1201,7 @@ button {
   border-radius: 999px;
   color: #ffaf2d;
   background: rgba(106, 59, 15, 0.62);
-  font-size: 1.35cqw;
+  font-size: var(--font-micro);
   font-style: normal;
   text-transform: uppercase;
 }
@@ -1200,8 +1209,8 @@ button {
 .leaderboard-player small {
   margin-top: 0.35cqw;
   overflow: hidden;
-  color: #938476;
-  font-size: 1.42cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1212,14 +1221,14 @@ button {
 
 .leaderboard-score strong {
   color: #f4e7d5;
-  font-size: 2.05cqw;
+  font-size: var(--font-value-small);
   white-space: nowrap;
 }
 
 .leaderboard-score small {
   margin-top: 0.35cqw;
-  color: #7f776f;
-  font-size: 1.5cqw;
+  color: var(--text-muted-warm-subtle);
+  font-size: var(--font-micro);
   font-weight: 900;
 }
 
@@ -1233,8 +1242,8 @@ button {
 
 .leaderboard-note {
   margin: 0.45cqw 0 0;
-  color: #71685f;
-  font-size: 1.45cqw;
+  color: var(--text-muted-warm-subtle);
+  font-size: var(--font-body-small);
   text-align: center;
 }
 
@@ -1348,17 +1357,17 @@ button {
 
 .onchain-empty strong {
   color: #fff0dc;
-  font-size: 3.1cqw;
+  font-size: var(--font-value-small);
 }
 
 .onchain-empty span {
-  font-size: 2.35cqw;
+  font-size: var(--font-body-small);
 }
 
 .burn-warning {
   margin: 1.5cqw 0;
   color: #d9bda3;
-  font-size: 2.25cqw;
+  font-size: var(--font-body-small);
   font-weight: 700;
   line-height: 1.35;
   text-align: center;
@@ -1366,7 +1375,7 @@ button {
 
 .rewards-heading p {
   color: #9fc88a;
-  font-size: 2.1cqw;
+  font-size: var(--font-micro);
   font-weight: 900;
   letter-spacing: 0.24cqw;
   line-height: 1;
@@ -1388,7 +1397,7 @@ button {
   border-radius: 999px;
   color: #ffb034;
   background: rgba(65, 35, 13, 0.78);
-  font-size: 2.15cqw;
+  font-size: var(--font-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1459,7 +1468,7 @@ button {
 .reward-summary-card small {
   overflow: hidden;
   color: #bca990;
-  font-size: 1.95cqw;
+  font-size: var(--font-caption);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1474,7 +1483,7 @@ button {
 
 .reward-summary-card em {
   color: #dc9d3b;
-  font-size: 1.75cqw;
+  font-size: var(--font-micro);
   font-style: normal;
 }
 
@@ -1494,7 +1503,7 @@ button {
   border-right: 0.14cqw solid rgba(184, 132, 77, 0.2);
   color: #908a81;
   background: transparent;
-  font-size: 2.3cqw;
+  font-size: var(--font-control);
   font-weight: 900;
   cursor: pointer;
 }
@@ -1583,15 +1592,15 @@ button {
 .history-row small,
 .position-note small,
 .history-total small {
-  color: #9f8b74;
-  font-size: 1.8cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-micro);
   font-weight: 800;
 }
 
 .reward-row-copy strong {
   margin-top: 0.25cqw;
   overflow: hidden;
-  font-size: 2.55cqw;
+  font-size: var(--font-value-small);
   line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1600,8 +1609,8 @@ button {
 .reward-row-copy em {
   margin-top: 0.25cqw;
   overflow: hidden;
-  color: #bdac99;
-  font-size: 1.65cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-caption);
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1614,7 +1623,7 @@ button {
 
 .reward-row-action > strong {
   color: #f8ead5;
-  font-size: 2.35cqw;
+  font-size: var(--font-value-small);
   white-space: nowrap;
 }
 
@@ -1632,7 +1641,7 @@ button {
   color: #281202;
   background: linear-gradient(180deg, #ffbd38, #ff7a0a);
   box-shadow: 0 0 1cqw rgba(255, 121, 10, 0.25);
-  font-size: 1.85cqw;
+  font-size: var(--font-control);
   font-weight: 950;
   cursor: pointer;
 }
@@ -1653,8 +1662,8 @@ button {
 
 .reward-footnote {
   margin: 0.3cqw 0 0;
-  color: #807467;
-  font-size: 1.8cqw;
+  color: var(--text-muted-warm-subtle);
+  font-size: var(--font-body-small);
   text-align: center;
 }
 
@@ -1681,7 +1690,7 @@ button {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  font-size: 1.75cqw;
+  font-size: var(--font-micro);
   font-weight: 950;
 }
 
@@ -1720,7 +1729,7 @@ button {
 .position-row > div strong {
   margin-top: 0.45cqw;
   overflow: hidden;
-  font-size: 2.5cqw;
+  font-size: var(--font-value-small);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1729,8 +1738,8 @@ button {
 .position-live-heading em {
   margin-top: 0.25cqw;
   overflow: hidden;
-  color: #9f8b74;
-  font-size: 1.55cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-caption);
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1762,8 +1771,8 @@ button {
 
 .position-live-metrics dt {
   overflow: hidden;
-  color: #9f8b74;
-  font-size: 1.35cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-micro);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1773,7 +1782,7 @@ button {
   margin: 0.2cqw 0 0;
   overflow: hidden;
   color: #f8ead5;
-  font-size: 1.65cqw;
+  font-size: var(--font-caption);
   font-weight: 950;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1782,7 +1791,8 @@ button {
 .position-live-content > p {
   margin: 0;
   color: #84cd67;
-  font-size: 1.35cqw;
+  font-size: var(--font-body-small);
+  line-height: 1.25;
   font-weight: 800;
 }
 
@@ -1793,7 +1803,7 @@ button {
 .position-row > span:last-child strong {
   margin-top: 0.35cqw;
   color: #ffac27;
-  font-size: 2.7cqw;
+  font-size: var(--font-value-small);
 }
 
 .position-note,
@@ -1818,7 +1828,7 @@ button {
 .position-note strong,
 .history-total strong {
   color: #f7ead9;
-  font-size: 2.55cqw;
+  font-size: var(--font-value-small);
 }
 
 .position-note small,
@@ -1863,12 +1873,12 @@ button {
 
 .history-row strong {
   margin-top: 0.4cqw;
-  font-size: 2.7cqw;
+  font-size: var(--font-value-small);
 }
 
 .history-row em {
   color: #7bc961;
-  font-size: 1.9cqw;
+  font-size: var(--font-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -1989,8 +1999,8 @@ button {
 }
 
 .portal-heading p {
-  color: #bfa7ea;
-  font-size: clamp(8px, 2cqw, 10px);
+  color: var(--text-muted-portal);
+  font-size: var(--font-micro);
   font-weight: 900;
   letter-spacing: 0.22cqw;
   line-height: 1;
@@ -2029,8 +2039,8 @@ button {
 
 .portal-intro {
   margin: 1cqw 0 1.6cqw;
-  color: #a89dac;
-  font-size: clamp(9px, 2.2cqw, 11px);
+  color: var(--text-muted-portal);
+  font-size: var(--font-body-small);
   font-weight: 700;
 }
 
@@ -2047,9 +2057,9 @@ button {
 .portal-mode-tabs button {
   border: 0;
   border-radius: 1.6cqw;
-  color: #82788a;
+  color: var(--text-muted-portal-subtle);
   background: transparent;
-  font-size: 2.1cqw;
+  font-size: var(--font-control);
   font-weight: 950;
   cursor: pointer;
 }
@@ -2079,8 +2089,8 @@ button {
 .portal-context-row label > span,
 .portal-network-pair label > span {
   margin: 0 0 0.5cqw 0.5cqw;
-  color: #85798b;
-  font-size: clamp(8px, 1.8cqw, 9px);
+  color: var(--text-muted-portal);
+  font-size: var(--font-micro);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -2095,7 +2105,7 @@ button {
   border-radius: 1.7cqw;
   color: #ded2e6;
   background: #110e14;
-  font-size: clamp(9px, 2cqw, 10px);
+  font-size: var(--font-control);
   font-weight: 850;
   outline: 0;
 }
@@ -2124,8 +2134,8 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #918796;
-  font-size: clamp(8px, 1.8cqw, 9px);
+  color: var(--text-muted-portal);
+  font-size: var(--font-caption);
   font-weight: 850;
 }
 
@@ -2134,7 +2144,7 @@ button {
   border: 0;
   color: #bc9cf5;
   background: transparent;
-  font-size: clamp(8px, 1.7cqw, 9px);
+  font-size: var(--font-control);
   font-style: normal;
   font-weight: 950;
   cursor: pointer;
@@ -2171,7 +2181,7 @@ button {
   color: white;
   background: linear-gradient(145deg, #6951d7, #312076);
   box-shadow: 0 0 1cqw rgba(112, 78, 255, 0.25);
-  font-size: 1.7cqw;
+  font-size: var(--font-micro);
   font-weight: 950;
   place-items: center;
 }
@@ -2198,21 +2208,21 @@ button {
   border: 0;
   color: #eee5f1;
   background: transparent;
-  font-size: 2.15cqw;
+  font-size: var(--font-control);
   font-weight: 950;
   outline: 0;
 }
 
 .portal-asset-input > strong:last-child {
   margin-left: 0.8cqw;
-  font-size: 2.15cqw;
+  font-size: var(--font-caption);
 }
 
 .portal-asset-card > small {
   display: block;
   margin-top: 0.55cqw;
-  color: #746d78;
-  font-size: clamp(9px, 1.9cqw, 10px);
+  color: var(--text-muted-portal-subtle);
+  font-size: var(--font-caption);
   font-weight: 750;
 }
 
@@ -2254,8 +2264,8 @@ button {
 }
 
 .portal-quote-grid dt {
-  color: #766f79;
-  font-size: clamp(8px, 1.7cqw, 9px);
+  color: var(--text-muted-portal-subtle);
+  font-size: var(--font-micro);
   font-weight: 800;
 }
 
@@ -2266,7 +2276,7 @@ button {
   align-items: center;
   overflow: hidden;
   color: #d9cfe0;
-  font-size: clamp(9px, 1.85cqw, 10px);
+  font-size: var(--font-caption);
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2311,7 +2321,7 @@ button {
   gap: 0.5cqw;
   align-items: center;
   color: #91a28f;
-  font-size: clamp(8px, 1.8cqw, 9px);
+  font-size: var(--font-caption);
   font-weight: 800;
 }
 
@@ -2322,13 +2332,13 @@ button {
 
 .portal-bridge-arrival strong {
   color: #a7df8d;
-  font-size: clamp(10px, 2.35cqw, 12px);
+  font-size: var(--font-value-small);
 }
 
 .portal-bridge-arrival small {
   grid-column: 2;
   color: #687867;
-  font-size: clamp(8px, 1.7cqw, 9px);
+  font-size: var(--font-micro);
   text-align: right;
 }
 
@@ -2362,15 +2372,15 @@ button {
 }
 
 .portal-review small {
-  color: #769275;
-  font-size: clamp(8px, 1.7cqw, 9px);
+  color: var(--text-muted-portal-subtle);
+  font-size: var(--font-micro);
   font-weight: 850;
 }
 
 .portal-review strong {
   overflow: hidden;
   color: #d9efd2;
-  font-size: clamp(9px, 1.9cqw, 10px);
+  font-size: var(--font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2388,7 +2398,7 @@ button {
     inset 0 0 1.8cqw rgba(255, 91, 15, 0.48),
     0 0 1.6cqw rgba(128, 65, 208, 0.3),
     0 0.5cqw 1.3cqw rgba(0, 0, 0, 0.66);
-  font-size: 2.35cqw;
+  font-size: var(--font-control);
 }
 
 .portal-primary-action:disabled {
@@ -2432,8 +2442,8 @@ button {
 }
 
 .portal-activity small {
-  color: #6e6871;
-  font-size: clamp(8px, 1.65cqw, 9px);
+  color: var(--text-muted-portal-subtle);
+  font-size: var(--font-micro);
   font-weight: 800;
 }
 
@@ -2441,22 +2451,22 @@ button {
   margin-top: 0.15cqw;
   overflow: hidden;
   color: #c8becd;
-  font-size: clamp(8px, 1.8cqw, 10px);
+  font-size: var(--font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .portal-activity em {
   color: #86c66c;
-  font-size: clamp(8px, 1.7cqw, 9px);
+  font-size: var(--font-micro);
   font-style: normal;
   font-weight: 900;
 }
 
 .portal-footnote {
   margin: 0.75cqw 0 0;
-  color: #5e5861;
-  font-size: clamp(8px, 1.7cqw, 9px);
+  color: var(--text-muted-portal-subtle);
+  font-size: var(--font-body-small);
   font-weight: 750;
   text-align: center;
 }
@@ -2504,7 +2514,7 @@ button {
   border-right: 0.14cqw solid rgba(127, 104, 80, 0.15);
   color: #8e8981;
   background: transparent;
-  font-size: 2.15cqw;
+  font-size: var(--font-control);
   font-weight: 800;
   cursor: pointer;
   flex-direction: column;
@@ -2729,7 +2739,7 @@ button {
 
 .mobile-menu-round small {
   color: #9d8972;
-  font-size: 9px;
+  font-size: var(--font-micro);
   font-weight: 900;
   letter-spacing: 1.4px;
   text-transform: uppercase;
@@ -2799,12 +2809,41 @@ button {
   .balance-pill,
   .wallet-pill {
     gap: 0.75cqw;
-    font-size: 2.18cqw;
+    font-size: var(--font-caption);
   }
 
   .brand-burn,
   .brand-tato {
     font-size: 6.45cqw;
+  }
+}
+
+@media (max-width: 1023px) {
+  .leaderboard-podium {
+    min-height: clamp(98px, 27cqw, 116px);
+  }
+
+  .podium-card {
+    height: clamp(88px, 24cqw, 104px);
+  }
+
+  .podium-card.is-rank-1 {
+    height: clamp(98px, 27cqw, 116px);
+  }
+
+  .podium-card > em {
+    overflow: visible;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .portal-quote-grid dd {
+    overflow: visible;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    white-space: normal;
   }
 }
 
@@ -2828,12 +2867,12 @@ button {
   }
 
   .onchain-empty strong {
-    font-size: 14px;
+    font-size: var(--font-value-small);
   }
 
   .onchain-empty span,
   .burn-warning {
-    font-size: 11px;
+    font-size: var(--font-body-small);
   }
 
   html,
@@ -3058,7 +3097,7 @@ button {
   .portal-quote-grid dd,
   .portal-review strong,
   .portal-activity strong {
-    font-size: 10px;
+    font-size: var(--font-caption);
   }
 
   .portal-field-label,
@@ -3069,9 +3108,22 @@ button {
   .portal-bridge-arrival small,
   .portal-review small,
   .portal-activity small,
-  .portal-activity em,
+  .portal-activity em {
+    font-size: var(--font-micro);
+  }
+
+  .portal-field-label,
+  .portal-bridge-arrival span {
+    font-size: var(--font-caption);
+  }
+
+  .portal-field-label button,
+  .portal-field-label em {
+    font-size: var(--font-control);
+  }
+
   .portal-footnote {
-    font-size: 9px;
+    font-size: var(--font-body-small);
   }
 
   .grab-button {
@@ -3187,7 +3239,7 @@ button {
   }
 
   .rewards-heading p {
-    font-size: 10px;
+    font-size: var(--font-micro);
     letter-spacing: 1.2px;
   }
 
@@ -3200,7 +3252,7 @@ button {
   .ready-badge {
     padding: 6px 9px;
     border-width: 1px;
-    font-size: 11px;
+    font-size: var(--font-caption);
   }
 
   .rewards-summary {
@@ -3235,7 +3287,7 @@ button {
   }
 
   .reward-summary-card small {
-    font-size: 10px;
+    font-size: var(--font-caption);
   }
 
   .reward-summary-card strong {
@@ -3244,7 +3296,7 @@ button {
   }
 
   .reward-summary-card em {
-    font-size: 9px;
+    font-size: var(--font-micro);
   }
 
   .rewards-tabs {
@@ -3256,7 +3308,7 @@ button {
 
   .rewards-tabs button {
     border-right-width: 1px;
-    font-size: 12px;
+    font-size: var(--font-control);
   }
 
   .rewards-tabs button.is-active {
@@ -3303,17 +3355,17 @@ button {
   .history-row small,
   .position-note small,
   .history-total small {
-    font-size: 9px;
+    font-size: var(--font-micro);
   }
 
   .reward-row-copy strong {
     margin-top: 2px;
-    font-size: 14px;
+    font-size: var(--font-value-small);
   }
 
   .reward-row-copy em {
     margin-top: 2px;
-    font-size: 9px;
+    font-size: var(--font-caption);
   }
 
   .reward-row-action {
@@ -3321,7 +3373,7 @@ button {
   }
 
   .reward-row-action > strong {
-    font-size: 12px;
+    font-size: var(--font-value-small);
   }
 
   .reward-row-action button {
@@ -3333,7 +3385,7 @@ button {
     border-width: 1px;
     border-radius: 7px;
     box-shadow: 0 0 7px rgba(255, 121, 10, 0.25);
-    font-size: 10px;
+    font-size: var(--font-control);
   }
 
   .reward-row-action button svg {
@@ -3343,7 +3395,7 @@ button {
 
   .reward-footnote {
     margin-top: 2px;
-    font-size: 9px;
+    font-size: var(--font-body-small);
   }
 
   .position-row {
@@ -3362,7 +3414,7 @@ button {
   .position-status {
     min-height: 28px;
     gap: 5px;
-    font-size: 9px;
+    font-size: var(--font-micro);
   }
 
   .position-status.is-live > span {
@@ -3378,13 +3430,13 @@ button {
 
   .position-row > div strong {
     margin-top: 3px;
-    font-size: 13px;
+    font-size: var(--font-value-small);
   }
 
   .position-row > div > em,
   .position-live-heading em {
     margin-top: 2px;
-    font-size: 8px;
+    font-size: var(--font-caption);
   }
 
   .position-live-content {
@@ -3402,17 +3454,21 @@ button {
 
   .position-live-metrics dt,
   .position-live-content > p {
-    font-size: 7px;
+    font-size: var(--font-micro);
+  }
+
+  .position-live-content > p {
+    font-size: var(--font-body-small);
   }
 
   .position-live-metrics dd {
     margin-top: 1px;
-    font-size: 9px;
+    font-size: var(--font-caption);
   }
 
   .position-row > span:last-child strong {
     margin-top: 2px;
-    font-size: 14px;
+    font-size: var(--font-value-small);
   }
 
   .position-note,
@@ -3432,7 +3488,7 @@ button {
 
   .position-note strong,
   .history-total strong {
-    font-size: 13px;
+    font-size: var(--font-value-small);
   }
 
   .position-note small,
@@ -3462,11 +3518,11 @@ button {
 
   .history-row strong {
     margin-top: 3px;
-    font-size: 14px;
+    font-size: var(--font-value-small);
   }
 
   .history-row em {
-    font-size: 10px;
+    font-size: var(--font-caption);
   }
 
   .bottom-navigation {
@@ -3524,8 +3580,8 @@ button {
 
   .sidebar-header > span {
     margin: 7px 0 0 3px;
-    color: #a68d72;
-    font-size: 10px;
+    color: var(--text-muted-warm);
+    font-size: var(--font-micro);
     font-weight: 900;
     letter-spacing: 2.8px;
     text-transform: uppercase;
@@ -3639,8 +3695,8 @@ button {
   }
 
   .sidebar-round small {
-    color: #a98c6e;
-    font-size: 9px;
+    color: var(--text-muted-warm);
+    font-size: var(--font-micro);
     font-weight: 900;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -3788,13 +3844,13 @@ button {
 }
 
 .account-menu-heading strong {
-  font-size: 2.35cqw;
+  font-size: var(--font-caption);
 }
 
 .account-menu-heading span {
   color: #c8b39c;
   font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 2.05cqw;
+  font-size: var(--font-micro);
 }
 
 .account-menu button,
@@ -3807,7 +3863,7 @@ button {
   border-radius: 1.3cqw;
   color: #f7eddf;
   background: rgba(255, 150, 28, 0.06);
-  font-size: 2.3cqw;
+  font-size: var(--font-control);
   font-weight: 750;
   text-align: left;
   text-decoration: none;
@@ -3837,7 +3893,7 @@ button {
   border-radius: 1.7cqw;
   color: #ded2e6;
   background: #110e14;
-  font-size: clamp(9px, 2cqw, 10px);
+  font-size: var(--font-control);
   font-weight: 850;
   text-align: left;
   cursor: pointer;
@@ -3917,7 +3973,7 @@ button {
 .operator-heading h1 { margin: 0; }
 .operator-heading p {
   color: #e69c56;
-  font-size: 2.1cqw;
+  font-size: var(--font-micro);
   font-weight: 900;
   letter-spacing: 0.24cqw;
   line-height: 1;
@@ -3938,7 +3994,7 @@ button {
   border-radius: 999px;
   color: #ffb034;
   background: rgba(65, 35, 13, 0.78);
-  font-size: 2.15cqw;
+  font-size: var(--font-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -3946,7 +4002,7 @@ button {
 .operator-intro {
   margin: 2cqw 0 0;
   color: #c9b6a1;
-  font-size: 2.35cqw;
+  font-size: var(--font-body-small);
   line-height: 1.4;
 }
 
@@ -3967,15 +4023,15 @@ button {
 }
 
 .operator-metrics div:last-child { border-right: 0; }
-.operator-metrics dt { color: #bfa78e; font-size: 2.1cqw; }
-.operator-metrics dd { overflow: hidden; margin: 0.6cqw 0 0; font-size: 2.7cqw; font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
+.operator-metrics dt { color: var(--text-muted-warm); font-size: var(--font-caption); }
+.operator-metrics dd { overflow: hidden; margin: 0.6cqw 0 0; font-size: var(--font-value-small); font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 
 .operator-token-field {
   display: grid;
   margin-top: 2.5cqw;
   gap: 1cqw;
   color: #dfc3a5;
-  font-size: 2.5cqw;
+  font-size: var(--font-caption);
   font-weight: 800;
 }
 
@@ -3988,7 +4044,7 @@ button {
   outline: none;
   color: #fff5e8;
   background: #0e0b08;
-  font-size: 3.4cqw;
+  font-size: var(--font-value-small);
 }
 
 .operator-token-field select:focus-visible,
@@ -4006,7 +4062,7 @@ button {
   border-radius: 2cqw;
   color: #ffd89c;
   background: linear-gradient(180deg, #2d2116, #17100b);
-  font-size: 2.8cqw;
+  font-size: var(--font-control);
   font-weight: 900;
   cursor: pointer;
 }
@@ -4037,7 +4093,7 @@ button {
   border-radius: 1.8cqw;
   color: #dcc5ae;
   background: rgba(92, 58, 24, 0.22);
-  font-size: 2.45cqw;
+  font-size: var(--font-body-small);
   line-height: 1.45;
 }
 
@@ -4056,16 +4112,16 @@ button {
 }
 
 .operator-empty svg { width: 5cqw; height: 5cqw; color: #ffab2e; }
-.operator-empty strong { color: #fff0dc; font-size: 3.1cqw; }
-.operator-empty span { font-size: 2.35cqw; }
+.operator-empty strong { color: #fff0dc; font-size: var(--font-value-small); }
+.operator-empty span { font-size: var(--font-body-small); }
 
 .operator-contract-link {
   display: inline-flex;
   margin: 2.2cqw auto 0;
   gap: 1cqw;
   align-items: center;
-  color: #a99580;
-  font-size: 2.15cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-caption);
   font-weight: 800;
   text-decoration: none;
 }
@@ -4077,7 +4133,7 @@ button {
   min-height: 6.7cqw;
   align-items: center;
   color: #f8eadc;
-  font-size: 2.5cqw;
+  font-size: var(--font-caption);
 }
 
 .portal-live-error,
@@ -4089,7 +4145,7 @@ button {
   gap: 2cqw;
   align-items: center;
   border-radius: 1.8cqw;
-  font-size: 2.45cqw;
+  font-size: var(--font-body-small);
   line-height: 1.4;
 }
 
@@ -4101,7 +4157,11 @@ button {
 .portal-live-status a { color: #ffd05a; font-weight: 900; }
 .portal-coming-soon { color: #d8c1aa; background: rgba(90, 70, 52, 0.25); }
 .portal-coming-soon span { display: flex; flex-direction: column; }
-.portal-coming-soon small { margin-top: 0.4cqw; color: #a9927c; }
+.portal-coming-soon small {
+  margin-top: 0.4cqw;
+  color: var(--text-muted-warm);
+  font-size: var(--font-body-small);
+}
 
 @media (min-width: 1024px) {
   .operator-backdrop {
@@ -4136,28 +4196,28 @@ button {
   .operator-heading { min-height: 48px; }
   .operator-heading-icon { width: 42px; height: 42px; margin-right: 12px; border-width: 1px; border-radius: 12px; }
   .operator-heading-icon svg { width: 24px; height: 24px; }
-  .operator-heading p { font-size: 10px; letter-spacing: 1.2px; }
+  .operator-heading p { font-size: var(--font-micro); letter-spacing: 1.2px; }
   .operator-heading h1 { margin-top: 3px; font-size: 25px; letter-spacing: 0.2px; }
-  .operator-count { padding: 6px 9px; border-width: 1px; font-size: 11px; }
-  .operator-intro { margin-top: 12px; font-size: 12px; }
+  .operator-count { padding: 6px 9px; border-width: 1px; font-size: var(--font-caption); }
+  .operator-intro { margin-top: 12px; font-size: var(--font-body-small); }
   .operator-metrics { min-height: 74px; margin: 14px 0; border-width: 1px; border-radius: 10px; }
   .operator-metrics div { padding: 12px; border-width: 1px; }
-  .operator-metrics dt { font-size: 11px; }
+  .operator-metrics dt { font-size: var(--font-caption); }
   .operator-metrics dd { margin-top: 5px; font-size: 15px; }
-  .operator-token-field { margin-top: 14px; gap: 6px; font-size: 12px; }
+  .operator-token-field { margin-top: 14px; gap: 6px; font-size: var(--font-caption); }
   .operator-token-field select { min-height: 46px; padding: 0 14px; border-width: 1px; border-radius: 10px; font-size: 15px; }
-  .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: 13px; }
+  .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: var(--font-control); }
   .operator-readiness { margin-top: 14px; gap: 8px; }
   .operator-readiness svg { width: 18px; height: 18px; }
-  .operator-transfer-warning, .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: 11px; }
+  .operator-transfer-warning, .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: var(--font-body-small); }
   .operator-empty { min-height: 130px; margin-top: 14px; padding: 16px; }
   .operator-empty svg { width: 26px; height: 26px; }
   .operator-empty strong { font-size: 15px; }
-  .operator-empty span { font-size: 12px; }
-  .operator-contract-link { margin-top: 12px; gap: 5px; font-size: 10px; }
+  .operator-empty span { font-size: var(--font-body-small); }
+  .operator-contract-link { margin-top: 12px; gap: 5px; font-size: var(--font-caption); }
   .operator-contract-link svg { width: 13px; height: 13px; }
   .live-portal-screen .portal-context-row strong { min-height: 34px; font-size: 12px; }
-  .portal-live-error, .portal-live-status, .portal-coming-soon { margin: 10px 0; padding: 12px; gap: 10px; border-radius: 9px; font-size: 12px; }
+  .portal-live-error, .portal-live-status, .portal-coming-soon { margin: 10px 0; padding: 12px; gap: 10px; border-radius: 9px; font-size: var(--font-body-small); }
   .portal-live-status svg, .portal-coming-soon svg { width: 18px; height: 18px; }
   .portal-coming-soon small { margin-top: 2px; }
 }
@@ -4179,11 +4239,11 @@ button {
   }
 
   .account-menu-heading strong {
-    font-size: 12px;
+    font-size: var(--font-caption);
   }
 
   .account-menu-heading span {
-    font-size: 11px;
+    font-size: var(--font-micro);
   }
 
   .account-menu button,
@@ -4191,7 +4251,7 @@ button {
     gap: 8px;
     padding: 9px 10px;
     border-radius: 7px;
-    font-size: 12px;
+    font-size: var(--font-control);
   }
 
   .account-menu button svg,
