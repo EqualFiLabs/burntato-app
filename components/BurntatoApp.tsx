@@ -1,6 +1,5 @@
 "use client";
 
-import { getImageProps } from "next/image";
 import {
   ArrowLeftRight,
   BadgeCheck,
@@ -28,6 +27,7 @@ import { NetworkEthBalance } from "@/components/NetworkEthBalance";
 import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
+import { ScreenHero } from "@/components/ScreenHero";
 import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -53,50 +53,6 @@ type LeaderboardEntry = {
 };
 
 const numberFormat = new Intl.NumberFormat("en-US");
-
-const heroSources: Record<Screen, {
-  mobile: string;
-  desktop: string;
-  mobileWidth: number;
-  mobileHeight: number;
-}> = {
-  grab: {
-    mobile: "/reference/grab.png",
-    desktop: "/scenes/home-desktop.png",
-    mobileWidth: 941,
-    mobileHeight: 1672,
-  },
-  burn: {
-    mobile: "/reference/burn.png",
-    desktop: "/scenes/burn-desktop.png",
-    mobileWidth: 941,
-    mobileHeight: 1672,
-  },
-  portal: {
-    mobile: "/scenes/portal-mobile.png",
-    desktop: "/scenes/portal-desktop.png",
-    mobileWidth: 864,
-    mobileHeight: 1821,
-  },
-  rewards: {
-    mobile: "/scenes/rewards-mobile.png",
-    desktop: "/scenes/rewards-desktop.png",
-    mobileWidth: 864,
-    mobileHeight: 1821,
-  },
-  operators: {
-    mobile: "/scenes/rewards-mobile.png",
-    desktop: "/scenes/rewards-desktop.png",
-    mobileWidth: 938,
-    mobileHeight: 600,
-  },
-  leaderboard: {
-    mobile: "/scenes/leaderboard-mobile.png",
-    desktop: "/scenes/leaderboard-desktop.png",
-    mobileWidth: 864,
-    mobileHeight: 1821,
-  },
-};
 
 const leaderboardMetrics: { id: LeaderboardMetric; label: string }[] = [
   { id: "earned", label: "Earned" },
@@ -217,7 +173,7 @@ function AppHeader() {
 
   const unavailableTitle = wallet.configured
     ? undefined
-    : "Set the public wallet environment variables to enable sign in.";
+    : "Sign in is temporarily unavailable.";
 
   return (
     <header className="app-header">
@@ -324,42 +280,6 @@ function AppHeader() {
   );
 }
 
-function Hero({ screen }: { screen: Screen }) {
-  const { mobile, desktop, mobileWidth, mobileHeight } = heroSources[screen];
-  const {
-    props: { srcSet: desktopSrcSet },
-  } = getImageProps({
-    src: desktop,
-    alt: "",
-    width: 1672,
-    height: 941,
-    quality: 75,
-    sizes: "(min-width: 1024px) calc(100vw - 236px), 1px",
-  });
-  const {
-    props: { ...mobileImageProps },
-  } = getImageProps({
-    src: mobile,
-    alt: "",
-    width: mobileWidth,
-    height: mobileHeight,
-    quality: 75,
-    sizes: "(max-width: 1023px) min(100vw, 480px), 1px",
-    fetchPriority: "high",
-    loading: "eager",
-  });
-
-  return (
-    <div className={`hero hero-${screen}`} aria-label={`Tato artwork for the ${screen} screen`}>
-      <picture>
-        <source media="(min-width: 1024px)" srcSet={desktopSrcSet} sizes="calc(100vw - 236px)" />
-        <img {...mobileImageProps} alt="" className="hero-source" />
-      </picture>
-      <div className="hero-vignette" />
-    </div>
-  );
-}
-
 function LeaderboardScreen() {
   const game = useBurntatoState();
   const wallet = useWalletState();
@@ -390,7 +310,7 @@ function LeaderboardScreen() {
 
   return (
     <main className="screen-content leaderboard-screen">
-      <Hero screen="leaderboard" />
+      <ScreenHero screen="leaderboard" />
       <div className="leaderboard-controls">
         <section className="leaderboard-hub" aria-labelledby="leaderboard-title">
           <div className="leaderboard-heading">
@@ -448,7 +368,9 @@ function LeaderboardScreen() {
                 </article>
               );
             })}
-          </div> : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No finalized play yet</strong><span>The first finalized hold or settlement will appear here.</span></div>}
+          </div> : game.historyLoading
+            ? <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>Loading leaderboard…</strong><span>Results will appear shortly.</span></div>
+            : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No completed play yet</strong><span>The first completed hold or round will appear here.</span></div>}
 
           {ranked.length > 3 && <div className="leaderboard-list-wrap">
             <div className="leaderboard-list-heading">
@@ -476,13 +398,6 @@ function LeaderboardScreen() {
             </ol>
           </div>}
 
-          <p className="leaderboard-note">
-            Burntato events on Robinhood Chain Testnet · {game.historySource === "indexer" ? "durable Ponder index" : "bounded direct-RPC fallback"}
-            {game.historySource === "indexer" && game.indexedBlock !== null && game.chainHead !== null && game.chainHead > game.indexedBlock
-              ? ` · ${String(game.chainHead - game.indexedBlock)} blocks behind`
-              : ""}
-            {game.historyLoading ? " · Syncing…" : ""}
-          </p>
         </section>
       </div>
     </main>
@@ -509,7 +424,7 @@ function RewardsScreen() {
 
   return (
     <main className="screen-content rewards-screen">
-      <Hero screen="rewards" />
+      <ScreenHero screen="rewards" />
       <div className="rewards-controls">
         <section className="rewards-hub" aria-labelledby="rewards-title">
           <div className="rewards-heading">
@@ -585,7 +500,6 @@ function RewardsScreen() {
                   );
                 })}
                 {readyRewards.length === 0 && <div className="onchain-empty"><Gift aria-hidden="true" /><strong>No rewards ready</strong><span>Settled winner and recovery rewards will appear here.</span></div>}
-                <p className="reward-footnote">Rewards are validated onchain and claimed one round at a time.</p>
               </div>
             )}
 
@@ -670,14 +584,14 @@ function GrabScreen() {
 
   return (
     <main className="screen-content grab-screen">
-      <Hero screen="grab" />
+      <ScreenHero screen="grab" />
       <section className="grab-actions" aria-label="Current Hot Potato round">
         <button className="primary-action grab-button" type="button" disabled={grabDisabled} onClick={action}>
           <Flame aria-hidden="true" />
           <span>{actionLabel}</span>
           <Flame aria-hidden="true" />
         </button>
-        {wallet.status === "ready" && canFinalizeEmission && (
+        {wallet.status === "ready" && isHolder && canFinalizeEmission && (
           <button
             className="secondary-game-action"
             type="button"
@@ -688,9 +602,7 @@ function GrabScreen() {
               ? transactionLabel(
                   game,
                   "collect",
-                  isHolder
-                    ? `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
-                    : "Finalize holder emission"
+                  `Collect ${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO`
                 )
               : transactionLabel(game, "network", "Switch to Robinhood")}
           </button>
@@ -759,7 +671,7 @@ function BurnScreen() {
 
   return (
     <main className="screen-content burn-screen">
-      <Hero screen="burn" />
+      <ScreenHero screen="burn" />
       <div className="burn-controls">
         <section className="burn-panel" aria-label="Commit POTATO to the next Recovery Market round">
           <div className="burn-title-row">
@@ -810,7 +722,7 @@ function BurnScreen() {
               onChange={(event) => setAmount(game.potatoBalance * BigInt(event.target.value) / 10_000n)}
             />
           </div>
-          <p className="burn-warning">Commitments are irrevocable. Settlement burns the configured portion of committed POTATO.</p>
+          <p className="burn-warning">This commitment cannot be undone. When the round ends, part of the committed POTATO is burned.</p>
           <button className="primary-action burn-button" type="button" disabled={commitDisabled} onClick={action}>
             <Flame aria-hidden="true" />
             <span>{actionLabel}</span>

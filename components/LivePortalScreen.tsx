@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownUp, ArrowLeftRight, Check, Clock3, Route, WalletCards } from "lucide-react";
+import { ArrowDownUp, ArrowLeftRight, Check, Clock3, WalletCards } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
   encodeAbiParameters,
@@ -14,6 +14,7 @@ import {
 import { useAccount, useBalance, usePublicClient, useReadContract, useSignTypedData, useWriteContract } from "wagmi";
 
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
+import { ScreenHero } from "@/components/ScreenHero";
 import { erc20Abi } from "@/lib/operators/contracts";
 import { hookAbi, permit2Abi, universalRouterAbi, v4QuoterAbi } from "@/lib/portal/contracts";
 import {
@@ -33,7 +34,6 @@ type Quote = {
   amountIn: bigint;
   amountOut: bigint;
   minimumOut: bigint;
-  gasEstimate: bigint;
   chainTimestamp: bigint;
 };
 
@@ -57,7 +57,7 @@ function shortAddress(address: string): string {
 function transactionLabel(transaction: PortalTransaction | null, idle: string): string {
   if (!transaction) return idle;
   if (transaction.stage === "wallet") return "Confirm in wallet…";
-  if (transaction.stage === "signing") return "Sign Permit2 authorization…";
+  if (transaction.stage === "signing") return "Confirm swap permission…";
   if (transaction.stage === "confirming") return "Confirming swap…";
   return idle;
 }
@@ -158,8 +158,8 @@ export function LivePortalScreen() {
       ])
         .then(([simulation, block]) => {
           if (cancelled) return;
-          const [amountOut, gasEstimate] = simulation.result;
-          setQuote({ amountIn, amountOut, minimumOut: minimumOutput(amountOut, slippageBps), gasEstimate, chainTimestamp: block.timestamp });
+          const [amountOut] = simulation.result;
+          setQuote({ amountIn, amountOut, minimumOut: minimumOutput(amountOut, slippageBps), chainTimestamp: block.timestamp });
         })
         .catch((cause) => {
           if (cancelled) return;
@@ -177,14 +177,14 @@ export function LivePortalScreen() {
   async function approvePotato() {
     if (!publicClient || !account || transactionLock.current) return;
     transactionLock.current = true;
-    setTransaction({ stage: "wallet", message: "Approve POTATO for Permit2 in your wallet." });
+    setTransaction({ stage: "wallet", message: "Approve POTATO in your wallet." });
     try {
       const simulation = await publicClient.simulateContract({
         address: BURNTATO_DEPLOYMENT.diamond,
         abi: erc20Abi,
         functionName: "approve",
         // POTATO intentionally requires its one Permit2 ERC-20 approval to be
-        // infinite; the signed Permit2 authorization below remains exact.
+        // infinite; the signed per-swap approval below remains exact.
         args: [BURNTATO_DEPLOYMENT.permit2, maxUint256],
         account,
       });
@@ -192,7 +192,7 @@ export function LivePortalScreen() {
       setTransaction({ stage: "confirming", message: "Confirming POTATO approval…", hash });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Approval reverted");
-      setTransaction({ stage: "success", message: "POTATO is approved for exact signed Permit2 swap limits.", hash });
+      setTransaction({ stage: "success", message: "POTATO approved. You can now swap.", hash });
       await refetchTokenAllowance();
     } catch (cause) {
       setTransaction({ stage: "error", message: describeSwapError(cause) });
@@ -211,7 +211,7 @@ export function LivePortalScreen() {
       const swapPlan = buildSwapPlan(poolKey, direction, quote.amountIn, quote.minimumOut);
       let inputs: `0x${string}`[] = [swapPlan];
       if (direction === "sell") {
-        setTransaction({ stage: "signing", message: "Sign an exact Permit2 authorization." });
+        setTransaction({ stage: "signing", message: "Confirm permission for this POTATO swap in your wallet." });
         const allowance = await publicClient.readContract({
           address: BURNTATO_DEPLOYMENT.permit2,
           abi: permit2Abi,
@@ -245,7 +245,7 @@ export function LivePortalScreen() {
         });
         inputs = [encodeAbiParameters(permitSingleParams, [permitSingle, signature]), swapPlan];
       }
-      setTransaction({ stage: "wallet", message: "Confirm the exact-input swap in your wallet." });
+      setTransaction({ stage: "wallet", message: "Confirm the swap in your wallet." });
       const simulation = await publicClient.simulateContract({
         address: BURNTATO_DEPLOYMENT.universalRouter,
         abi: universalRouterAbi,
@@ -255,10 +255,10 @@ export function LivePortalScreen() {
         account,
       });
       const hash = await writeContractAsync(simulation.request);
-      setTransaction({ stage: "confirming", message: "Confirming swap on Robinhood testnet…", hash });
+      setTransaction({ stage: "confirming", message: "Confirming swap…", hash });
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Swap reverted");
-      setTransaction({ stage: "success", message: "Swap confirmed on Robinhood testnet.", hash });
+      setTransaction({ stage: "success", message: "Swap complete.", hash });
       setQuote(null);
       await Promise.all([refetchNative(), refetchPotato(), refetchTokenAllowance()]);
     } catch (cause) {
@@ -285,54 +285,47 @@ export function LivePortalScreen() {
     primaryAction = game.switchToRobinhood;
     primaryDisabled = game.networkSwitchBlocked;
   } else if (needsTokenApproval) {
-    primaryLabel = transactionLabel(transaction, "Approve POTATO for Permit2");
+    primaryLabel = transactionLabel(transaction, "Approve POTATO");
     primaryAction = () => void approvePotato();
     primaryDisabled = transactionPending;
   }
 
   return (
     <main className="screen-content portal-screen live-portal-screen">
-      <section className="portal-live-hero">
-        <p>Robinhood Chain Testnet</p>
-        <h1>Burntato Portal</h1>
-        <span>Live V4 exact-input swaps. Testnet units only—no fabricated USD values.</span>
-      </section>
+      <ScreenHero screen="portal" />
       <div className="portal-controls">
         <section className="portal-hub" aria-labelledby="live-portal-title">
           <div className="portal-heading">
             <span className="portal-heading-icon"><ArrowLeftRight aria-hidden="true" /></span>
-            <div><p>Swap. Register. Play.</p><h2 id="live-portal-title">ETH ↔ POTATO</h2></div>
+            <div><p>Robinhood Chain Testnet</p><h1 id="live-portal-title">ETH ↔ POTATO</h1></div>
           </div>
           <div className="portal-context-row">
-            <label><span>Wallet</span><strong>{account ? shortAddress(account) : "Spectator mode"}</strong></label>
+            <label><span>Wallet</span><strong>{account ? shortAddress(account) : "Not connected"}</strong></label>
             <label><span>Slippage</span><select value={slippageBps} onChange={(event) => setSlippageBps(Number(event.target.value))}><option value={50}>0.5%</option><option value={100}>1.0%</option><option value={200}>2.0%</option></select></label>
           </div>
           <div className="portal-workspace" role="tabpanel">
             <div className="portal-asset-card">
               <div className="portal-field-label"><span>You pay</span><button type="button" onClick={() => sourceBalance !== undefined && setAmount(formatEther(sourceBalance))}>MAX</button></div>
-              <div className="portal-asset-input"><input inputMode="decimal" value={amount} aria-label="Exact input amount" onChange={(event) => setAmount(event.target.value)} /><strong>{direction === "buy" ? "ETH" : "POTATO"}</strong></div>
-              <small>Live balance {formatted(sourceBalance)} {direction === "buy" ? "ETH" : "POTATO"}</small>
+              <div className="portal-asset-input"><input inputMode="decimal" value={amount} aria-label="Swap amount" onChange={(event) => setAmount(event.target.value)} /><strong>{direction === "buy" ? "ETH" : "POTATO"}</strong></div>
+              <small>Balance {formatted(sourceBalance)} {direction === "buy" ? "ETH" : "POTATO"}</small>
             </div>
             <button className="portal-reverse" type="button" aria-label="Reverse swap direction" onClick={() => { setDirection((current) => current === "buy" ? "sell" : "buy"); setQuote(null); }}><ArrowDownUp aria-hidden="true" /></button>
             <div className="portal-asset-card is-output">
-              <div className="portal-field-label"><span>You receive</span><em>{quoteLoading ? "Quoting…" : "Live quote"}</em></div>
+              <div className="portal-field-label"><span>You receive</span><em>{quoteLoading ? "Quoting…" : "Quote"}</em></div>
               <div className="portal-asset-input"><strong>{formatted(quote?.amountOut)}</strong><strong>{direction === "buy" ? "POTATO" : "ETH"}</strong></div>
               <small>Minimum {formatted(quote?.minimumOut)} {direction === "buy" ? "POTATO" : "ETH"}</small>
             </div>
             <dl className="portal-quote-grid">
-              <div><dt>Pool fee</dt><dd>{hookFeeBps === undefined ? "—" : `${Number(hookFeeBps) / 100}% bilateral`}</dd></div>
+              <div><dt>Pool fee</dt><dd>{hookFeeBps === undefined ? "—" : `${Number(hookFeeBps) / 100}% per swap`}</dd></div>
               <div><dt>Fee split</dt><dd>{operatorFeeShareBps === undefined ? "—" : `${Number(operatorFeeShareBps) / 100}% Operators · ${(10_000 - Number(operatorFeeShareBps)) / 100}% Treasury`}</dd></div>
-              <div><dt>Gas estimate</dt><dd>{quote?.gasEstimate.toLocaleString() ?? "—"}</dd></div>
-              <div><dt>Route</dt><dd><Route aria-hidden="true" /> Universal Router V4</dd></div>
             </dl>
           </div>
-          {insufficientBalance && <p className="portal-live-error">The exact input exceeds the connected wallet balance.</p>}
+          {insufficientBalance && <p className="portal-live-error">You do not have enough {direction === "buy" ? "ETH" : "POTATO"} for this swap.</p>}
           {quoteError && <p className="portal-live-error">{quoteError}</p>}
-          {direction === "buy" && buysEnabled === false && <p className="portal-live-error">External POTATO buys are currently disabled by hook governance.</p>}
+          {direction === "buy" && buysEnabled === false && <p className="portal-live-error">Buying POTATO is temporarily unavailable.</p>}
           <button className="primary-action portal-primary-action" type="button" disabled={primaryDisabled} onClick={primaryAction}><WalletCards aria-hidden="true" /><span>{primaryLabel}</span></button>
           {transaction && <div className={`portal-live-status is-${transaction.stage}`} role="status" aria-live="polite"><Check aria-hidden="true" /><span>{transaction.message}</span>{transaction.hash && <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>}</div>}
-          <div className="portal-coming-soon"><Clock3 aria-hidden="true" /><span><strong>Bridge coming soon</strong><small>Base, Arbitrum, and Solana routes are intentionally unavailable.</small></span></div>
-          <p className="portal-footnote">This portal routes only ETH ↔ POTATO through the deployed Burntato pool.</p>
+          <div className="portal-coming-soon"><Clock3 aria-hidden="true" /><span><strong>Bridge coming soon</strong><small>Base, Arbitrum, and Solana support is coming later.</small></span></div>
         </section>
       </div>
     </main>
