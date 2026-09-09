@@ -46,4 +46,11 @@ describe("consumer-facing copy", () => {
     expect(portalSource).toContain("Confirm permission for this POTATO swap in your wallet.");
     expect(portalSource).not.toContain("Confirm this POTATO swap in your wallet.");
   });
+
+  it("keeps the Portal title as a primary heading", () => {
+    const portalSource = readFileSync(resolve(process.cwd(), "components/LivePortalScreen.tsx"), "utf8");
+
+    expect(portalSource).toContain('<h1 id="live-portal-title">ETH ↔ POTATO</h1>');
+    expect(portalSource).not.toContain('<h2 id="live-portal-title">ETH ↔ POTATO</h2>');
+  });
 });

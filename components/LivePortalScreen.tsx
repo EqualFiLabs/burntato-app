@@ -297,7 +297,7 @@ export function LivePortalScreen() {
         <section className="portal-hub" aria-labelledby="live-portal-title">
           <div className="portal-heading">
             <span className="portal-heading-icon"><ArrowLeftRight aria-hidden="true" /></span>
-            <div><p>Robinhood Chain Testnet</p><h2 id="live-portal-title">ETH ↔ POTATO</h2></div>
+            <div><p>Robinhood Chain Testnet</p><h1 id="live-portal-title">ETH ↔ POTATO</h1></div>
           </div>
           <div className="portal-context-row">
             <label><span>Wallet</span><strong>{account ? shortAddress(account) : "Not connected"}</strong></label>

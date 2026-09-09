@@ -1983,6 +1983,7 @@ button {
 }
 
 .portal-heading p,
+.portal-heading h1,
 .portal-heading h2 {
   margin: 0;
 }
@@ -1996,6 +1997,7 @@ button {
   text-transform: uppercase;
 }
 
+.portal-heading h1,
 .portal-heading h2 {
   margin-top: 0.55cqw;
   font-family: Impact, "Arial Black", sans-serif;
