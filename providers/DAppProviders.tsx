@@ -17,7 +17,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http } from "viem";
 import { useAccount, WagmiProvider as PublicWagmiProvider } from "wagmi";
 
-import { robinhoodTestnet } from "@/lib/burntato/chain";
+import { createBurntatoChain } from "@/lib/burntato/chain";
+import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import {
   defaultWalletState,
   WalletContext,
@@ -30,16 +31,16 @@ import {
 import { BurntatoBridge, BurntatoContext, defaultBurntatoState } from "./burntato-context";
 import { OperatorBridge, OperatorContext, defaultOperatorState } from "./operator-context";
 
-const ROBINHOOD_RPC_VARIABLE = "NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL";
+const BURNTATO_RPC_VARIABLE = "NEXT_PUBLIC_BURNTATO_RPC_URL";
 
 type RuntimeEnvironment = {
-  /** Public game reads need only a valid Robinhood testnet RPC. */
+  /** Public game reads need only a valid RPC for the configured deployment. */
   gameConfigured: boolean;
   /** Wallet identity additionally needs a Privy App ID. */
   walletConfigured: boolean;
   appId: string;
   clientId: string | undefined;
-  robinhoodRpcUrl: string;
+  rpcUrl: string;
 };
 
 /**
@@ -75,14 +76,15 @@ export function parsePublicRpcUrl(value: string | undefined, variableName: strin
 export function readRuntimeEnvironment(source: {
   NEXT_PUBLIC_PRIVY_APP_ID?: string;
   NEXT_PUBLIC_PRIVY_CLIENT_ID?: string;
+  NEXT_PUBLIC_BURNTATO_RPC_URL?: string;
   NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL?: string;
 }): RuntimeEnvironment {
   const problems: string[] = [];
   const appId = source.NEXT_PUBLIC_PRIVY_APP_ID?.trim() ?? "";
   const clientId = source.NEXT_PUBLIC_PRIVY_CLIENT_ID?.trim() ?? "";
-  const robinhoodRpcUrl = parsePublicRpcUrl(
-    source.NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL,
-    ROBINHOOD_RPC_VARIABLE,
+  const rpcUrl = parsePublicRpcUrl(
+    source.NEXT_PUBLIC_BURNTATO_RPC_URL ?? source.NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL,
+    BURNTATO_RPC_VARIABLE,
     problems,
   );
   const gameConfigured = problems.length === 0;
@@ -92,12 +94,12 @@ export function readRuntimeEnvironment(source: {
     walletConfigured: gameConfigured && appId.length > 0,
     appId,
     clientId: clientId.length > 0 ? clientId : undefined,
-    robinhoodRpcUrl,
+    rpcUrl,
   };
 
   if (problems.length > 0) {
     console.warn(
-      `Burntato game data is unavailable: ${problems.join("; ")}. Set the public Robinhood testnet RPC URL to enable live reads.`
+      `Burntato game data is unavailable: ${problems.join("; ")}. Set the public RPC URL for the configured deployment to enable live reads.`
     );
   }
   return environment;
@@ -106,15 +108,17 @@ export function readRuntimeEnvironment(source: {
 const runtimeEnvironment = readRuntimeEnvironment({
   NEXT_PUBLIC_PRIVY_APP_ID: process.env.NEXT_PUBLIC_PRIVY_APP_ID,
   NEXT_PUBLIC_PRIVY_CLIENT_ID: process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID,
+  NEXT_PUBLIC_BURNTATO_RPC_URL: process.env.NEXT_PUBLIC_BURNTATO_RPC_URL,
   NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL: process.env.NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL,
 });
 
-const supportedChains = [robinhoodTestnet] as const;
+const burntatoChain = createBurntatoChain(runtimeEnvironment.rpcUrl);
+const supportedChains = [burntatoChain] as const;
 
 const wagmiConfig = createConfig({
   chains: supportedChains,
   transports: {
-    [robinhoodTestnet.id]: http(runtimeEnvironment.robinhoodRpcUrl),
+    [burntatoChain.id]: http(runtimeEnvironment.rpcUrl),
   },
 });
 
@@ -197,7 +201,7 @@ function resolveActiveWallet(
 
 function explorerUrlFor(address: string | null): string | null {
   if (!address) return null;
-  const explorer = robinhoodTestnet.blockExplorers?.default.url;
+  const explorer = BURNTATO_DEPLOYMENT.explorer;
   return explorer ? `${explorer}/address/${address}` : null;
 }
 
@@ -386,7 +390,7 @@ function ConfiguredWalletProviders({ children }: { children: ReactNode }) {
       config={{
         loginMethods: ["wallet", "email"],
         supportedChains: [...supportedChains],
-        defaultChain: robinhoodTestnet,
+        defaultChain: burntatoChain,
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
           solana: { createOnLogin: "off" },

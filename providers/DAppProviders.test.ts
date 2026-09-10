@@ -15,8 +15,9 @@ describe("public runtime environment", () => {
 
   it("separates spectator readiness from optional Privy wallet readiness", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    expect(readRuntimeEnvironment({ NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL: "https://rpc.example" })).toMatchObject({ gameConfigured: true, walletConfigured: false });
-    expect(readRuntimeEnvironment({ NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL: "https://rpc.example", NEXT_PUBLIC_PRIVY_APP_ID: "app-id" })).toMatchObject({ gameConfigured: true, walletConfigured: true });
+    expect(readRuntimeEnvironment({ NEXT_PUBLIC_BURNTATO_RPC_URL: "https://rpc.example" })).toMatchObject({ gameConfigured: true, walletConfigured: false });
+    expect(readRuntimeEnvironment({ NEXT_PUBLIC_BURNTATO_RPC_URL: "https://rpc.example", NEXT_PUBLIC_PRIVY_APP_ID: "app-id" })).toMatchObject({ gameConfigured: true, walletConfigured: true });
+    expect(readRuntimeEnvironment({ NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL: "https://legacy.example" })).toMatchObject({ gameConfigured: true, rpcUrl: "https://legacy.example/" });
     expect(readRuntimeEnvironment({ NEXT_PUBLIC_PRIVY_APP_ID: "app-id" })).toMatchObject({ gameConfigured: false, walletConfigured: false });
     warn.mockRestore();
   });

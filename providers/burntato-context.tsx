@@ -141,11 +141,11 @@ function readContract(client: PublicClient, functionName: string, args?: readonl
 
 async function readSnapshot(client: PublicClient, account: Address | undefined): Promise<Snapshot> {
   const block = await client.getBlock();
-  const [roundIdRaw, configRaw, purchasesPausedRaw, commitmentsPausedRaw] = await Promise.all([
+  const [roundIdRaw, configRaw, pausedRaw, purchasesInitializedRaw] = await Promise.all([
     readContract(client, "currentRoundId"),
     readContract(client, "protocolConfig"),
-    readContract(client, "purchasesPaused"),
-    readContract(client, "commitmentsPaused"),
+    readContract(client, "paused"),
+    readContract(client, "purchasesInitialized"),
   ]);
   const currentRoundId = roundIdRaw as bigint;
   const targetRoundId = currentRoundId + 1n;
@@ -164,8 +164,8 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     currentRound: roundRaw as BurntatoRound | null,
     protocolConfig: configRaw as RoundConfig,
     currentEmission: emissionRaw as readonly [bigint, bigint],
-    purchasesPaused: purchasesPausedRaw as boolean,
-    commitmentsPaused: commitmentsPausedRaw as boolean,
+    purchasesPaused: (pausedRaw as boolean) || !(purchasesInitializedRaw as boolean),
+    commitmentsPaused: pausedRaw as boolean,
     potatoBalance: balanceRaw as bigint,
     targetRoundId,
     ownCommitment: ownRaw as bigint,
@@ -314,12 +314,12 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
         value: request.value,
       } as never);
       const hash = await writeContractAsync(simulation.request as never);
-      const confirmingState: TransactionState = { stage: "confirming", message: "Confirming on Robinhood testnet…", hash };
+      const confirmingState: TransactionState = { stage: "confirming", message: `Confirming on ${BURNTATO_DEPLOYMENT.network}…`, hash };
       setTransactions((current) => ({ ...current, [action]: confirmingState }));
       setLatestTransaction(confirmingState);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Transaction reverted");
-      const successState: TransactionState = { stage: "success", message: "Confirmed on Robinhood testnet.", hash };
+      const successState: TransactionState = { stage: "success", message: `Confirmed on ${BURNTATO_DEPLOYMENT.network}.`, hash };
       setTransactions((current) => ({ ...current, [action]: successState }));
       setLatestTransaction(successState);
       await refresh();
@@ -337,12 +337,12 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
   const switchToRobinhood = useCallback(() => {
     if (!canStartTransaction("network", inFlightActionsRef.current)) return;
     inFlightActionsRef.current.add("network");
-    const switchingState: TransactionState = { stage: "wallet", message: "Approve the Robinhood testnet network switch…" };
+    const switchingState: TransactionState = { stage: "wallet", message: `Approve the ${BURNTATO_DEPLOYMENT.network} network switch…` };
     setTransactions((current) => ({ ...current, network: switchingState }));
     setLatestTransaction(switchingState);
     void switchChainAsync({ chainId: BURNTATO_DEPLOYMENT.chainId })
       .then(() => {
-        const successState: TransactionState = { stage: "success", message: "Connected to Robinhood Chain Testnet." };
+        const successState: TransactionState = { stage: "success", message: `Connected to ${BURNTATO_DEPLOYMENT.network}.` };
         setTransactions((current) => ({ ...current, network: successState }));
         setLatestTransaction(successState);
       })

@@ -28,6 +28,7 @@ import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
 import { ScreenHero } from "@/components/ScreenHero";
+import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -919,8 +920,8 @@ export function BurntatoApp() {
       <BottomNavigation screen={screen} select={setScreen} />
       <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
         <span>{displayedNotice}</span>
-        {displayedNotice === transactionNotice && game.latestTransaction?.hash && (
-          <a href={`https://explorer.testnet.chain.robinhood.com/tx/${game.latestTransaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>
+        {displayedNotice === transactionNotice && game.latestTransaction?.hash && BURNTATO_DEPLOYMENT.explorer && (
+          <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${game.latestTransaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>
         )}
         {displayedNotice === transactionNotice && displayedNotice && <button type="button" onClick={game.dismissTransactionNotice} aria-label="Dismiss message">×</button>}
       </div>

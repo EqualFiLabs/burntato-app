@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createPublicClient, http, parseEther } from "viem";
 
-import { robinhoodTestnet } from "./burntato/chain";
+import { createBurntatoChain } from "./burntato/chain";
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "./burntato/contract";
 import { erc20Abi, faucetAbi, genesisDistributorAbi, genesisVaultAbi, operatorNftAbi, operatorRewardsAbi } from "./operators/contracts";
 import { hookAbi, v4QuoterAbi } from "./portal/contracts";
@@ -9,7 +9,7 @@ import { hookAbi, v4QuoterAbi } from "./portal/contracts";
 const liveRpcUrl = process.env.BURNTATO_LIVE_RPC_URL;
 
 describe.skipIf(!liveRpcUrl)("deployed Robinhood readbacks", () => {
-  const client = createPublicClient({ chain: robinhoodTestnet, transport: http(liveRpcUrl) });
+  const client = createPublicClient({ chain: createBurntatoChain(liveRpcUrl ?? "https://rpc.testnet.chain.robinhood.com"), transport: http(liveRpcUrl) });
 
   it("matches deployment code, game, Operator, faucet, and launch state", async () => {
     expect(await client.getChainId()).toBe(BURNTATO_DEPLOYMENT.chainId);
@@ -26,11 +26,11 @@ describe.skipIf(!liveRpcUrl)("deployed Robinhood readbacks", () => {
       BURNTATO_DEPLOYMENT.permit2,
     ]) expect(await client.getCode({ address })).not.toBeUndefined();
 
-    const [roundId, protocol, purchasesPaused, commitmentsPaused, faucetAmount, faucetBalance, quote, owner, routerWeight, routerPending, launchFinalized] = await Promise.all([
+    const [roundId, protocol, paused, purchasesInitialized, faucetAmount, faucetBalance, quote, owner, routerWeight, routerPending, launchFinalized] = await Promise.all([
       client.readContract({ address: BURNTATO_DEPLOYMENT.diamond, abi: burntatoAbi, functionName: "currentRoundId" }),
       client.readContract({ address: BURNTATO_DEPLOYMENT.diamond, abi: burntatoAbi, functionName: "protocolConfig" }),
-      client.readContract({ address: BURNTATO_DEPLOYMENT.diamond, abi: burntatoAbi, functionName: "purchasesPaused" }),
-      client.readContract({ address: BURNTATO_DEPLOYMENT.diamond, abi: burntatoAbi, functionName: "commitmentsPaused" }),
+      client.readContract({ address: BURNTATO_DEPLOYMENT.diamond, abi: burntatoAbi, functionName: "paused" }),
+      client.readContract({ address: BURNTATO_DEPLOYMENT.diamond, abi: burntatoAbi, functionName: "purchasesInitialized" }),
       client.readContract({ address: BURNTATO_DEPLOYMENT.faucet, abi: faucetAbi, functionName: "CLAIM_AMOUNT" }),
       client.readContract({ address: BURNTATO_DEPLOYMENT.statics, abi: erc20Abi, functionName: "balanceOf", args: [BURNTATO_DEPLOYMENT.faucet] }),
       client.readContract({ address: BURNTATO_DEPLOYMENT.genesisVault, abi: genesisVaultAbi, functionName: "quoteGenesisPurchase" }),
@@ -47,8 +47,8 @@ describe.skipIf(!liveRpcUrl)("deployed Robinhood readbacks", () => {
     expect(protocol.minimumRoundTimeout).toBe(60n);
     expect(protocol.operatorPurchaseBps).toBe(1_500);
     expect(protocol.winnerBps + protocol.recoveryBps + protocol.treasuryBps + protocol.buybackBps + protocol.operatorPurchaseBps).toBe(10_000);
-    expect(purchasesPaused).toBe(false);
-    expect(commitmentsPaused).toBe(false);
+    expect(paused).toBe(false);
+    expect(purchasesInitialized).toBe(true);
     expect(faucetAmount).toBe(200_000n * 10n ** 18n);
     expect(faucetBalance).toBe(faucetAmount);
     expect(quote.staticsPrice).toBe(180_000n * 10n ** 18n);

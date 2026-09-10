@@ -35,7 +35,7 @@ export function OperatorScreen() {
   } else if (wallet.status !== "ready") {
     readinessAction = { label: wallet.busyAction === "login" ? "Signing in…" : "Sign in to view rewards", action: wallet.login, disabled: wallet.busyAction !== null };
   } else if (!operator.correctNetwork) {
-    readinessAction = { label: "Switch to Robinhood testnet", action: game.switchToRobinhood, disabled: game.networkSwitchBlocked };
+    readinessAction = { label: `Switch to ${BURNTATO_DEPLOYMENT.network}`, action: game.switchToRobinhood, disabled: game.networkSwitchBlocked };
   }
 
   const selected = operator.operatorId !== null;
@@ -119,9 +119,11 @@ export function OperatorScreen() {
           {operator.error && <p className="operator-inline-error" role="alert">{operator.error}</p>}
           {selected && operator.loading && <p className="operator-sync" role="status">Updating rewards…</p>}
 
-          <a className="operator-contract-link" href={`${BURNTATO_DEPLOYMENT.explorer}/address/${BURNTATO_DEPLOYMENT.operatorRewardsRouter}`} target="_blank" rel="noopener noreferrer">
-            View rewards contract <ExternalLink aria-hidden="true" />
-          </a>
+          {BURNTATO_DEPLOYMENT.explorer && (
+            <a className="operator-contract-link" href={`${BURNTATO_DEPLOYMENT.explorer}/address/${BURNTATO_DEPLOYMENT.operatorRewardsRouter}`} target="_blank" rel="noopener noreferrer">
+              View rewards contract <ExternalLink aria-hidden="true" />
+            </a>
+          )}
         </section>
       </div>
     </main>
