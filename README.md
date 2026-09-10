@@ -31,6 +31,7 @@ Set `NEXT_PUBLIC_BURNTATO_INDEXER_URL` to its public origin. Ponder owns `/healt
 ## Product paths
 
 - Play starts/grabs or settles a round and permissionlessly materializes matured holder emission.
+- Round shows only the current round's pot, next three Grab prices, recovery balances, committed POTATO, and remaining emission runway.
 - Burn commits wallet POTATO to the next recovery round.
 - Rewards independently verifies and claims winner/recovery positions by round.
 - Leaderboard derives from the durable event index, with a labeled bounded direct-RPC fallback.

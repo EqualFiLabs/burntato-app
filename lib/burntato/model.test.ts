@@ -7,8 +7,10 @@ import {
   describeBurntatoError,
   formatCountdown,
   formatEth,
+  projectGrabPrices,
   projectedRecoveryPayout,
   recoveryPositionShareBps,
+  remainingRoundEmissions,
   shareBps,
   type BurntatoRound,
 } from "./model";
@@ -76,6 +78,35 @@ describe("round presentation", () => {
 
   it("preserves low-cost testnet purchase prices", () => {
     expect(formatEth(10_000_000_000_000n)).toBe("0.00001");
+  });
+
+  it("projects grab prices with the contract's upward BPS rounding", () => {
+    expect(projectGrabPrices(10_001n, 5_000)).toEqual([10_001n, 15_002n, 22_503n]);
+    expect(projectGrabPrices(1n, 1, 2)).toEqual([1n, 2n]);
+  });
+
+  it("separates claimable round emissions from the current holder accrual", () => {
+    expect(remainingRoundEmissions(round({ remainingEmission: 100n, remainingTreasuryEmission: 50n }), [30n, 20n])).toEqual({
+      baseAvailable: 70n,
+      treasuryAvailable: 30n,
+      totalAvailable: 100n,
+      holderAccrued: 50n,
+      holderAccruedFinalized: false,
+    });
+  });
+
+  it("does not subtract already-finalized holder emission twice", () => {
+    expect(remainingRoundEmissions(round({
+      remainingEmission: 70n,
+      remainingTreasuryEmission: 30n,
+      holderEmissionFinalized: true,
+    }), [30n, 20n])).toEqual({
+      baseAvailable: 70n,
+      treasuryAvailable: 30n,
+      totalAvailable: 100n,
+      holderAccrued: 50n,
+      holderAccruedFinalized: true,
+    });
   });
 });
 

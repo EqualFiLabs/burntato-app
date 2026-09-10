@@ -131,6 +131,8 @@ export const burntatoAbi = parseAbi([
   "struct Round { uint256 roundId; RoundConfig config; address currentHolder; uint256 holderSince; uint256 deadline; uint64 purchaseIndex; uint256 nextPrice; uint256 holderMaxReward; uint256 holderEarned; uint256 remainingEmission; uint256 emittedPotato; uint256 treasuryEmissionBudget; uint256 holderTreasuryMaxReward; uint256 holderTreasuryEarned; uint256 remainingTreasuryEmission; uint256 treasuryEmittedPotato; uint256 treasuryReleasedPotato; uint256 winnerPool; uint256 recoveryPool; uint256 recoveryCarryIn; uint256 totalCommitted; bool holderEmissionFinalized; bool activated; bool settled; }",
   "function currentRoundId() view returns (uint256)",
   "function protocolConfig() view returns (ProtocolConfig)",
+  "function winnerReserveEth() view returns (uint256)",
+  "function nextTreasuryRewardBudget() view returns (uint256 roundId, uint256 budget)",
   "function getRound(uint256 roundId) view returns (Round)",
   "function currentEarnedEmission() view returns (uint256 baseEarned, uint256 treasuryEarned)",
   "function canonicalPoolKey() view returns ((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) key)",

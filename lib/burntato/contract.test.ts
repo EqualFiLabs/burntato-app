@@ -58,6 +58,8 @@ describe("Robinhood deployment parity", () => {
     expect(toFunctionSelector("getRound(uint256)")).toBe("0x8f1327c0");
     expect(toFunctionSelector("paused()")).toBe("0x5c975abb");
     expect(toFunctionSelector("purchasesInitialized()")).toBe("0x71e67bba");
+    expect(toFunctionSelector("winnerReserveEth()")).toBe("0x0649cf55");
+    expect(toFunctionSelector("nextTreasuryRewardBudget()")).toBe("0x9c4c6d76");
 
     const protocolConfig = getAbiItem({ abi: burntatoAbi, name: "protocolConfig" });
     expect(protocolConfig.type).toBe("function");
