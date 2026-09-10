@@ -1,5 +1,7 @@
 import type { Address } from "viem";
 
+import { BURNTATO_DEPLOYMENT } from "../burntato/contract";
+
 export const MAX_OPERATOR_ID = 5_555n;
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 
@@ -69,6 +71,6 @@ export function describeOperatorError(error: unknown): string {
   if (normalized.includes("launchrewardsalreadyfinalized")) return "Genesis Launch rewards have finalized; registration is closed.";
   if (normalized.includes("purchasespaused")) return "Genesis Vault purchases are currently paused.";
   if (normalized.includes("activationtiernotincreased")) return "Choose an activation tier above the current tier.";
-  if (normalized.includes("chain") || normalized.includes("network")) return "Switch to Robinhood Chain Testnet and try again.";
+  if (normalized.includes("chain") || normalized.includes("network")) return `Switch to ${BURNTATO_DEPLOYMENT.network} and try again.`;
   return "The Operator action could not be completed. Refresh the live state and try again.";
 }

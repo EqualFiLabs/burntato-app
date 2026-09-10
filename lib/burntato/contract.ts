@@ -1,6 +1,6 @@
-import { parseAbi, type Address } from "viem";
+import { getAddress, parseAbi, type Address } from "viem";
 
-export const BURNTATO_DEPLOYMENT = {
+const ROBINHOOD_TESTNET_DEPLOYMENT = {
   network: "Robinhood Chain Testnet",
   chainId: 46_630,
   deploymentId: "robinhood-testnet-46630-low-cost",
@@ -26,6 +26,105 @@ export const BURNTATO_DEPLOYMENT = {
   permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3" as Address,
 } as const;
 
+type PublicDeploymentEnvironment = {
+  NEXT_PUBLIC_BURNTATO_NETWORK?: string;
+  NEXT_PUBLIC_BURNTATO_CHAIN_ID?: string;
+  NEXT_PUBLIC_BURNTATO_DEPLOYMENT_ID?: string;
+  NEXT_PUBLIC_BURNTATO_EXPLORER_URL?: string;
+  NEXT_PUBLIC_BURNTATO_DIAMOND_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_DEPLOYMENT_BLOCK?: string;
+  NEXT_PUBLIC_BURNTATO_SOURCE_COMMIT?: string;
+  NEXT_PUBLIC_BURNTATO_OPERATOR_REWARDS_ROUTER_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_HOOK_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_STATICS_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_DEPLOYMENT_BLOCK?: string;
+  NEXT_PUBLIC_BURNTATO_ACTIVATION_REGISTRY_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_WETH_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_POOL_MANAGER_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_QUOTER_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_UNIVERSAL_ROUTER_ADDRESS?: string;
+  NEXT_PUBLIC_BURNTATO_PERMIT2_ADDRESS?: string;
+};
+
+function requiredOverride(value: string | undefined, variableName: string): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) throw new Error(`${variableName} is required when NEXT_PUBLIC_BURNTATO_CHAIN_ID overrides the default deployment`);
+  return trimmed;
+}
+
+function parseChainId(value: string | undefined): number {
+  const trimmed = value?.trim();
+  if (!trimmed) return ROBINHOOD_TESTNET_DEPLOYMENT.chainId;
+  if (!/^\d+$/.test(trimmed)) throw new Error("NEXT_PUBLIC_BURNTATO_CHAIN_ID must be a positive integer");
+  const chainId = Number(trimmed);
+  if (!Number.isSafeInteger(chainId) || chainId <= 0) throw new Error("NEXT_PUBLIC_BURNTATO_CHAIN_ID must be a positive safe integer");
+  return chainId;
+}
+
+function parseBlock(value: string | undefined, variableName: string): bigint {
+  const trimmed = requiredOverride(value, variableName);
+  if (!/^\d+$/.test(trimmed)) throw new Error(`${variableName} must be a non-negative integer`);
+  return BigInt(trimmed);
+}
+
+function parseAddress(value: string | undefined, variableName: string): Address {
+  const trimmed = requiredOverride(value, variableName);
+  try {
+    return getAddress(trimmed);
+  } catch {
+    throw new Error(`${variableName} must be a valid EVM address`);
+  }
+}
+
+export function deploymentFromEnvironment(source: PublicDeploymentEnvironment) {
+  const chainId = parseChainId(source.NEXT_PUBLIC_BURNTATO_CHAIN_ID);
+  if (chainId === ROBINHOOD_TESTNET_DEPLOYMENT.chainId) return ROBINHOOD_TESTNET_DEPLOYMENT;
+
+  return {
+    ...ROBINHOOD_TESTNET_DEPLOYMENT,
+    network: requiredOverride(source.NEXT_PUBLIC_BURNTATO_NETWORK, "NEXT_PUBLIC_BURNTATO_NETWORK"),
+    chainId,
+    deploymentId: requiredOverride(source.NEXT_PUBLIC_BURNTATO_DEPLOYMENT_ID, "NEXT_PUBLIC_BURNTATO_DEPLOYMENT_ID"),
+    explorer: source.NEXT_PUBLIC_BURNTATO_EXPLORER_URL?.trim() ?? "",
+    diamond: parseAddress(source.NEXT_PUBLIC_BURNTATO_DIAMOND_ADDRESS, "NEXT_PUBLIC_BURNTATO_DIAMOND_ADDRESS"),
+    deploymentBlock: parseBlock(source.NEXT_PUBLIC_BURNTATO_DEPLOYMENT_BLOCK, "NEXT_PUBLIC_BURNTATO_DEPLOYMENT_BLOCK"),
+    sourceCommit: requiredOverride(source.NEXT_PUBLIC_BURNTATO_SOURCE_COMMIT, "NEXT_PUBLIC_BURNTATO_SOURCE_COMMIT"),
+    operatorRewardsRouter: parseAddress(source.NEXT_PUBLIC_BURNTATO_OPERATOR_REWARDS_ROUTER_ADDRESS, "NEXT_PUBLIC_BURNTATO_OPERATOR_REWARDS_ROUTER_ADDRESS"),
+    hook: parseAddress(source.NEXT_PUBLIC_BURNTATO_HOOK_ADDRESS, "NEXT_PUBLIC_BURNTATO_HOOK_ADDRESS"),
+    statics: parseAddress(source.NEXT_PUBLIC_BURNTATO_STATICS_ADDRESS, "NEXT_PUBLIC_BURNTATO_STATICS_ADDRESS"),
+    operatorNft: parseAddress(source.NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_ADDRESS, "NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_ADDRESS"),
+    operatorNftDeploymentBlock: parseBlock(source.NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_DEPLOYMENT_BLOCK, "NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_DEPLOYMENT_BLOCK"),
+    activationRegistry: parseAddress(source.NEXT_PUBLIC_BURNTATO_ACTIVATION_REGISTRY_ADDRESS, "NEXT_PUBLIC_BURNTATO_ACTIVATION_REGISTRY_ADDRESS"),
+    weth: parseAddress(source.NEXT_PUBLIC_BURNTATO_WETH_ADDRESS, "NEXT_PUBLIC_BURNTATO_WETH_ADDRESS"),
+    poolManager: parseAddress(source.NEXT_PUBLIC_BURNTATO_POOL_MANAGER_ADDRESS, "NEXT_PUBLIC_BURNTATO_POOL_MANAGER_ADDRESS"),
+    quoter: parseAddress(source.NEXT_PUBLIC_BURNTATO_QUOTER_ADDRESS, "NEXT_PUBLIC_BURNTATO_QUOTER_ADDRESS"),
+    universalRouter: parseAddress(source.NEXT_PUBLIC_BURNTATO_UNIVERSAL_ROUTER_ADDRESS, "NEXT_PUBLIC_BURNTATO_UNIVERSAL_ROUTER_ADDRESS"),
+    permit2: parseAddress(source.NEXT_PUBLIC_BURNTATO_PERMIT2_ADDRESS, "NEXT_PUBLIC_BURNTATO_PERMIT2_ADDRESS"),
+  } as const;
+}
+
+export const BURNTATO_DEPLOYMENT = deploymentFromEnvironment({
+  NEXT_PUBLIC_BURNTATO_NETWORK: process.env.NEXT_PUBLIC_BURNTATO_NETWORK,
+  NEXT_PUBLIC_BURNTATO_CHAIN_ID: process.env.NEXT_PUBLIC_BURNTATO_CHAIN_ID,
+  NEXT_PUBLIC_BURNTATO_DEPLOYMENT_ID: process.env.NEXT_PUBLIC_BURNTATO_DEPLOYMENT_ID,
+  NEXT_PUBLIC_BURNTATO_EXPLORER_URL: process.env.NEXT_PUBLIC_BURNTATO_EXPLORER_URL,
+  NEXT_PUBLIC_BURNTATO_DIAMOND_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_DIAMOND_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_DEPLOYMENT_BLOCK: process.env.NEXT_PUBLIC_BURNTATO_DEPLOYMENT_BLOCK,
+  NEXT_PUBLIC_BURNTATO_SOURCE_COMMIT: process.env.NEXT_PUBLIC_BURNTATO_SOURCE_COMMIT,
+  NEXT_PUBLIC_BURNTATO_OPERATOR_REWARDS_ROUTER_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_OPERATOR_REWARDS_ROUTER_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_HOOK_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_HOOK_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_STATICS_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_STATICS_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_DEPLOYMENT_BLOCK: process.env.NEXT_PUBLIC_BURNTATO_OPERATOR_NFT_DEPLOYMENT_BLOCK,
+  NEXT_PUBLIC_BURNTATO_ACTIVATION_REGISTRY_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_ACTIVATION_REGISTRY_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_WETH_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_WETH_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_POOL_MANAGER_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_POOL_MANAGER_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_QUOTER_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_QUOTER_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_UNIVERSAL_ROUTER_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_UNIVERSAL_ROUTER_ADDRESS,
+  NEXT_PUBLIC_BURNTATO_PERMIT2_ADDRESS: process.env.NEXT_PUBLIC_BURNTATO_PERMIT2_ADDRESS,
+});
+
 export const burntatoAbi = parseAbi([
   "struct ProtocolConfig { uint256 startingPrice; uint16 priceIncreaseBps; uint256 roundTimeout; uint256 roundEmissionBudget; uint16 emissionStepBps; uint256 emissionVestingDuration; uint16 winnerBps; uint16 recoveryBps; uint16 treasuryBps; uint16 recoveryBurnBps; uint16 recoveryTreasuryBps; uint16 buybackBps; uint16 operatorPurchaseBps; uint256 roundTimeoutDecay; uint256 minimumRoundTimeout; }",
   "struct RoundConfig { uint256 startingPrice; uint16 priceIncreaseBps; uint256 roundTimeout; uint256 roundEmissionBudget; uint16 emissionStepBps; uint256 emissionVestingDuration; uint16 winnerBps; uint16 recoveryBps; uint16 treasuryBps; uint16 recoveryBurnBps; uint16 recoveryTreasuryBps; uint16 buybackBps; uint16 operatorPurchaseBps; uint256 roundTimeoutDecay; uint256 minimumRoundTimeout; }",
@@ -35,8 +134,8 @@ export const burntatoAbi = parseAbi([
   "function getRound(uint256 roundId) view returns (Round)",
   "function currentEarnedEmission() view returns (uint256 baseEarned, uint256 treasuryEarned)",
   "function canonicalPoolKey() view returns ((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) key)",
-  "function purchasesPaused() view returns (bool)",
-  "function commitmentsPaused() view returns (bool)",
+  "function paused() view returns (bool)",
+  "function purchasesInitialized() view returns (bool)",
   "function balanceOf(address account) view returns (uint256)",
   "function buyPotato() payable",
   "function materializeMaturedEmission() returns (uint256 baseEarned, uint256 treasuryEarned)",
@@ -60,7 +159,6 @@ export const burntatoAbi = parseAbi([
   "error AlreadyClaimed()",
   "error AlreadyFinalized()",
   "error CommitmentClosed(uint256 roundId)",
-  "error CommitmentsPaused()",
   "error IncorrectPayment(uint256 expected, uint256 actual)",
   "error InsufficientBalance()",
   "error InvalidAddress()",
@@ -68,7 +166,8 @@ export const burntatoAbi = parseAbi([
   "error NativeTransferFailed()",
   "error NoCurrentHolder()",
   "error NothingToClaim()",
-  "error PurchasesPaused()",
+  "error ProtocolPaused()",
+  "error PurchasesNotInitialized()",
   "error Reentrancy()",
   "error RoundAlreadySettled()",
   "error RoundExpired()",

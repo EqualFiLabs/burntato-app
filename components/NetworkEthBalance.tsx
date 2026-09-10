@@ -3,10 +3,10 @@
 import { formatUnits } from "viem";
 import { useBalance } from "wagmi";
 
-import { robinhoodTestnet } from "@/lib/burntato/chain";
+import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import { useWalletState } from "@/providers/wallet-context";
 
-/** Read-only Robinhood testnet ETH balance for the active wallet. */
+/** Read-only ETH balance on the configured Burntato chain. */
 export function NetworkEthBalance() {
   const { configured, activeAddress, status } = useWalletState();
 
@@ -20,7 +20,7 @@ export function NetworkEthBalance() {
 function NetworkEthBalanceReadout({ address }: { address: string }) {
   const { data, isPending, isError } = useBalance({
     address: address as `0x${string}`,
-    chainId: robinhoodTestnet.id,
+    chainId: BURNTATO_DEPLOYMENT.chainId,
     query: { refetchInterval: 30_000 },
   });
 

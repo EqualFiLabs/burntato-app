@@ -14,7 +14,7 @@ import {
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-import { robinhoodTestnet } from "./burntato/chain";
+import { createBurntatoChain } from "./burntato/chain";
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "./burntato/contract";
 import { activationRegistryAbi, erc20Abi, faucetAbi, genesisVaultAbi, operatorNftAbi, operatorRewardsAbi } from "./operators/contracts";
 import { permit2Abi, universalRouterAbi, v4QuoterAbi } from "./portal/contracts";
@@ -27,8 +27,9 @@ const activationCostAbi = parseAbi(["function tierCost(uint8 tier) view returns 
 
 describe.skipIf(!forkRpcUrl)("Robinhood fork value flow", () => {
   const account = privateKeyToAccount(localOnlyKey);
-  const publicClient = createPublicClient({ chain: robinhoodTestnet, transport: http(forkRpcUrl) });
-  const walletClient = createWalletClient({ account, chain: robinhoodTestnet, transport: http(forkRpcUrl) });
+  const forkChain = createBurntatoChain(forkRpcUrl ?? "https://rpc.testnet.chain.robinhood.com");
+  const publicClient = createPublicClient({ chain: forkChain, transport: http(forkRpcUrl) });
+  const walletClient = createWalletClient({ account, chain: forkChain, transport: http(forkRpcUrl) });
 
   async function send(parameters: { address: Address; abi: readonly unknown[]; functionName: string; args?: readonly unknown[]; value?: bigint }): Promise<Hash> {
     const hash = await walletClient.writeContract(parameters as never);

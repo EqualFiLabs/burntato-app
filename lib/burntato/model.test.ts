@@ -102,6 +102,7 @@ describe("transaction feedback", () => {
   it("maps known contract and wallet failures to actionable copy", () => {
     expect(describeBurntatoError(new Error("IncorrectPayment(1, 2)"))).toContain("price changed");
     expect(describeBurntatoError(new Error("User rejected the request"))).toContain("cancelled");
-    expect(describeBurntatoError(new Error("CommitmentsPaused()"))).toContain("paused");
+    expect(describeBurntatoError(new Error("ProtocolPaused()"))).toContain("paused");
+    expect(describeBurntatoError(new Error("PurchasesNotInitialized()"))).toContain("not been initialized");
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDownUp, ArrowLeftRight, Check, Clock3, WalletCards } from "lucide-react";
+import { useSignTypedData as usePrivySignTypedData } from "@privy-io/react-auth";
 import { useEffect, useRef, useState } from "react";
 import {
   encodeAbiParameters,
@@ -11,7 +12,7 @@ import {
   type Address,
   type Hash,
 } from "viem";
-import { useAccount, useBalance, usePublicClient, useReadContract, useSignTypedData, useWriteContract } from "wagmi";
+import { useAccount, useBalance, usePublicClient, useReadContract, useSignTypedData as useWagmiSignTypedData, useWriteContract } from "wagmi";
 
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import { ScreenHero } from "@/components/ScreenHero";
@@ -68,7 +69,8 @@ export function LivePortalScreen() {
   const { chainId } = useAccount();
   const publicClient = usePublicClient({ chainId: BURNTATO_DEPLOYMENT.chainId });
   const { writeContractAsync } = useWriteContract();
-  const { signTypedDataAsync } = useSignTypedData();
+  const { signTypedData: signEmbeddedTypedData } = usePrivySignTypedData();
+  const { signTypedDataAsync: signExternalTypedData } = useWagmiSignTypedData();
   const [direction, setDirection] = useState<SwapDirection>("buy");
   const [amount, setAmount] = useState("0.01");
   const [slippageBps, setSlippageBps] = useState(100);
@@ -225,7 +227,7 @@ export function LivePortalScreen() {
           spender: BURNTATO_DEPLOYMENT.universalRouter,
           sigDeadline,
         } as const;
-        const signature = await signTypedDataAsync({
+        const typedData = {
           domain: { name: "Permit2", chainId: BURNTATO_DEPLOYMENT.chainId, verifyingContract: BURNTATO_DEPLOYMENT.permit2 },
           types: {
             PermitDetails: [
@@ -242,7 +244,33 @@ export function LivePortalScreen() {
           },
           primaryType: "PermitSingle",
           message: permitSingle,
-        });
+        } as const;
+        const signature = wallet.activeWalletKind === "embedded"
+          ? (await signEmbeddedTypedData(
+              {
+                ...typedData,
+                types: {
+                  PermitDetails: [...typedData.types.PermitDetails],
+                  PermitSingle: [...typedData.types.PermitSingle],
+                },
+                message: {
+                  ...permitSingle,
+                  details: {
+                    ...permitSingle.details,
+                    amount: permitSingle.details.amount.toString(),
+                    nonce: permitSingle.details.nonce.toString(),
+                  },
+                  sigDeadline: permitSingle.sigDeadline.toString(),
+                },
+              },
+              {
+                address: account,
+                // This exact, short-lived permit is attached to the immediately
+                // following swap transaction; the Portal already discloses it.
+                uiOptions: { showWalletUIs: false },
+              },
+            )).signature as `0x${string}`
+          : await signExternalTypedData(typedData);
         inputs = [encodeAbiParameters(permitSingleParams, [permitSingle, signature]), swapPlan];
       }
       setTransaction({ stage: "wallet", message: "Confirm the swap in your wallet." });
@@ -281,7 +309,7 @@ export function LivePortalScreen() {
     primaryAction = wallet.login;
     primaryDisabled = wallet.status === "unconfigured" || wallet.busyAction !== null;
   } else if (wrongNetwork) {
-    primaryLabel = "Switch to Robinhood testnet";
+    primaryLabel = `Switch to ${BURNTATO_DEPLOYMENT.network}`;
     primaryAction = game.switchToRobinhood;
     primaryDisabled = game.networkSwitchBlocked;
   } else if (needsTokenApproval) {
@@ -297,7 +325,7 @@ export function LivePortalScreen() {
         <section className="portal-hub" aria-labelledby="live-portal-title">
           <div className="portal-heading">
             <span className="portal-heading-icon"><ArrowLeftRight aria-hidden="true" /></span>
-            <div><p>Robinhood Chain Testnet</p><h1 id="live-portal-title">ETH ↔ POTATO</h1></div>
+            <div><p>{BURNTATO_DEPLOYMENT.network}</p><h1 id="live-portal-title">ETH ↔ POTATO</h1></div>
           </div>
           <div className="portal-context-row">
             <label><span>Wallet</span><strong>{account ? shortAddress(account) : "Not connected"}</strong></label>
@@ -324,7 +352,7 @@ export function LivePortalScreen() {
           {quoteError && <p className="portal-live-error">{quoteError}</p>}
           {direction === "buy" && buysEnabled === false && <p className="portal-live-error">Buying POTATO is temporarily unavailable.</p>}
           <button className="primary-action portal-primary-action" type="button" disabled={primaryDisabled} onClick={primaryAction}><WalletCards aria-hidden="true" /><span>{primaryLabel}</span></button>
-          {transaction && <div className={`portal-live-status is-${transaction.stage}`} role="status" aria-live="polite"><Check aria-hidden="true" /><span>{transaction.message}</span>{transaction.hash && <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>}</div>}
+          {transaction && <div className={`portal-live-status is-${transaction.stage}`} role="status" aria-live="polite"><Check aria-hidden="true" /><span>{transaction.message}</span>{transaction.hash && BURNTATO_DEPLOYMENT.explorer && <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>}</div>}
           <div className="portal-coming-soon"><Clock3 aria-hidden="true" /><span><strong>Bridge coming soon</strong><small>Base, Arbitrum, and Solana support is coming later.</small></span></div>
         </section>
       </div>

@@ -1,6 +1,6 @@
 # Burntato App
 
-Burntato is a live consumer application for the deployed Robinhood Chain Testnet game, Operator rewards, and ETH/POTATO V4 market. Every displayed game value, balance, quote, fee, eligibility decision, and reward comes from the configured chain or is labeled unavailable. Testnet assets have no represented USD value.
+Burntato is a live consumer application for the configured game, Operator rewards, and ETH/POTATO V4 market. Every displayed game value, balance, quote, fee, eligibility decision, and reward comes from the configured chain or is labeled unavailable. The checked-in defaults target Robinhood Chain Testnet, whose assets have no represented USD value.
 
 The application supports public read-only spectator mode. Adding a Privy App ID enables EVM wallet sign-in and transactions; Solana wallet creation and discovery remain disabled. Writes are simulated first, locked through receipt confirmation, and refreshed from current onchain state.
 
@@ -15,7 +15,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-`NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL` must be an absolute credential-free HTTP(S) endpoint. `NEXT_PUBLIC_PRIVY_APP_ID` and `NEXT_PUBLIC_PRIVY_CLIENT_ID` are optional public identifiers; never put Privy secrets, delegated signer material, authorization keys, private keys, or credential-bearing RPC URLs in frontend variables.
+`NEXT_PUBLIC_BURNTATO_RPC_URL` must be an absolute credential-free HTTP(S) endpoint. `NEXT_PUBLIC_PRIVY_APP_ID` and `NEXT_PUBLIC_PRIVY_CLIENT_ID` are optional public identifiers; never put Privy secrets, delegated signer material, authorization keys, private keys, or credential-bearing RPC URLs in frontend variables. The legacy `NEXT_PUBLIC_ROBINHOOD_TESTNET_RPC_URL` name remains a fallback for existing deployments.
+
+The default deployment addresses are used when `NEXT_PUBLIC_BURNTATO_CHAIN_ID` is absent or `46630`. Setting another chain ID requires the full deployment override documented in `.env.example`; incomplete overrides fail the build instead of mixing contracts from different chains. Because `NEXT_PUBLIC_*` values are frozen by `next build`, rebuild after changing a chain, RPC, or address.
 
 To run the durable history service locally:
 

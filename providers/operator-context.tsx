@@ -193,7 +193,7 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
       setTransactions((current) => ({ ...current, [action]: { stage: "confirming", message: "Waiting for confirmation…", hash } }));
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       if (receipt.status !== "success") throw new Error("Transaction reverted");
-      setTransactions((current) => ({ ...current, [action]: { stage: "success", message: "Confirmed on Robinhood testnet.", hash } }));
+      setTransactions((current) => ({ ...current, [action]: { stage: "success", message: `Confirmed on ${BURNTATO_DEPLOYMENT.network}.`, hash } }));
       await refresh();
     } catch (cause) {
       const message = describeOperatorError(cause);

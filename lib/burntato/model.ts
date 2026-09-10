@@ -1,5 +1,7 @@
 import { formatEther, formatUnits } from "viem";
 
+import { BURNTATO_DEPLOYMENT } from "./contract";
+
 export type RoundConfig = {
   startingPrice: bigint;
   priceIncreaseBps: number;
@@ -104,14 +106,14 @@ export function describeBurntatoError(error: unknown): string {
   if (normalized.includes("incorrectpayment")) return "The price changed before submission. Refresh and try again.";
   if (normalized.includes("roundexpired")) return "This round has expired. Settle it before grabbing again.";
   if (normalized.includes("roundnotexpired")) return "This round is still live.";
-  if (normalized.includes("purchasespaused")) return "Grabs are currently paused.";
-  if (normalized.includes("commitmentspaused")) return "Recovery commitments are currently paused.";
+  if (normalized.includes("protocolpaused")) return "Burntato is currently paused.";
+  if (normalized.includes("purchasesnotinitialized")) return "Burntato purchases have not been initialized.";
   if (normalized.includes("commitmentclosed")) return "Commitments for that round are closed.";
   if (normalized.includes("insufficientbalance")) return "Your POTATO balance is too low.";
   if (normalized.includes("nothingtoclaim")) return "There is nothing claimable for this round.";
   if (normalized.includes("alreadyclaimed")) return "This reward has already been claimed.";
   if (normalized.includes("vestingincomplete")) return "This POTATO emission is still vesting.";
   if (normalized.includes("unauthorizedwinner")) return "Only the round winner can claim this reward.";
-  if (normalized.includes("chain") || normalized.includes("network")) return "Switch to Robinhood Chain Testnet and try again.";
+  if (normalized.includes("chain") || normalized.includes("network")) return `Switch to ${BURNTATO_DEPLOYMENT.network} and try again.`;
   return "The transaction could not be completed. Refresh the game state and try again.";
 }
