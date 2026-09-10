@@ -46,7 +46,14 @@ describe.skipIf(!liveRpcUrl)("deployed Robinhood readbacks", () => {
     expect(protocol.roundTimeoutDecay).toBe(60n);
     expect(protocol.minimumRoundTimeout).toBe(60n);
     expect(protocol.operatorPurchaseBps).toBe(1_500);
-    expect(protocol.winnerBps + protocol.recoveryBps + protocol.treasuryBps + protocol.buybackBps + protocol.operatorPurchaseBps).toBe(10_000);
+    expect(
+      protocol.winnerBps +
+        protocol.nextRoundWinnerBps +
+        protocol.recoveryBps +
+        protocol.treasuryBps +
+        protocol.buybackBps +
+        protocol.operatorPurchaseBps,
+    ).toBe(10_000);
     expect(paused).toBe(false);
     expect(purchasesInitialized).toBe(true);
     expect(faucetAmount).toBe(200_000n * 10n ** 18n);

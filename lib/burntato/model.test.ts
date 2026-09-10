@@ -24,6 +24,7 @@ function round(overrides: Partial<BurntatoRound> = {}): BurntatoRound {
       emissionStepBps: 0,
       emissionVestingDuration: 100n,
       winnerBps: 0,
+      nextRoundWinnerBps: 0,
       recoveryBps: 0,
       treasuryBps: 0,
       recoveryBurnBps: 0,

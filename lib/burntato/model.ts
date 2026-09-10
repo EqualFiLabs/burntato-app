@@ -10,6 +10,7 @@ export type RoundConfig = {
   emissionStepBps: number;
   emissionVestingDuration: bigint;
   winnerBps: number;
+  nextRoundWinnerBps: number;
   recoveryBps: number;
   treasuryBps: number;
   recoveryBurnBps: number;

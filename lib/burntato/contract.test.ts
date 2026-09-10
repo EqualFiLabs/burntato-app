@@ -73,6 +73,7 @@ describe("Robinhood deployment parity", () => {
       "emissionStepBps",
       "emissionVestingDuration",
       "winnerBps",
+      "nextRoundWinnerBps",
       "recoveryBps",
       "treasuryBps",
       "recoveryBurnBps",
