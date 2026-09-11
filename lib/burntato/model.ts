@@ -10,6 +10,7 @@ export type RoundConfig = {
   emissionStepBps: number;
   emissionVestingDuration: bigint;
   winnerBps: number;
+  nextRoundWinnerBps: number;
   recoveryBps: number;
   treasuryBps: number;
   recoveryBurnBps: number;
@@ -95,6 +96,39 @@ export function projectedRecoveryPayout(recoveryPool: bigint, commitment: bigint
   return recoveryPool === 0n || commitment === 0n || totalCommitment === 0n
     ? 0n
     : (recoveryPool * commitment) / totalCommitment;
+}
+
+export function projectGrabPrices(startingPrice: bigint, priceIncreaseBps: number, count = 3): bigint[] {
+  const prices: bigint[] = [];
+  let price = startingPrice;
+  const increaseBps = BigInt(priceIncreaseBps);
+
+  for (let index = 0; index < count; index += 1) {
+    prices.push(price);
+    price += (price * increaseBps + 9_999n) / 10_000n;
+  }
+
+  return prices;
+}
+
+export function remainingRoundEmissions(
+  round: BurntatoRound,
+  currentEmission: readonly [bigint, bigint],
+) {
+  const pendingBase = round.holderEmissionFinalized ? 0n : currentEmission[0];
+  const pendingTreasury = round.holderEmissionFinalized ? 0n : currentEmission[1];
+  const baseAvailable = round.remainingEmission > pendingBase ? round.remainingEmission - pendingBase : 0n;
+  const treasuryAvailable = round.remainingTreasuryEmission > pendingTreasury
+    ? round.remainingTreasuryEmission - pendingTreasury
+    : 0n;
+
+  return {
+    baseAvailable,
+    treasuryAvailable,
+    totalAvailable: baseAvailable + treasuryAvailable,
+    holderAccrued: currentEmission[0] + currentEmission[1],
+    holderAccruedFinalized: round.holderEmissionFinalized,
+  };
 }
 
 export function describeBurntatoError(error: unknown): string {

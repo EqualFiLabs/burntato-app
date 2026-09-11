@@ -24,6 +24,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { NetworkEthBalance } from "@/components/NetworkEthBalance";
+import { CurrentRoundStats } from "@/components/CurrentRoundStats";
 import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
@@ -33,7 +34,7 @@ import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/li
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
 
-type Screen = "grab" | "burn" | "portal" | "leaderboard" | "rewards" | "operators";
+type Screen = "grab" | "round" | "burn" | "portal" | "leaderboard" | "rewards" | "operators";
 type RewardsTab = "ready" | "positions" | "history";
 type LeaderboardMetric = "earned" | "wins" | "hold" | "recovery";
 type LeaderboardPeriod = "all-time" | "round";
@@ -553,7 +554,7 @@ function LiveCountdown({ deadline, anchor }: { deadline: bigint; anchor: bigint 
   return <>{formatCountdown(countdownSeconds(deadline, now))}</>;
 }
 
-function GrabScreen() {
+function GrabScreen({ showRound }: { showRound: () => void }) {
   const game = useBurntatoState();
   const wallet = useWalletState();
   const price = game.currentRound?.nextPrice ?? game.protocolConfig?.startingPrice ?? 0n;
@@ -621,7 +622,7 @@ function GrabScreen() {
             <strong className="digital-value">{game.phase === "unstarted" ? "READY TO START" : game.phase === "settled" ? "SETTLED" : game.currentRound ? <LiveCountdown key={game.chainNow.toString()} deadline={game.currentRound.deadline} anchor={game.chainNow} /> : "--:--:--"}</strong>
           </div>
         </div>
-        <div className="round-card pot-card">
+        <button className="round-card pot-card" type="button" onClick={showRound} aria-label="Open current round economics">
           <span className="metric-icon eth-icon"><EthereumMark /></span>
           <div className="metric-copy">
             <span className="metric-label" title={game.currentRound?.currentHolder}>Current Pot · {game.phase === "unstarted" ? "No holder" : game.currentRound ? shortAddress(game.currentRound.currentHolder) : "—"}</span>
@@ -630,7 +631,7 @@ function GrabScreen() {
           <span className="coin-stack" aria-hidden="true">
             <span /><span /><span />
           </span>
-        </div>
+        </button>
       </section>
     </main>
   );
@@ -751,6 +752,7 @@ function BurnScreen() {
 
 const destinationNavigation = [
   { id: "grab", label: "Play", Icon: Home, screen: "grab" },
+  { id: "round", label: "Round", Icon: PieChart, screen: "round" },
   { id: "burn", label: "Burn", Icon: Flame, screen: "burn" },
   { id: "portal", label: "Portal", Icon: ArrowLeftRight, screen: "portal" },
   { id: "rewards", label: "Rewards", Icon: Gift, screen: "rewards" },
@@ -759,10 +761,7 @@ const destinationNavigation = [
 ] as const;
 
 const mobileNavigation = [
-  destinationNavigation[0],
-  destinationNavigation[1],
-  destinationNavigation[2],
-  destinationNavigation[3],
+  ...destinationNavigation.filter(({ id }) => id === "grab" || id === "burn" || id === "portal" || id === "rewards"),
 ] as const;
 
 function BottomNavigation({ screen, select }: { screen: Screen; select: (screen: Screen) => void }) {
@@ -822,7 +821,7 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
             );
           })}
           <button
-            className={menuOpen || screen === "leaderboard" || screen === "operators" ? "nav-item is-active" : "nav-item"}
+            className={menuOpen || screen === "round" || screen === "leaderboard" || screen === "operators" ? "nav-item is-active" : "nav-item"}
             type="button"
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation-menu"
@@ -851,10 +850,10 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
           })}
         </div>
 
-        <div className="sidebar-round" aria-hidden="true">
+        <button className="sidebar-round" type="button" onClick={() => select("round")} aria-label="Open current round economics">
           <span className="sidebar-round-flame"><Flame /></span>
-          <span><small>Live round</small><strong>#{game.currentRoundId.toString()}</strong></span>
-        </div>
+          <span><small>Live round</small><strong>#{(game.currentRoundId || 1n).toString()}</strong></span>
+        </button>
       </nav>
 
       <dialog
@@ -892,10 +891,10 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
             );
           })}
         </nav>
-        <div className="mobile-menu-round" aria-hidden="true">
+        <button className="mobile-menu-round" type="button" onClick={() => { select("round"); setMenuOpen(false); }} aria-label="Open current round economics">
           <span className="sidebar-round-flame"><Flame /></span>
-          <span><small>Live round</small><strong>#{game.currentRoundId.toString()}</strong></span>
-        </div>
+          <span><small>Live round</small><strong>#{(game.currentRoundId || 1n).toString()}</strong></span>
+        </button>
       </dialog>
     </>
   );
@@ -911,7 +910,20 @@ export function BurntatoApp() {
   return (
     <div className={`phone-shell is-${screen}`}>
       <AppHeader />
-      {screen === "grab" && <GrabScreen />}
+      {screen === "grab" && <GrabScreen showRound={() => setScreen("round")} />}
+      {screen === "round" && (
+        <CurrentRoundStats
+          currentRoundId={game.currentRoundId}
+          round={game.currentRound}
+          protocolConfig={game.protocolConfig}
+          phase={game.phase}
+          currentEmission={game.currentEmission}
+          recoveryCommitment={game.activeRecoveryTotalCommitment}
+          genesisWinnerReserve={game.genesisWinnerReserve}
+          genesisTreasuryBudget={game.genesisTreasuryBudget}
+          chainNow={game.chainNow}
+        />
+      )}
       {screen === "leaderboard" && <LeaderboardScreen />}
       {screen === "burn" && <BurnScreen />}
       {screen === "portal" && <LivePortalScreen />}

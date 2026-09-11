@@ -45,6 +45,8 @@ type BurntatoState = {
   totalCommitment: bigint;
   activeRecoveryCommitment: bigint;
   activeRecoveryTotalCommitment: bigint;
+  genesisWinnerReserve: bigint;
+  genesisTreasuryBudget: bigint;
   loading: boolean;
   readError: string | null;
   history: BurntatoEvent[];
@@ -85,6 +87,8 @@ export const defaultBurntatoState: BurntatoState = {
   totalCommitment: 0n,
   activeRecoveryCommitment: 0n,
   activeRecoveryTotalCommitment: 0n,
+  genesisWinnerReserve: 0n,
+  genesisTreasuryBudget: 0n,
   loading: false,
   readError: null,
   history: [],
@@ -112,7 +116,7 @@ const BurntatoContext = createContext<BurntatoState>(defaultBurntatoState);
 type Snapshot = Pick<BurntatoState,
   "chainNow" | "currentRoundId" | "currentRound" | "protocolConfig" | "currentEmission" |
   "purchasesPaused" | "commitmentsPaused" | "potatoBalance" | "targetRoundId" | "ownCommitment" | "totalCommitment" |
-  "activeRecoveryCommitment" | "activeRecoveryTotalCommitment"
+  "activeRecoveryCommitment" | "activeRecoveryTotalCommitment" | "genesisWinnerReserve" | "genesisTreasuryBudget"
 >;
 
 const emptySnapshot: Snapshot = {
@@ -129,6 +133,8 @@ const emptySnapshot: Snapshot = {
   totalCommitment: 0n,
   activeRecoveryCommitment: 0n,
   activeRecoveryTotalCommitment: 0n,
+  genesisWinnerReserve: 0n,
+  genesisTreasuryBudget: 0n,
 };
 
 function contractRequest(functionName: string, args?: readonly unknown[]) {
@@ -149,15 +155,19 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
   ]);
   const currentRoundId = roundIdRaw as bigint;
   const targetRoundId = currentRoundId + 1n;
-  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, activeOwnRaw, activeTotalRaw] = await Promise.all([
+  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, activeOwnRaw, activeTotalRaw, winnerReserveRaw, treasuryBudgetRaw] = await Promise.all([
     currentRoundId === 0n ? Promise.resolve(null) : readContract(client, "getRound", [currentRoundId]),
     currentRoundId === 0n ? Promise.resolve([0n, 0n] as const) : readContract(client, "currentEarnedEmission"),
     account ? readContract(client, "balanceOf", [account]) : Promise.resolve(0n),
     account ? readContract(client, "recoveryCommitment", [targetRoundId, account]) : Promise.resolve(0n),
     readContract(client, "totalRecoveryCommitment", [targetRoundId]),
     account && currentRoundId !== 0n ? readContract(client, "recoveryCommitment", [currentRoundId, account]) : Promise.resolve(0n),
-    account && currentRoundId !== 0n ? readContract(client, "totalRecoveryCommitment", [currentRoundId]) : Promise.resolve(0n),
+    currentRoundId !== 0n ? readContract(client, "totalRecoveryCommitment", [currentRoundId]) : Promise.resolve(0n),
+    currentRoundId === 0n ? readContract(client, "winnerReserveEth") : Promise.resolve(0n),
+    currentRoundId === 0n ? readContract(client, "nextTreasuryRewardBudget") : Promise.resolve([0n, 0n] as const),
   ]);
+  const [treasuryBudgetRoundId, treasuryBudget] = treasuryBudgetRaw as readonly [bigint, bigint];
+  const genesisTreasuryBudget = treasuryBudgetRoundId === targetRoundId ? treasuryBudget : 0n;
   return {
     chainNow: block.timestamp,
     currentRoundId,
@@ -172,6 +182,8 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     totalCommitment: totalRaw as bigint,
     activeRecoveryCommitment: activeOwnRaw as bigint,
     activeRecoveryTotalCommitment: activeTotalRaw as bigint,
+    genesisWinnerReserve: winnerReserveRaw as bigint,
+    genesisTreasuryBudget,
   };
 }
 
