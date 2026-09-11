@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { ZERO_ADDRESS, activationUpgradeCost, describeOperatorError, faucetEligibility, operatorRewardAction, parseOperatorId } from "./model";
+import {
+  ZERO_ADDRESS,
+  activationUpgradeCost,
+  describeOperatorError,
+  faucetEligibility,
+  operatorPreviewFromResult,
+  operatorRewardAction,
+  parseOperatorId,
+} from "./model";
 
 const account = "0x1111111111111111111111111111111111111111" as const;
 const registration = { owner: account, weight: 10_000, rewardIndex: 0n, claimable: 0n, rewardRemainder: 0n };
@@ -36,5 +44,16 @@ describe("Operator onboarding state", () => {
 
   it("forces re-registration after owner or weight invalidation", () => {
     expect(operatorRewardAction(account, registration, { ...preview, currentOwner: "0x2222222222222222222222222222222222222222", transferDetected: true, forfeitable: 5n })).toBe("register");
+  });
+
+  it("maps the positional rewards contract result to named UI fields", () => {
+    expect(operatorPreviewFromResult([account, 10_000, true, 4n, 5n, 6n])).toEqual({
+      currentOwner: account,
+      currentWeight: 10_000,
+      transferDetected: true,
+      claimable: 4n,
+      forfeitable: 5n,
+      rewardRemainder: 6n,
+    });
   });
 });

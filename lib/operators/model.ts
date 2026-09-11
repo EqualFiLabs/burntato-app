@@ -30,6 +30,13 @@ export type OperatorPreview = {
   rewardRemainder: bigint;
 };
 
+export type OperatorPreviewResult = readonly [Address, number, boolean, bigint, bigint, bigint];
+
+export function operatorPreviewFromResult(result: OperatorPreviewResult): OperatorPreview {
+  const [currentOwner, currentWeight, transferDetected, claimable, forfeitable, rewardRemainder] = result;
+  return { currentOwner, currentWeight, transferDetected, claimable, forfeitable, rewardRemainder };
+}
+
 export type OperatorRewardAction = "register" | "sync" | "claim";
 
 export function operatorRewardAction(account: Address | null, registration: OperatorRegistration, preview: OperatorPreview): OperatorRewardAction {

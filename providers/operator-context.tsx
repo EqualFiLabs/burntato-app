@@ -9,7 +9,9 @@ import { operatorNftAbi, operatorRewardsAbi } from "@/lib/operators/contracts";
 import {
   ZERO_ADDRESS,
   describeOperatorError,
+  operatorPreviewFromResult,
   type OperatorPreview,
+  type OperatorPreviewResult,
   type OperatorRegistration,
 } from "@/lib/operators/model";
 import { discoverOwnedOperatorIds } from "@/lib/operators/ownership";
@@ -102,7 +104,7 @@ async function readOperatorSnapshot(client: PublicClient, operatorId: bigint | n
   return {
     tokenOwner: tokenOwner as Address,
     routerRegistration: routerRegistration as OperatorRegistration,
-    routerPreview: routerPreview as OperatorPreview,
+    routerPreview: operatorPreviewFromResult(routerPreview as OperatorPreviewResult),
   };
 }
 
