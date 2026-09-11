@@ -35,7 +35,7 @@ Set `NEXT_PUBLIC_BURNTATO_INDEXER_URL` to its public origin. Ponder owns `/healt
 - Burn commits wallet POTATO to the next recovery round.
 - Rewards independently verifies and claims winner/recovery positions by round.
 - Leaderboard derives from the durable event index, with a labeled bounded direct-RPC fallback.
-- Operators reads the connected wallet's current Statics Operator ownership, lets the user select an owned token from a dropdown, and registers, syncs, or claims Burntato revenue.
+- Operators reads the connected wallet's current Statics Operator ownership, lets the user select an owned token from a dropdown, and registers, syncs, or claims Burntato revenue, including one-transaction claims across multiple registered Operators.
 - Portal executes live exact-input ETH/POTATO V4 swaps. Buys use V4 swap/settle/take. Sells use POTATO’s required infinite ERC-20 Permit2 approval followed by an exact, short-lived signed Permit2 authorization. Cross-chain routes and ETH/STATICS routing are explicitly unavailable.
 
 Registered Operators receive 15% of direct game purchases and 40% of the pool’s 1% bilateral swap fee. An owner change or activation-weight decrease invalidates the Burntato registration; forfeited rewards redistribute to other valid Operators, or Treasury when no valid registered weight remains. Activation increases remain valid after sync.

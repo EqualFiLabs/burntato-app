@@ -39,7 +39,8 @@ export function OperatorScreen() {
   }
 
   const selected = operator.operatorId !== null;
-  const actionPending = pending(operator, "register-burntato") || pending(operator, "sync-burntato") || pending(operator, "claim-burntato");
+  const batchPending = pending(operator, "claim-burntato-batch");
+  const actionPending = pending(operator, "register-burntato") || pending(operator, "sync-burntato") || pending(operator, "claim-burntato") || batchPending;
 
   return (
     <main className="screen-content operator-screen">
@@ -82,6 +83,20 @@ export function OperatorScreen() {
 
               {!operator.ownedOperatorsLoading && operator.ownedOperatorIds.length === 0 && (
                 <div className="operator-empty"><BadgeCheck aria-hidden="true" /><strong>No Operators found</strong><span>This wallet does not currently own a Statics Operator.</span></div>
+              )}
+
+              {operator.ownedOperatorIds.length > 1 && (
+                <div className="operator-batch-claim">
+                  <span><small>All registered Operators</small><strong>{formatEth(operator.batchClaimable)} ETH</strong></span>
+                  <button
+                    className="operator-action is-primary"
+                    type="button"
+                    disabled={Boolean(readinessAction) || actionPending || operator.loading || operator.batchClaimOperatorIds.length < 2 || operator.batchClaimable === 0n}
+                    onClick={() => void operator.claimAllBurntato()}
+                  >
+                    {actionLabel(operator, "claim-burntato-batch", `Claim all ${operator.batchClaimOperatorIds.length}`)}
+                  </button>
+                </div>
               )}
 
               {selected && (

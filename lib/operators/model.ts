@@ -30,6 +30,38 @@ export type OperatorPreview = {
   rewardRemainder: bigint;
 };
 
+export type OperatorPreviewResult = readonly [Address, number, boolean, bigint, bigint, bigint];
+
+export type OwnedOperatorReward = {
+  operatorId: bigint;
+  registration: OperatorRegistration;
+  preview: OperatorPreview;
+};
+
+export function operatorPreviewFromResult(result: OperatorPreviewResult): OperatorPreview {
+  const [currentOwner, currentWeight, transferDetected, claimable, forfeitable, rewardRemainder] = result;
+  return { currentOwner, currentWeight, transferDetected, claimable, forfeitable, rewardRemainder };
+}
+
+export function operatorClaimBatch(account: Address | null, rewards: readonly OwnedOperatorReward[]): { operatorIds: bigint[]; claimable: bigint } {
+  if (!account) return { operatorIds: [], claimable: 0n };
+  const normalizedAccount = account.toLowerCase();
+  const eligible = rewards
+    .filter(({ registration, preview }) => (
+      registration.owner.toLowerCase() === normalizedAccount
+      && preview.currentOwner.toLowerCase() === normalizedAccount
+      && !preview.transferDetected
+    ))
+    .sort((a, b) => a.operatorId < b.operatorId ? -1 : a.operatorId > b.operatorId ? 1 : 0);
+  const operatorIds: bigint[] = [];
+  let claimable = 0n;
+  for (const reward of eligible) {
+    operatorIds.push(reward.operatorId);
+    claimable += reward.preview.claimable;
+  }
+  return { operatorIds, claimable };
+}
+
 export type OperatorRewardAction = "register" | "sync" | "claim";
 
 export function operatorRewardAction(account: Address | null, registration: OperatorRegistration, preview: OperatorPreview): OperatorRewardAction {

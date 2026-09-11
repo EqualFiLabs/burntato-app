@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { ZERO_ADDRESS, activationUpgradeCost, describeOperatorError, faucetEligibility, operatorRewardAction, parseOperatorId } from "./model";
+import {
+  ZERO_ADDRESS,
+  activationUpgradeCost,
+  describeOperatorError,
+  faucetEligibility,
+  operatorClaimBatch,
+  operatorPreviewFromResult,
+  operatorRewardAction,
+  parseOperatorId,
+} from "./model";
 
 const account = "0x1111111111111111111111111111111111111111" as const;
 const registration = { owner: account, weight: 10_000, rewardIndex: 0n, claimable: 0n, rewardRemainder: 0n };
@@ -36,5 +45,29 @@ describe("Operator onboarding state", () => {
 
   it("forces re-registration after owner or weight invalidation", () => {
     expect(operatorRewardAction(account, registration, { ...preview, currentOwner: "0x2222222222222222222222222222222222222222", transferDetected: true, forfeitable: 5n })).toBe("register");
+  });
+
+  it("maps the positional rewards contract result to named UI fields", () => {
+    expect(operatorPreviewFromResult([account, 10_000, true, 4n, 5n, 6n])).toEqual({
+      currentOwner: account,
+      currentWeight: 10_000,
+      transferDetected: true,
+      claimable: 4n,
+      forfeitable: 5n,
+      rewardRemainder: 6n,
+    });
+  });
+
+  it("builds a sorted batch from currently owned valid registrations", () => {
+    const other = "0x2222222222222222222222222222222222222222" as const;
+    const rewards = [
+      { operatorId: 9n, registration, preview: { ...preview, claimable: 3n } },
+      { operatorId: 2n, registration, preview: { ...preview, claimable: 5n } },
+      { operatorId: 4n, registration: { ...registration, owner: ZERO_ADDRESS }, preview },
+      { operatorId: 6n, registration, preview: { ...preview, currentOwner: other, transferDetected: true } },
+    ];
+
+    expect(operatorClaimBatch(account, rewards)).toEqual({ operatorIds: [2n, 9n], claimable: 8n });
+    expect(operatorClaimBatch(null, rewards)).toEqual({ operatorIds: [], claimable: 0n });
   });
 });

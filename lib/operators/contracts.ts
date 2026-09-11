@@ -68,6 +68,7 @@ export const operatorRewardsAbi = parseAbi([
   "function register(uint256 operatorId)",
   "function sync(uint256 operatorId) returns (uint8 result)",
   "function claim(uint256 operatorId,address receiver) returns (uint256 amount)",
+  "function claimBatch(uint256[] operatorIds,address receiver) returns (uint256 amount)",
   "function registrationOf(uint256 operatorId) view returns (Registration registration)",
   "function previewRewards(uint256 operatorId) view returns (address currentOwner,uint16 currentWeight,bool transferDetected,uint256 claimable,uint256 forfeitable,uint256 rewardRemainder)",
   "function totalRegisteredWeight() view returns (uint256)",
@@ -80,6 +81,8 @@ export const operatorRewardsAbi = parseAbi([
   "error InvalidOperatorOwner(uint256 operatorId,address caller,address owner)",
   "error OperatorAlreadyRegistered(uint256 operatorId)",
   "error OperatorNotRegistered(uint256 operatorId)",
+  "error EmptyOperatorBatch()",
+  "error InvalidOperatorOrder(uint256 previousOperatorId,uint256 operatorId)",
 ]);
 
 export const genesisDistributorAbi = parseAbi([
