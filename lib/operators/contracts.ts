@@ -66,7 +66,9 @@ export const activationRegistryAbi = parseAbi([
 export const operatorRewardsAbi = parseAbi([
   "struct Registration { address owner; uint16 weight; uint256 rewardIndex; uint256 claimable; uint256 rewardRemainder; }",
   "function register(uint256 operatorId)",
+  "function registerBatch(uint256[] operatorIds)",
   "function sync(uint256 operatorId) returns (uint8 result)",
+  "function syncBatch(uint256[] operatorIds)",
   "function claim(uint256 operatorId,address receiver) returns (uint256 amount)",
   "function claimBatch(uint256[] operatorIds,address receiver) returns (uint256 amount)",
   "function registrationOf(uint256 operatorId) view returns (Registration registration)",

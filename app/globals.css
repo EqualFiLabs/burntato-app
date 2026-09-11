@@ -4675,22 +4675,29 @@ button {
 
 .operator-action:disabled { opacity: 0.52; cursor: not-allowed; }
 
-.operator-batch-claim {
+.operator-batch-actions {
   display: grid;
   margin-top: 2.5cqw;
-  padding: 2cqw;
-  gap: 1.5cqw;
+  overflow: hidden;
   border: 0.15cqw solid rgba(255, 157, 47, 0.3);
   border-radius: 2cqw;
   background: rgba(61, 35, 16, 0.38);
+}
+
+.operator-batch-action {
+  display: grid;
+  padding: 2cqw;
+  gap: 1.5cqw;
+  border-bottom: 0.15cqw solid rgba(255, 157, 47, 0.2);
   grid-template-columns: minmax(0, 1fr) minmax(14cqw, auto);
   align-items: center;
 }
 
-.operator-batch-claim span { min-width: 0; }
-.operator-batch-claim small { display: block; color: var(--text-muted-warm); font-size: var(--font-caption); }
-.operator-batch-claim strong { display: block; margin-top: 0.6cqw; overflow: hidden; font-size: var(--font-value-small); text-overflow: ellipsis; white-space: nowrap; }
-.operator-batch-claim .operator-action { min-height: 8cqw; }
+.operator-batch-action:last-child { border-bottom: 0; }
+.operator-batch-action span { min-width: 0; }
+.operator-batch-action small { display: block; color: var(--text-muted-warm); font-size: var(--font-caption); }
+.operator-batch-action strong { display: block; margin-top: 0.6cqw; overflow: hidden; font-size: var(--font-value-small); text-overflow: ellipsis; white-space: nowrap; }
+.operator-batch-action .operator-action { min-height: 8cqw; }
 
 .operator-transfer-warning,
 .operator-inline-error,
@@ -4814,9 +4821,10 @@ button {
   .operator-token-field { margin-top: 14px; gap: 6px; font-size: var(--font-caption); }
   .operator-token-field select { min-height: 46px; padding: 0 14px; border-width: 1px; border-radius: 10px; font-size: 15px; }
   .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: var(--font-control); }
-  .operator-batch-claim { margin-top: 14px; padding: 10px; gap: 10px; border-width: 1px; border-radius: 10px; grid-template-columns: minmax(0, 1fr) minmax(120px, auto); }
-  .operator-batch-claim strong { margin-top: 3px; font-size: 15px; }
-  .operator-batch-claim .operator-action { min-height: 38px; }
+  .operator-batch-actions { margin-top: 14px; border-width: 1px; border-radius: 10px; }
+  .operator-batch-action { padding: 10px; gap: 10px; border-width: 1px; grid-template-columns: minmax(0, 1fr) minmax(120px, auto); }
+  .operator-batch-action strong { margin-top: 3px; font-size: 15px; }
+  .operator-batch-action .operator-action { min-height: 38px; }
   .operator-readiness { margin-top: 14px; gap: 8px; }
   .operator-readiness svg { width: 18px; height: 18px; }
   .operator-transfer-warning, .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: var(--font-body-small); }

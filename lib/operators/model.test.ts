@@ -5,7 +5,7 @@ import {
   activationUpgradeCost,
   describeOperatorError,
   faucetEligibility,
-  operatorClaimBatch,
+  operatorActionBatches,
   operatorPreviewFromResult,
   operatorRewardAction,
   parseOperatorId,
@@ -58,16 +58,28 @@ describe("Operator onboarding state", () => {
     });
   });
 
-  it("builds a sorted batch from currently owned valid registrations", () => {
+  it("classifies sorted owned Operators for every batch action", () => {
     const other = "0x2222222222222222222222222222222222222222" as const;
     const rewards = [
       { operatorId: 9n, registration, preview: { ...preview, claimable: 3n } },
-      { operatorId: 2n, registration, preview: { ...preview, claimable: 5n } },
+      { operatorId: 2n, registration, preview: { ...preview, currentWeight: 12_500, claimable: 5n } },
       { operatorId: 4n, registration: { ...registration, owner: ZERO_ADDRESS }, preview },
       { operatorId: 6n, registration, preview: { ...preview, currentOwner: other, transferDetected: true } },
+      { operatorId: 7n, registration: { ...registration, owner: other }, preview: { ...preview, transferDetected: true } },
+      { operatorId: 9n, registration, preview: { ...preview, claimable: 3n } },
     ];
 
-    expect(operatorClaimBatch(account, rewards)).toEqual({ operatorIds: [2n, 9n], claimable: 8n });
-    expect(operatorClaimBatch(null, rewards)).toEqual({ operatorIds: [], claimable: 0n });
+    expect(operatorActionBatches(account, rewards)).toEqual({
+      registerOperatorIds: [4n, 7n],
+      syncOperatorIds: [2n],
+      claimOperatorIds: [2n, 9n],
+      claimable: 8n,
+    });
+    expect(operatorActionBatches(null, rewards)).toEqual({
+      registerOperatorIds: [],
+      syncOperatorIds: [],
+      claimOperatorIds: [],
+      claimable: 0n,
+    });
   });
 });
