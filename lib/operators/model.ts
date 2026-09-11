@@ -38,28 +38,55 @@ export type OwnedOperatorReward = {
   preview: OperatorPreview;
 };
 
+export type OperatorActionBatches = {
+  registerOperatorIds: bigint[];
+  syncOperatorIds: bigint[];
+  claimOperatorIds: bigint[];
+  claimable: bigint;
+};
+
 export function operatorPreviewFromResult(result: OperatorPreviewResult): OperatorPreview {
   const [currentOwner, currentWeight, transferDetected, claimable, forfeitable, rewardRemainder] = result;
   return { currentOwner, currentWeight, transferDetected, claimable, forfeitable, rewardRemainder };
 }
 
-export function operatorClaimBatch(account: Address | null, rewards: readonly OwnedOperatorReward[]): { operatorIds: bigint[]; claimable: bigint } {
-  if (!account) return { operatorIds: [], claimable: 0n };
+export function operatorActionBatches(account: Address | null, rewards: readonly OwnedOperatorReward[]): OperatorActionBatches {
+  const batches: OperatorActionBatches = {
+    registerOperatorIds: [],
+    syncOperatorIds: [],
+    claimOperatorIds: [],
+    claimable: 0n,
+  };
+  if (!account) return batches;
   const normalizedAccount = account.toLowerCase();
-  const eligible = rewards
-    .filter(({ registration, preview }) => (
-      registration.owner.toLowerCase() === normalizedAccount
-      && preview.currentOwner.toLowerCase() === normalizedAccount
-      && !preview.transferDetected
-    ))
-    .sort((a, b) => a.operatorId < b.operatorId ? -1 : a.operatorId > b.operatorId ? 1 : 0);
-  const operatorIds: bigint[] = [];
-  let claimable = 0n;
-  for (const reward of eligible) {
-    operatorIds.push(reward.operatorId);
-    claimable += reward.preview.claimable;
+  const seen = new Set<string>();
+  const sorted = [...rewards].sort((a, b) => a.operatorId < b.operatorId ? -1 : a.operatorId > b.operatorId ? 1 : 0);
+  for (const reward of sorted) {
+    const key = reward.operatorId.toString();
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const registeredOwner = reward.registration.owner.toLowerCase();
+    const currentOwner = reward.preview.currentOwner.toLowerCase();
+    if (registeredOwner === ZERO_ADDRESS.toLowerCase()) {
+      batches.registerOperatorIds.push(reward.operatorId);
+      continue;
+    }
+    if (currentOwner !== normalizedAccount) continue;
+    if (reward.preview.transferDetected) {
+      batches.registerOperatorIds.push(reward.operatorId);
+      continue;
+    }
+    if (registeredOwner !== normalizedAccount) continue;
+    if (reward.preview.currentWeight > reward.registration.weight) {
+      batches.syncOperatorIds.push(reward.operatorId);
+    }
+    if (reward.preview.claimable > 0n) {
+      batches.claimOperatorIds.push(reward.operatorId);
+      batches.claimable += reward.preview.claimable;
+    }
   }
-  return { operatorIds, claimable };
+  return batches;
 }
 
 export type OperatorRewardAction = "register" | "sync" | "claim";
