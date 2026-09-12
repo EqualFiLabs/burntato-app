@@ -5,14 +5,12 @@ import { type Abi, type Address, type Hash, type PublicClient } from "viem";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
-import { operatorNftAbi, operatorRewardsAbi } from "@/lib/operators/contracts";
+import { operatorRewardsAbi } from "@/lib/operators/contracts";
 import {
-  ZERO_ADDRESS,
   describeOperatorError,
   operatorActionBatches,
   operatorPreviewFromResult,
   type OwnedOperatorReward,
-  type OperatorPreview,
   type OperatorPreviewResult,
   type OperatorRegistration,
 } from "@/lib/operators/model";
@@ -20,11 +18,8 @@ import { discoverOwnedOperatorIds } from "@/lib/operators/ownership";
 import { useWalletState } from "./wallet-context";
 
 export type OperatorAction =
-  | "register-burntato"
   | "register-burntato-batch"
-  | "sync-burntato"
   | "sync-burntato-batch"
-  | "claim-burntato"
   | "claim-burntato-batch";
 
 export type OperatorTransaction = {
@@ -33,77 +28,43 @@ export type OperatorTransaction = {
   hash?: Hash;
 };
 
-type OperatorSnapshot = {
-  tokenOwner: Address | null;
-  routerRegistration: OperatorRegistration;
-  routerPreview: OperatorPreview;
-};
-
-const emptyRegistration: OperatorRegistration = {
-  owner: ZERO_ADDRESS,
-  weight: 0,
-  rewardIndex: 0n,
-  claimable: 0n,
-  rewardRemainder: 0n,
-};
-
-const emptyPreview: OperatorPreview = {
-  currentOwner: ZERO_ADDRESS,
-  currentWeight: 0,
-  transferDetected: false,
-  claimable: 0n,
-  forfeitable: 0n,
-  rewardRemainder: 0n,
-};
-
-const emptySnapshot: OperatorSnapshot = {
-  tokenOwner: null,
-  routerRegistration: emptyRegistration,
-  routerPreview: emptyPreview,
-};
-
-type OperatorState = OperatorSnapshot & {
-  operatorId: bigint | null;
-  setOperatorId: (operatorId: bigint | null) => void;
+type OperatorState = {
   ownedOperatorIds: readonly bigint[];
   ownedOperatorsLoading: boolean;
   batchRegisterOperatorIds: readonly bigint[];
   batchSyncOperatorIds: readonly bigint[];
   batchClaimOperatorIds: readonly bigint[];
   batchClaimable: bigint;
+  walletRegisteredWeight: bigint;
+  totalRegisteredWeight: bigint;
+  totalRegisteredOperators: bigint;
   loading: boolean;
   error: string | null;
   correctNetwork: boolean;
   transactions: Partial<Record<OperatorAction, OperatorTransaction>>;
   refresh: () => Promise<void>;
-  registerBurntato: () => Promise<void>;
   registerAllBurntato: () => Promise<void>;
-  syncBurntato: () => Promise<void>;
   syncAllBurntato: () => Promise<void>;
-  claimBurntato: () => Promise<void>;
   claimAllBurntato: () => Promise<void>;
 };
 
 export const defaultOperatorState: OperatorState = {
-  ...emptySnapshot,
-  operatorId: null,
-  setOperatorId: () => undefined,
   ownedOperatorIds: [],
   ownedOperatorsLoading: false,
   batchRegisterOperatorIds: [],
   batchSyncOperatorIds: [],
   batchClaimOperatorIds: [],
   batchClaimable: 0n,
+  walletRegisteredWeight: 0n,
+  totalRegisteredWeight: 0n,
+  totalRegisteredOperators: 0n,
   loading: false,
   error: null,
   correctNetwork: false,
   transactions: {},
   refresh: async () => undefined,
-  registerBurntato: async () => undefined,
   registerAllBurntato: async () => undefined,
-  syncBurntato: async () => undefined,
   syncAllBurntato: async () => undefined,
-  claimBurntato: async () => undefined,
   claimAllBurntato: async () => undefined,
 };
 
@@ -112,38 +73,32 @@ function request(address: Address, abi: Abi, functionName: string, args?: readon
   return { address, abi, functionName, args } as const;
 }
 
-async function read(client: PublicClient, address: Address, abi: Abi, functionName: string, args?: readonly unknown[]): Promise<unknown> {
-  return client.readContract(request(address, abi, functionName, args) as never) as Promise<unknown>;
-}
+type OperatorSummary = ReturnType<typeof operatorActionBatches> & {
+  totalRegisteredWeight: bigint;
+  totalRegisteredOperators: bigint;
+};
 
-async function readOperatorSnapshot(client: PublicClient, operatorId: bigint | null): Promise<OperatorSnapshot> {
-  if (operatorId === null) return emptySnapshot;
-  const [tokenOwner, routerRegistration, routerPreview] = await Promise.all([
-    read(client, BURNTATO_DEPLOYMENT.operatorNft, operatorNftAbi, "ownerOf", [operatorId]),
-    read(client, BURNTATO_DEPLOYMENT.operatorRewardsRouter, operatorRewardsAbi, "registrationOf", [operatorId]),
-    read(client, BURNTATO_DEPLOYMENT.operatorRewardsRouter, operatorRewardsAbi, "previewRewards", [operatorId]),
-  ]);
-  return {
-    tokenOwner: tokenOwner as Address,
-    routerRegistration: routerRegistration as OperatorRegistration,
-    routerPreview: operatorPreviewFromResult(routerPreview as OperatorPreviewResult),
-  };
-}
-
-async function readOperatorBatch(client: PublicClient, account: Address | null, operatorIds: readonly bigint[]) {
-  if (!account || operatorIds.length === 0) return operatorActionBatches(account, []);
-  const rewards = await Promise.all(operatorIds.map(async (operatorId): Promise<OwnedOperatorReward> => {
-    const [registration, preview] = await Promise.all([
-      read(client, BURNTATO_DEPLOYMENT.operatorRewardsRouter, operatorRewardsAbi, "registrationOf", [operatorId]),
-      read(client, BURNTATO_DEPLOYMENT.operatorRewardsRouter, operatorRewardsAbi, "previewRewards", [operatorId]),
-    ]);
-    return {
-      operatorId,
-      registration: registration as OperatorRegistration,
-      preview: operatorPreviewFromResult(preview as OperatorPreviewResult),
-    };
+async function readOperatorSummary(client: PublicClient, account: Address | null, operatorIds: readonly bigint[]): Promise<OperatorSummary> {
+  const router = BURNTATO_DEPLOYMENT.operatorRewardsRouter;
+  const contracts = [
+    request(router, operatorRewardsAbi, "totalRegisteredWeight"),
+    request(router, operatorRewardsAbi, "totalRegisteredOperators"),
+    ...operatorIds.flatMap((operatorId) => [
+      request(router, operatorRewardsAbi, "registrationOf", [operatorId]),
+      request(router, operatorRewardsAbi, "previewRewards", [operatorId]),
+    ]),
+  ];
+  const results = await client.multicall({ contracts: contracts as never, allowFailure: false }) as readonly unknown[];
+  const rewards: OwnedOperatorReward[] = operatorIds.map((operatorId, index) => ({
+    operatorId,
+    registration: results[2 + index * 2] as OperatorRegistration,
+    preview: operatorPreviewFromResult(results[3 + index * 2] as OperatorPreviewResult),
   }));
-  return operatorActionBatches(account, rewards);
+  return {
+    ...operatorActionBatches(account, rewards),
+    totalRegisteredWeight: results[0] as bigint,
+    totalRegisteredOperators: results[1] as bigint,
+  };
 }
 
 export function OperatorBridge({ children }: { children: ReactNode }) {
@@ -152,14 +107,15 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
   const publicClient = usePublicClient({ chainId: BURNTATO_DEPLOYMENT.chainId });
   const { writeContractAsync } = useWriteContract();
   const account = wallet.activeAddress as Address | null;
-  const [operatorId, setOperatorId] = useState<bigint | null>(null);
   const [ownedOperatorIds, setOwnedOperatorIds] = useState<bigint[]>([]);
   const [ownedOperatorsLoading, setOwnedOperatorsLoading] = useState(false);
   const [batchRegisterOperatorIds, setBatchRegisterOperatorIds] = useState<bigint[]>([]);
   const [batchSyncOperatorIds, setBatchSyncOperatorIds] = useState<bigint[]>([]);
   const [batchClaimOperatorIds, setBatchClaimOperatorIds] = useState<bigint[]>([]);
   const [batchClaimable, setBatchClaimable] = useState(0n);
-  const [snapshot, setSnapshot] = useState(emptySnapshot);
+  const [walletRegisteredWeight, setWalletRegisteredWeight] = useState(0n);
+  const [totalRegisteredWeight, setTotalRegisteredWeight] = useState(0n);
+  const [totalRegisteredOperators, setTotalRegisteredOperators] = useState(0n);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Partial<Record<OperatorAction, OperatorTransaction>>>({});
@@ -172,11 +128,11 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
     const initial = window.setTimeout(() => {
       if (!publicClient || !account) {
         setOwnedOperatorIds([]);
-        setOperatorId(null);
         setBatchRegisterOperatorIds([]);
         setBatchSyncOperatorIds([]);
         setBatchClaimOperatorIds([]);
         setBatchClaimable(0n);
+        setWalletRegisteredWeight(0n);
         setOwnedOperatorsLoading(false);
         return;
       }
@@ -185,13 +141,11 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
         .then((ids) => {
           if (version !== ownershipVersion.current) return;
           setOwnedOperatorIds(ids);
-          setOperatorId((current) => current !== null && ids.includes(current) ? current : (ids[0] ?? null));
           setError(null);
         })
         .catch((cause) => {
           if (version !== ownershipVersion.current) return;
           setOwnedOperatorIds([]);
-          setOperatorId(null);
           setError(describeOperatorError(cause));
         })
         .finally(() => {
@@ -204,18 +158,17 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!publicClient) return;
     const version = ++refreshVersion.current;
-    setLoading(operatorId !== null || ownedOperatorIds.length !== 0);
+    setLoading(ownedOperatorIds.length !== 0);
     try {
-      const [next, batch] = await Promise.all([
-        readOperatorSnapshot(publicClient as PublicClient, operatorId),
-        readOperatorBatch(publicClient as PublicClient, account, ownedOperatorIds),
-      ]);
+      const summary = await readOperatorSummary(publicClient as PublicClient, account, ownedOperatorIds);
       if (version !== refreshVersion.current) return;
-      setSnapshot(next);
-      setBatchRegisterOperatorIds(batch.registerOperatorIds);
-      setBatchSyncOperatorIds(batch.syncOperatorIds);
-      setBatchClaimOperatorIds(batch.claimOperatorIds);
-      setBatchClaimable(batch.claimable);
+      setBatchRegisterOperatorIds(summary.registerOperatorIds);
+      setBatchSyncOperatorIds(summary.syncOperatorIds);
+      setBatchClaimOperatorIds(summary.claimOperatorIds);
+      setBatchClaimable(summary.claimable);
+      setWalletRegisteredWeight(summary.registeredWeight);
+      setTotalRegisteredWeight(summary.totalRegisteredWeight);
+      setTotalRegisteredOperators(summary.totalRegisteredOperators);
       setError(null);
     } catch (cause) {
       if (version !== refreshVersion.current) return;
@@ -223,7 +176,7 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
     } finally {
       if (version === refreshVersion.current) setLoading(false);
     }
-  }, [account, operatorId, ownedOperatorIds, publicClient]);
+  }, [account, ownedOperatorIds, publicClient]);
 
   useEffect(() => {
     const initial = window.setTimeout(() => void refresh(), 0);
@@ -260,45 +213,36 @@ export function OperatorBridge({ children }: { children: ReactNode }) {
   }, [account, publicClient, refresh, writeContractAsync]);
 
   const value = useMemo<OperatorState>(() => ({
-    ...snapshot,
-    operatorId,
-    setOperatorId,
     ownedOperatorIds,
     ownedOperatorsLoading,
     batchRegisterOperatorIds,
     batchSyncOperatorIds,
     batchClaimOperatorIds,
     batchClaimable,
+    walletRegisteredWeight,
+    totalRegisteredWeight,
+    totalRegisteredOperators,
     loading,
     error,
     correctNetwork: chainId === BURNTATO_DEPLOYMENT.chainId,
     transactions,
     refresh,
-    registerBurntato: async () => {
-      if (operatorId !== null) await run("register-burntato", "register", [operatorId]);
-    },
     registerAllBurntato: async () => {
       if (batchRegisterOperatorIds.length > 0) {
         await run("register-burntato-batch", "registerBatch", [batchRegisterOperatorIds]);
       }
-    },
-    syncBurntato: async () => {
-      if (operatorId !== null) await run("sync-burntato", "sync", [operatorId]);
     },
     syncAllBurntato: async () => {
       if (batchSyncOperatorIds.length > 0) {
         await run("sync-burntato-batch", "syncBatch", [batchSyncOperatorIds]);
       }
     },
-    claimBurntato: async () => {
-      if (operatorId !== null && account) await run("claim-burntato", "claim", [operatorId, account]);
-    },
     claimAllBurntato: async () => {
       if (batchClaimOperatorIds.length > 0 && account) {
         await run("claim-burntato-batch", "claimBatch", [batchClaimOperatorIds, account]);
       }
     },
-  }), [account, batchClaimable, batchClaimOperatorIds, batchRegisterOperatorIds, batchSyncOperatorIds, chainId, error, loading, operatorId, ownedOperatorIds, ownedOperatorsLoading, refresh, run, snapshot, transactions]);
+  }), [account, batchClaimable, batchClaimOperatorIds, batchRegisterOperatorIds, batchSyncOperatorIds, chainId, error, loading, ownedOperatorIds, ownedOperatorsLoading, refresh, run, totalRegisteredOperators, totalRegisteredWeight, transactions, walletRegisteredWeight]);
 
   return <OperatorContext.Provider value={value}>{children}</OperatorContext.Provider>;
 }

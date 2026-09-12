@@ -1,11 +1,10 @@
 "use client";
 
 import { BadgeCheck, ExternalLink, WalletCards } from "lucide-react";
-import { type Address } from "viem";
 
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import { formatEth } from "@/lib/burntato/model";
-import { operatorRewardAction, ZERO_ADDRESS } from "@/lib/operators/model";
+import { formatOperatorRewardShare } from "@/lib/operators/model";
 import { useBurntatoState } from "@/providers/burntato-context";
 import { type OperatorAction, useOperatorState } from "@/providers/operator-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -26,8 +25,6 @@ export function OperatorScreen() {
   const wallet = useWalletState();
   const game = useBurntatoState();
   const operator = useOperatorState();
-  const registeredOwner = operator.routerRegistration.owner.toLowerCase() !== ZERO_ADDRESS.toLowerCase();
-  const rewardsAction = operatorRewardAction(wallet.activeAddress as Address | null, operator.routerRegistration, operator.routerPreview);
 
   let readinessAction: { label: string; action: () => void; disabled: boolean } | null = null;
   if (wallet.status === "unconfigured") {
@@ -38,16 +35,10 @@ export function OperatorScreen() {
     readinessAction = { label: `Switch to ${BURNTATO_DEPLOYMENT.network}`, action: game.switchToRobinhood, disabled: game.networkSwitchBlocked };
   }
 
-  const selected = operator.operatorId !== null;
   const registerBatchPending = pending(operator, "register-burntato-batch");
   const syncBatchPending = pending(operator, "sync-burntato-batch");
   const claimBatchPending = pending(operator, "claim-burntato-batch");
-  const actionPending = pending(operator, "register-burntato")
-    || registerBatchPending
-    || pending(operator, "sync-burntato")
-    || syncBatchPending
-    || pending(operator, "claim-burntato")
-    || claimBatchPending;
+  const actionPending = registerBatchPending || syncBatchPending || claimBatchPending;
   const hasBatchAction = operator.batchRegisterOperatorIds.length > 0
     || operator.batchSyncOperatorIds.length > 0
     || operator.batchClaimOperatorIds.length > 0;
@@ -79,24 +70,19 @@ export function OperatorScreen() {
 
           {wallet.status === "ready" && (
             <>
-              <label className="operator-token-field">
-                <span>Your Operator</span>
-                <select
-                  aria-label="Your Operator"
-                  disabled={operator.ownedOperatorsLoading || operator.ownedOperatorIds.length === 0}
-                  value={operator.operatorId?.toString() ?? ""}
-                  onChange={(event) => operator.setOperatorId(event.target.value ? BigInt(event.target.value) : null)}
-                >
-                  <option value="" disabled>{operator.ownedOperatorsLoading ? "Reading wallet…" : "No Operators found"}</option>
-                  {operator.ownedOperatorIds.map((id) => <option key={id.toString()} value={id.toString()}>Operator #{id.toString()}</option>)}
-                </select>
-              </label>
-
               {!operator.ownedOperatorsLoading && operator.ownedOperatorIds.length === 0 && (
                 <div className="operator-empty"><BadgeCheck aria-hidden="true" /><strong>No Operators found</strong><span>This wallet does not currently own a Statics Operator.</span></div>
               )}
 
-              {operator.ownedOperatorIds.length > 1 && hasBatchAction && (
+              {operator.ownedOperatorIds.length > 0 && (
+                <dl className="operator-metrics" aria-label="Wallet Operator rewards">
+                  <div><dt>Reward pool share</dt><dd>{formatOperatorRewardShare(operator.walletRegisteredWeight, operator.totalRegisteredWeight)}</dd></div>
+                  <div><dt>Total Operators</dt><dd>{operator.totalRegisteredOperators.toLocaleString()}</dd></div>
+                  <div><dt>Claimable</dt><dd>{formatEth(operator.batchClaimable)} ETH</dd></div>
+                </dl>
+              )}
+
+              {operator.ownedOperatorIds.length > 0 && hasBatchAction && (
                 <div className="operator-batch-actions" aria-label="All Operator actions">
                   {operator.batchRegisterOperatorIds.length > 0 && (
                     <div className="operator-batch-action">
@@ -126,7 +112,7 @@ export function OperatorScreen() {
                   )}
                   {operator.batchClaimOperatorIds.length > 0 && (
                     <div className="operator-batch-action">
-                      <span><small>All claimable rewards</small><strong>{formatEth(operator.batchClaimable)} ETH</strong></span>
+                      <span><small>Ready to claim</small><strong>{operator.batchClaimOperatorIds.length} {operatorLabel(operator.batchClaimOperatorIds.length)}</strong></span>
                       <button
                         className="operator-action is-primary"
                         type="button"
@@ -139,40 +125,10 @@ export function OperatorScreen() {
                   )}
                 </div>
               )}
-
-              {selected && (
-                <>
-                  <dl className="operator-metrics" aria-label="Selected Operator rewards">
-                    <div><dt>Current weight</dt><dd>{operator.routerPreview.currentWeight ? `${operator.routerPreview.currentWeight / 100}%` : "—"}</dd></div>
-                    <div><dt>Registered</dt><dd>{operator.routerRegistration.weight ? `${operator.routerRegistration.weight / 100}%` : "No"}</dd></div>
-                    <div><dt>Claimable</dt><dd>{formatEth(operator.routerPreview.claimable)} ETH</dd></div>
-                  </dl>
-
-                  {operator.routerPreview.transferDetected && (
-                    <p className="operator-inline-error">This Operator changed owners or lost activation weight. Register it again to continue. Unclaimed rewards from the previous registration will be shared with other Operators.</p>
-                  )}
-
-                  {rewardsAction === "register" ? (
-                    <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || actionPending || operator.loading} onClick={() => void operator.registerBurntato()}>
-                      {actionLabel(operator, "register-burntato", registeredOwner ? "Register current ownership" : "Register for rewards")}
-                    </button>
-                  ) : rewardsAction === "sync" ? (
-                    <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || actionPending || operator.loading} onClick={() => void operator.syncBurntato()}>
-                      {actionLabel(operator, "sync-burntato", "Update reward weight")}
-                    </button>
-                  ) : (
-                    <button className="operator-action is-primary" type="button" disabled={Boolean(readinessAction) || actionPending || operator.loading || operator.routerPreview.claimable === 0n} onClick={() => void operator.claimBurntato()}>
-                      {actionLabel(operator, "claim-burntato", "Claim Operator ETH")}
-                    </button>
-                  )}
-
-                </>
-              )}
             </>
           )}
 
           {operator.error && <p className="operator-inline-error" role="alert">{operator.error}</p>}
-          {selected && operator.loading && <p className="operator-sync" role="status">Updating rewards…</p>}
 
           {BURNTATO_DEPLOYMENT.explorer && (
             <a className="operator-contract-link" href={`${BURNTATO_DEPLOYMENT.explorer}/address/${BURNTATO_DEPLOYMENT.operatorRewardsRouter}`} target="_blank" rel="noopener noreferrer">

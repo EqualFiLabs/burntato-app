@@ -8,6 +8,7 @@ const other = "0x2222222222222222222222222222222222222222" as Address;
 
 describe("Operator ownership discovery", () => {
   it("deduplicates incoming transfers and verifies current ownership", async () => {
+    let multicallCount = 0;
     const client = {
       getBlockNumber: async () => 112_400_000n,
       getLogs: async () => [
@@ -16,19 +17,37 @@ describe("Operator ownership discovery", () => {
         { args: { tokenId: 12n } },
         { args: { tokenId: 8n } },
       ],
-      readContract: async ({ args }: { args: readonly [bigint] }) => args[0] === 8n ? other : account,
+      multicall: async ({
+        contracts,
+      }: {
+        contracts: readonly { args: readonly [bigint] }[];
+      }) => {
+        multicallCount += 1;
+        return contracts.map(({ args }) => ({
+          status: "success",
+          result: args[0] === 8n ? other : account,
+        }));
+      },
     } as unknown as PublicClient;
 
-    await expect(discoverOwnedOperatorIds(client, account)).resolves.toEqual([3n, 12n]);
+    await expect(discoverOwnedOperatorIds(client, account)).resolves.toEqual([
+      3n,
+      12n,
+    ]);
+    expect(multicallCount).toBe(1);
   });
 
-  it("returns an empty dropdown when the wallet has no incoming Operators", async () => {
+  it("returns an empty set when the wallet has no incoming Operators", async () => {
     const client = {
       getBlockNumber: async () => 112_400_000n,
       getLogs: async () => [],
-      readContract: async () => account,
+      multicall: async () => {
+        throw new Error("multicall should not run without candidates");
+      },
     } as unknown as PublicClient;
 
-    await expect(discoverOwnedOperatorIds(client, account)).resolves.toEqual([]);
+    await expect(discoverOwnedOperatorIds(client, account)).resolves.toEqual(
+      [],
+    );
   });
 });

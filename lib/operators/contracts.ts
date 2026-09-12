@@ -74,6 +74,7 @@ export const operatorRewardsAbi = parseAbi([
   "function registrationOf(uint256 operatorId) view returns (Registration registration)",
   "function previewRewards(uint256 operatorId) view returns (address currentOwner,uint16 currentWeight,bool transferDetected,uint256 claimable,uint256 forfeitable,uint256 rewardRemainder)",
   "function totalRegisteredWeight() view returns (uint256)",
+  "function totalRegisteredOperators() view returns (uint256)",
   "function pendingRevenue() view returns (uint256)",
   "function totalReceived() view returns (uint256)",
   "event OperatorRegistered(uint256 indexed operatorId,address indexed owner,uint16 weight)",

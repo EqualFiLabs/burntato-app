@@ -4613,28 +4613,6 @@ button {
 .operator-metrics dt { color: var(--text-muted-warm); font-size: var(--font-caption); }
 .operator-metrics dd { overflow: hidden; margin: 0.6cqw 0 0; font-size: var(--font-value-small); font-weight: 900; text-overflow: ellipsis; white-space: nowrap; }
 
-.operator-token-field {
-  display: grid;
-  margin-top: 2.5cqw;
-  gap: 1cqw;
-  color: #dfc3a5;
-  font-size: var(--font-caption);
-  font-weight: 800;
-}
-
-.operator-token-field select {
-  width: 100%;
-  min-height: 10cqw;
-  padding: 0 3cqw;
-  border: 0.2cqw solid rgba(255, 155, 32, 0.48);
-  border-radius: 2cqw;
-  outline: none;
-  color: #fff5e8;
-  background: #0e0b08;
-  font-size: var(--font-value-small);
-}
-
-.operator-token-field select:focus-visible,
 .operator-action:focus-visible,
 .operator-contract-link:focus-visible {
   outline: 3px solid #ffd05a;
@@ -4696,8 +4674,7 @@ button {
 .operator-batch-action strong { display: block; margin-top: 0.6cqw; overflow: hidden; font-size: var(--font-value-small); text-overflow: ellipsis; white-space: nowrap; }
 .operator-batch-action .operator-action { min-height: 8cqw; }
 
-.operator-inline-error,
-.operator-sync {
+.operator-inline-error {
   margin: 2.2cqw 0;
   padding: 2.1cqw;
   border-radius: 1.8cqw;
@@ -4811,8 +4788,6 @@ button {
   .operator-metrics div { padding: 12px; border-width: 1px; }
   .operator-metrics dt { font-size: var(--font-caption); }
   .operator-metrics dd { margin-top: 5px; font-size: 15px; }
-  .operator-token-field { margin-top: 14px; gap: 6px; font-size: var(--font-caption); }
-  .operator-token-field select { min-height: 46px; padding: 0 14px; border-width: 1px; border-radius: 10px; font-size: 15px; }
   .operator-action { min-height: 46px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: var(--font-control); }
   .operator-batch-actions { margin-top: 14px; border-width: 1px; border-radius: 10px; }
   .operator-batch-action { padding: 10px; gap: 10px; border-width: 1px; grid-template-columns: minmax(0, 1fr) minmax(120px, auto); }
@@ -4820,7 +4795,7 @@ button {
   .operator-batch-action .operator-action { min-height: 38px; }
   .operator-readiness { margin-top: 14px; gap: 8px; }
   .operator-readiness svg { width: 18px; height: 18px; }
-  .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: var(--font-body-small); }
+  .operator-inline-error { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: var(--font-body-small); }
   .operator-empty { min-height: 130px; margin-top: 14px; padding: 16px; }
   .operator-empty svg { width: 26px; height: 26px; }
   .operator-empty strong { font-size: 15px; }

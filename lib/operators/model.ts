@@ -43,6 +43,7 @@ export type OperatorActionBatches = {
   syncOperatorIds: bigint[];
   claimOperatorIds: bigint[];
   claimable: bigint;
+  registeredWeight: bigint;
 };
 
 export function operatorPreviewFromResult(result: OperatorPreviewResult): OperatorPreview {
@@ -56,6 +57,7 @@ export function operatorActionBatches(account: Address | null, rewards: readonly
     syncOperatorIds: [],
     claimOperatorIds: [],
     claimable: 0n,
+    registeredWeight: 0n,
   };
   if (!account) return batches;
   const normalizedAccount = account.toLowerCase();
@@ -78,6 +80,7 @@ export function operatorActionBatches(account: Address | null, rewards: readonly
       continue;
     }
     if (registeredOwner !== normalizedAccount) continue;
+    batches.registeredWeight += BigInt(reward.registration.weight);
     if (reward.preview.currentWeight > reward.registration.weight) {
       batches.syncOperatorIds.push(reward.operatorId);
     }
@@ -89,12 +92,16 @@ export function operatorActionBatches(account: Address | null, rewards: readonly
   return batches;
 }
 
-export type OperatorRewardAction = "register" | "sync" | "claim";
-
-export function operatorRewardAction(account: Address | null, registration: OperatorRegistration, preview: OperatorPreview): OperatorRewardAction {
-  const registeredByWallet = Boolean(account && registration.owner.toLowerCase() === account.toLowerCase());
-  if (!registeredByWallet || preview.transferDetected) return "register";
-  return preview.currentWeight > registration.weight ? "sync" : "claim";
+export function formatOperatorRewardShare(registeredWeight: bigint, totalRegisteredWeight: bigint): string {
+  if (registeredWeight === 0n || totalRegisteredWeight === 0n) return "0%";
+  const boundedWeight = registeredWeight > totalRegisteredWeight ? totalRegisteredWeight : registeredWeight;
+  const hundredths = boundedWeight * 10_000n / totalRegisteredWeight;
+  if (hundredths === 0n) return "<0.01%";
+  const whole = hundredths / 100n;
+  const fraction = hundredths % 100n;
+  if (fraction === 0n) return `${whole}%`;
+  if (fraction % 10n === 0n) return `${whole}.${fraction / 10n}%`;
+  return `${whole}.${fraction.toString().padStart(2, "0")}%`;
 }
 
 export function faucetEligibility(chainNow: bigint, nextClaimAt: bigint, balance: bigint, claimAmount: bigint): { ready: boolean; funded: boolean } {

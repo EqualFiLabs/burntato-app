@@ -5,9 +5,9 @@ import {
   activationUpgradeCost,
   describeOperatorError,
   faucetEligibility,
+  formatOperatorRewardShare,
   operatorActionBatches,
   operatorPreviewFromResult,
-  operatorRewardAction,
   parseOperatorId,
 } from "./model";
 
@@ -35,16 +35,17 @@ describe("Operator onboarding state", () => {
     expect(describeOperatorError(new Error("InvalidOperatorOwner(1, a, b)"))).toContain("not the current owner");
   });
 
-  it("derives faucet readiness and each receipt-bound reward action", () => {
+  it("derives faucet readiness", () => {
     expect(faucetEligibility(100n, 100n, 200n, 200n)).toEqual({ ready: true, funded: true });
     expect(faucetEligibility(99n, 100n, 199n, 200n)).toEqual({ ready: false, funded: false });
-    expect(operatorRewardAction(account, { ...registration, owner: ZERO_ADDRESS }, preview)).toBe("register");
-    expect(operatorRewardAction(account, registration, { ...preview, currentWeight: 12_500 })).toBe("sync");
-    expect(operatorRewardAction(account, registration, preview)).toBe("claim");
   });
 
-  it("forces re-registration after owner or weight invalidation", () => {
-    expect(operatorRewardAction(account, registration, { ...preview, currentOwner: "0x2222222222222222222222222222222222222222", transferDetected: true, forfeitable: 5n })).toBe("register");
+  it("formats activation-weighted wallet reward share", () => {
+    expect(formatOperatorRewardShare(0n, 0n)).toBe("0%");
+    expect(formatOperatorRewardShare(25_000n, 100_000n)).toBe("25%");
+    expect(formatOperatorRewardShare(12_500n, 30_000n)).toBe("41.66%");
+    expect(formatOperatorRewardShare(1n, 20_000n)).toBe("<0.01%");
+    expect(formatOperatorRewardShare(125_000n, 100_000n)).toBe("100%");
   });
 
   it("maps the positional rewards contract result to named UI fields", () => {
@@ -74,12 +75,14 @@ describe("Operator onboarding state", () => {
       syncOperatorIds: [2n],
       claimOperatorIds: [2n, 9n],
       claimable: 8n,
+      registeredWeight: 20_000n,
     });
     expect(operatorActionBatches(null, rewards)).toEqual({
       registerOperatorIds: [],
       syncOperatorIds: [],
       claimOperatorIds: [],
       claimable: 0n,
+      registeredWeight: 0n,
     });
   });
 });
