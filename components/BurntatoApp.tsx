@@ -30,7 +30,7 @@ import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
 import { ScreenHero } from "@/components/ScreenHero";
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
-import { countdownSeconds, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
+import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
 
@@ -557,6 +557,7 @@ function LiveCountdown({ deadline, anchor }: { deadline: bigint; anchor: bigint 
 function GrabScreen({ showRound }: { showRound: () => void }) {
   const game = useBurntatoState();
   const wallet = useWalletState();
+  const displayRoundId = game.currentRoundId === 0n ? 1n : game.currentRoundId;
   const price = game.currentRound?.nextPrice ?? game.protocolConfig?.startingPrice ?? 0n;
   const isHolder = Boolean(wallet.activeAddress && game.currentRound?.currentHolder.toLowerCase() === wallet.activeAddress.toLowerCase());
   const vestingMature = Boolean(game.currentRound && game.chainNow >= game.currentRound.holderSince + game.currentRound.config.emissionVestingDuration);
@@ -614,10 +615,10 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
           <div className="metric-copy">
             <span className="metric-label">
               {game.phase === "unstarted"
-                ? `Round #${game.currentRoundId} · Status`
+                ? `Round #${displayRoundId} · Status`
                 : isHolder
                   ? `${formatPotato(game.currentEmission[0] + game.currentEmission[1])} POTATO earned`
-                  : `Round #${game.currentRoundId} · Time left`}
+                  : `Round #${displayRoundId} · Time left`}
             </span>
             <strong className="digital-value">{game.phase === "unstarted" ? "READY TO START" : game.phase === "settled" ? "SETTLED" : game.currentRound ? <LiveCountdown key={game.chainNow.toString()} deadline={game.currentRound.deadline} anchor={game.chainNow} /> : "--:--:--"}</strong>
           </div>
@@ -626,7 +627,7 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
           <span className="metric-icon eth-icon"><EthereumMark /></span>
           <div className="metric-copy">
             <span className="metric-label" title={game.currentRound?.currentHolder}>Current Pot · {game.phase === "unstarted" ? "No holder" : game.currentRound ? shortAddress(game.currentRound.currentHolder) : "—"}</span>
-            <strong>{formatEth(game.currentRound?.winnerPool ?? 0n)} ETH</strong>
+            <strong>{formatEth(currentWinnerPot(game.currentRound, game.genesisWinnerReserve))} ETH</strong>
           </div>
           <span className="coin-stack" aria-hidden="true">
             <span /><span /><span />

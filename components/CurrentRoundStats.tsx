@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import {
   countdownSeconds,
+  currentWinnerPot,
   formatCountdown,
   formatEth,
   formatPotato,
@@ -71,7 +72,7 @@ export function CurrentRoundStats({
         holderAccrued: 0n,
         holderAccruedFinalized: false,
       };
-  const winnerPot = round?.winnerPool ?? genesisWinnerReserve;
+  const winnerPot = currentWinnerPot(round, genesisWinnerReserve);
   const recoveryPool = round?.recoveryPool ?? 0n;
   const holder = round?.currentHolder;
   const hasHolder = Boolean(holder && holder.toLowerCase() !== ZERO_ADDRESS);

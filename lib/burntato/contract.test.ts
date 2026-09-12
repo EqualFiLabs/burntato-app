@@ -97,6 +97,7 @@ describe("Robinhood deployment parity", () => {
     expect(selector(genesisVaultAbi, "buyGenesis")).toBe("0xc12e4b23");
     expect(selector(activationRegistryAbi, "activate")).toBe("0x4578f5f0");
     expect(selector(operatorRewardsAbi, "register")).toBe("0xf207564e");
+    expect(selector(operatorRewardsAbi, "totalRegisteredOperators")).toBe("0x7b789f0b");
     expect(selector(operatorRewardsAbi, "registerBatch")).toBe("0x69e4863f");
     expect(selector(operatorRewardsAbi, "sync")).toBe("0xb1357bf9");
     expect(selector(operatorRewardsAbi, "syncBatch")).toBe("0x36ad7cd9");
