@@ -33,6 +33,7 @@ Set `NEXT_PUBLIC_BURNTATO_INDEXER_URL` to its public origin. Ponder owns `/healt
 - Play starts/grabs or settles a round and permissionlessly materializes matured holder emission.
 - Round shows only the current round's pot, next three Grab prices, recovery balances, committed POTATO, and remaining emission runway.
 - Burn commits wallet POTATO to the next recovery round.
+- Upcoming shows onchain Winner and Recovery sponsorship for future rounds, lets anyone fund both pots in one transaction, and provides shareable round links.
 - Rewards independently verifies and claims winner/recovery positions by round.
 - Leaderboard derives from the durable event index, with a labeled bounded direct-RPC fallback.
 - Operators reads the connected wallet's current Statics Operator ownership, lets the user select an owned token from a dropdown, and registers, syncs, or claims Burntato revenue, including one-transaction claims across multiple registered Operators.
@@ -41,6 +42,8 @@ Set `NEXT_PUBLIC_BURNTATO_INDEXER_URL` to its public origin. Ponder owns `/healt
 Registered Operators receive 15% of direct game purchases and 40% of the pool’s 1% bilateral swap fee. An owner change or activation-weight decrease invalidates the Burntato registration; forfeited rewards redistribute to other valid Operators, or Treasury when no valid registered weight remains. Activation increases remain valid after sync.
 
 Operator acquisition, activation, and STATICS faucet access belong to the Statics application and are intentionally not exposed by Burntato.
+
+Future-round sponsorship requires the per-round reserve ABI introduced by the matching Burntato protocol release. Older deployments remain usable; the Upcoming screen identifies sponsorship as unavailable without breaking other reads. Set `NEXT_PUBLIC_BURNTATO_SITE_URL` to the public application origin so shared `/rounds/[roundId]` pages emit canonical metadata and dynamic social cards.
 
 ## Deployed Robinhood system
 

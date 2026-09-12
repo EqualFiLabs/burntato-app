@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
 
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
+import { publicSiteUrl } from "@/lib/burntato/sponsorship";
 import { DAppProviders } from "@/providers/DAppProviders";
 
 import "./globals.css";
 
+const metadataBase = publicSiteUrl(process.env.NEXT_PUBLIC_BURNTATO_SITE_URL) ?? undefined;
+
 export const metadata: Metadata = {
+  metadataBase,
   title: { default: "Burntato", template: "%s · Burntato" },
   description: `A fully onchain Hot Potato game on ${BURNTATO_DEPLOYMENT.network}.`,
   applicationName: "Burntato",
