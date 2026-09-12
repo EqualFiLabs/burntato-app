@@ -3,6 +3,7 @@
 import {
   ArrowLeftRight,
   BadgeCheck,
+  CalendarDays,
   Check,
   ChevronDown,
   Copy,
@@ -29,12 +30,13 @@ import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
 import { ScreenHero } from "@/components/ScreenHero";
+import { UpcomingRounds, type InitialSponsoredRound } from "@/components/UpcomingRounds";
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
 
-type Screen = "grab" | "round" | "burn" | "portal" | "leaderboard" | "rewards" | "operators";
+type Screen = "grab" | "round" | "burn" | "portal" | "leaderboard" | "rewards" | "operators" | "upcoming";
 type RewardsTab = "ready" | "positions" | "history";
 type LeaderboardMetric = "earned" | "wins" | "hold" | "recovery";
 type LeaderboardPeriod = "all-time" | "round";
@@ -757,6 +759,7 @@ const destinationNavigation = [
   { id: "burn", label: "Burn", Icon: Flame, screen: "burn" },
   { id: "portal", label: "Portal", Icon: ArrowLeftRight, screen: "portal" },
   { id: "rewards", label: "Rewards", Icon: Gift, screen: "rewards" },
+  { id: "upcoming", label: "Upcoming", Icon: CalendarDays, screen: "upcoming" },
   { id: "operators", label: "Operators", Icon: BadgeCheck, screen: "operators" },
   { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
 ] as const;
@@ -822,7 +825,7 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
             );
           })}
           <button
-            className={menuOpen || screen === "round" || screen === "leaderboard" || screen === "operators" ? "nav-item is-active" : "nav-item"}
+            className={menuOpen || screen === "round" || screen === "leaderboard" || screen === "operators" || screen === "upcoming" ? "nav-item is-active" : "nav-item"}
             type="button"
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation-menu"
@@ -901,10 +904,18 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
   );
 }
 
-export function BurntatoApp() {
+export function BurntatoApp({
+  initialScreen = "grab",
+  focusRoundId,
+  initialSponsoredRound,
+}: {
+  initialScreen?: Screen;
+  focusRoundId?: string;
+  initialSponsoredRound?: InitialSponsoredRound;
+} = {}) {
   const wallet = useWalletState();
   const game = useBurntatoState();
-  const [screen, setScreen] = useState<Screen>("grab");
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const transactionNotice = game.latestTransaction?.message;
   const displayedNotice = wallet.error ?? game.readError ?? game.historyError ?? transactionNotice;
 
@@ -930,6 +941,9 @@ export function BurntatoApp() {
       {screen === "portal" && <LivePortalScreen />}
       {screen === "rewards" && <RewardsScreen />}
       {screen === "operators" && <OperatorScreen />}
+      {screen === "upcoming" && (
+        <UpcomingRounds focusRoundId={focusRoundId} initialSponsoredRound={initialSponsoredRound} />
+      )}
       <BottomNavigation screen={screen} select={setScreen} />
       <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">
         <span>{displayedNotice}</span>

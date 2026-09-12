@@ -30,6 +30,9 @@ ponder.on("Burntato:RecoveryCommitted", record("burntato", "RecoveryCommitted"))
 ponder.on("Burntato:RoundSettled", record("burntato", "RoundSettled"));
 ponder.on("Burntato:WinnerClaimed", record("burntato", "WinnerClaimed"));
 ponder.on("Burntato:RecoveryClaimed", record("burntato", "RecoveryClaimed"));
+ponder.on("Burntato:WinnerReserveFunded", record("burntato", "WinnerReserveFunded"));
+ponder.on("Burntato:NextRoundWinnerFunded", record("burntato", "NextRoundWinnerFunded"));
+ponder.on("Burntato:RecoveryReserveFunded", record("burntato", "RecoveryReserveFunded"));
 
 ponder.on("OperatorRouter:OperatorRegistered", record("operator", "OperatorRegistered"));
 ponder.on("OperatorRouter:OperatorWeightUpdated", record("operator", "OperatorWeightUpdated"));

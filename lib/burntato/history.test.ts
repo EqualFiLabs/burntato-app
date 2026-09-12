@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildLeaderboard, candidateRoundIds, dedupeEvents, fetchIndexedHistory, type BurntatoEvent } from "./history";
+import { buildLeaderboard, candidateRoundIds, dedupeEvents, fetchIndexedHistory, sponsorshipRoundIds, type BurntatoEvent } from "./history";
 
 const alice = "0x1111111111111111111111111111111111111111";
 const bob = "0x2222222222222222222222222222222222222222";
@@ -39,6 +39,26 @@ describe("event projection", () => {
       event("RoundSettled", 2, { roundId: 5n, winner: alice }),
     ], alice);
     expect(rounds).toEqual([5n, 4n]);
+  });
+
+  it("discovers future sponsorship targets and always includes the next round", () => {
+    const rounds = sponsorshipRoundIds([
+      event("WinnerReserveFunded", 1, { targetRoundId: 12n, amount: 10n }),
+      event("RecoveryReserveFunded", 2, { targetRoundId: 8n, amount: 20n }),
+      event("NextRoundWinnerFunded", 3, { targetRoundId: 7n, amount: 30n }),
+      event("WinnerReserveFunded", 4, { targetRoundId: 5n, amount: 40n }),
+    ], 6n);
+    expect(rounds).toEqual([7n, 8n, 12n]);
+  });
+
+  it("bounds onchain verification work to the nearest 100 upcoming rounds", () => {
+    const events = Array.from({ length: 120 }, (_, index) =>
+      event("WinnerReserveFunded", index, { targetRoundId: 2n + BigInt(index), amount: 1n })
+    );
+    const rounds = sponsorshipRoundIds(events, 1n);
+    expect(rounds).toHaveLength(100);
+    expect(rounds[0]).toBe(2n);
+    expect(rounds.at(-1)).toBe(101n);
   });
 });
 

@@ -3,7 +3,7 @@ import { decodeEventLog, type Address, type PublicClient } from "viem";
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "./contract";
 
 export type BurntatoEvent = {
-  name: "PotatoPurchased" | "EmissionFinalized" | "TreasuryRewardFinalized" | "RecoveryCommitted" | "RoundSettled" | "WinnerClaimed" | "RecoveryClaimed";
+  name: "PotatoPurchased" | "EmissionFinalized" | "TreasuryRewardFinalized" | "RecoveryCommitted" | "RoundSettled" | "WinnerClaimed" | "RecoveryClaimed" | "WinnerReserveFunded" | "NextRoundWinnerFunded" | "RecoveryReserveFunded";
   blockNumber: bigint;
   transactionHash: `0x${string}`;
   logIndex: number;
@@ -45,6 +45,9 @@ const TRACKED_EVENTS = new Set<BurntatoEvent["name"]>([
   "RoundSettled",
   "WinnerClaimed",
   "RecoveryClaimed",
+  "WinnerReserveFunded",
+  "NextRoundWinnerFunded",
+  "RecoveryReserveFunded",
 ]);
 
 function reviveIndexedValue(value: unknown): unknown {
@@ -223,4 +226,18 @@ export function candidateRoundIds(events: BurntatoEvent[], account: Address): bi
     if (event.name === "RecoveryCommitted" && asAddress(event.args.account) === normalized) rounds.add(asBigInt(event.args.roundId));
   }
   return [...rounds].sort((a, b) => a > b ? -1 : 1);
+}
+
+export function sponsorshipRoundIds(events: BurntatoEvent[], currentRoundId: bigint): bigint[] {
+  const rounds = new Set<bigint>([currentRoundId + 1n]);
+  for (const event of events) {
+    if (
+      event.name !== "WinnerReserveFunded"
+      && event.name !== "NextRoundWinnerFunded"
+      && event.name !== "RecoveryReserveFunded"
+    ) continue;
+    const targetRoundId = asBigInt(event.args.targetRoundId);
+    if (targetRoundId > currentRoundId) rounds.add(targetRoundId);
+  }
+  return [...rounds].sort((a, b) => a < b ? -1 : 1).slice(0, 100);
 }

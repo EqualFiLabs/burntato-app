@@ -143,5 +143,6 @@ describe("transaction feedback", () => {
     expect(describeBurntatoError(new Error("User rejected the request"))).toContain("cancelled");
     expect(describeBurntatoError(new Error("ProtocolPaused()"))).toContain("paused");
     expect(describeBurntatoError(new Error("PurchasesNotInitialized()"))).toContain("not been initialized");
+    expect(describeBurntatoError(new Error("InvalidFutureRound(4, 4)"))).toContain("later round");
   });
 });
