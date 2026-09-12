@@ -9,6 +9,9 @@ const burntatoAbi = parseAbi([
   "event RoundSettled(uint256 indexed roundId,address indexed winner,uint256 winnerPool,uint256 recoveryPool,uint256 totalCommitted,uint256 burnedPotato,uint256 treasuryPotato)",
   "event WinnerClaimed(uint256 indexed roundId,address indexed winner,address indexed recipient,uint256 amount)",
   "event RecoveryClaimed(uint256 indexed roundId,address indexed account,address indexed recipient,uint256 amount)",
+  "event WinnerReserveFunded(address indexed funder,uint256 indexed targetRoundId,uint256 amount,uint256 roundReserveEth)",
+  "event NextRoundWinnerFunded(uint256 indexed roundId,uint256 indexed targetRoundId,uint256 amount,uint256 roundReserveEth)",
+  "event RecoveryReserveFunded(address indexed funder,uint256 indexed targetRoundId,uint256 amount,uint256 roundReserveEth)",
 ]);
 
 const operatorAbi = parseAbi([

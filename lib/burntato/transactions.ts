@@ -6,6 +6,7 @@ export type TransactionAction =
   | "settle"
   | "collect"
   | "commit"
+  | `sponsor-${string}`
   | `winner-${string}`
   | `recovery-${string}`;
 
@@ -22,7 +23,7 @@ export type Transactions = Partial<Record<TransactionAction, TransactionState>>;
 const GAMEPLAY_ACTIONS = ["grab", "settle", "collect", "commit"] as const;
 
 export function isGameplayAction(action: TransactionAction): boolean {
-  return GAMEPLAY_ACTIONS.some((gameplayAction) => gameplayAction === action);
+  return action.startsWith("sponsor-") || GAMEPLAY_ACTIONS.some((gameplayAction) => gameplayAction === action);
 }
 
 export function isTransactionPending(state: TransactionState | undefined): boolean {
@@ -35,7 +36,9 @@ export function isTransactionPending(state: TransactionState | undefined): boole
  * independently keyed by round and does not change the active round.
  */
 export function hasGameplayTransactionPending(transactions: Transactions): boolean {
-  return GAMEPLAY_ACTIONS.some((action) => isTransactionPending(transactions[action]));
+  return Object.entries(transactions).some(([action, state]) =>
+    isGameplayAction(action as TransactionAction) && isTransactionPending(state)
+  );
 }
 
 export function hasNetworkTransactionPending(transactions: Transactions): boolean {

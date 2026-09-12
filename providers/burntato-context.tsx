@@ -12,11 +12,13 @@ import {
   dedupeEvents,
   fetchIndexedHistory,
   scanBurntatoEvents,
+  sponsorshipRoundIds,
   type BurntatoEvent,
   type LeaderboardRow,
   type RewardCandidate,
 } from "@/lib/burntato/history";
 import { describeBurntatoError, deriveRoundPhase, type BurntatoRound, type RoundConfig, type RoundPhase } from "@/lib/burntato/model";
+import type { SponsoredRound } from "@/lib/burntato/sponsorship";
 import {
   canStartTransaction,
   hasAnyTransactionPending,
@@ -47,6 +49,9 @@ type BurntatoState = {
   activeRecoveryTotalCommitment: bigint;
   genesisWinnerReserve: bigint;
   genesisTreasuryBudget: bigint;
+  sponsorshipAvailable: boolean;
+  upcomingRounds: SponsoredRound[];
+  upcomingRoundsLoading: boolean;
   loading: boolean;
   readError: string | null;
   history: BurntatoEvent[];
@@ -65,6 +70,7 @@ type BurntatoState = {
   settle: () => Promise<void>;
   collect: () => Promise<void>;
   commit: (amount: bigint) => Promise<void>;
+  fundRound: (roundId: bigint, winnerAmount: bigint, recoveryAmount: bigint) => Promise<void>;
   claim: (reward: RewardCandidate) => Promise<void>;
   dismissTransactionNotice: () => void;
 };
@@ -89,6 +95,9 @@ export const defaultBurntatoState: BurntatoState = {
   activeRecoveryTotalCommitment: 0n,
   genesisWinnerReserve: 0n,
   genesisTreasuryBudget: 0n,
+  sponsorshipAvailable: false,
+  upcomingRounds: [],
+  upcomingRoundsLoading: false,
   loading: false,
   readError: null,
   history: [],
@@ -107,6 +116,7 @@ export const defaultBurntatoState: BurntatoState = {
   settle: async () => undefined,
   collect: async () => undefined,
   commit: async () => undefined,
+  fundRound: async () => undefined,
   claim: async () => undefined,
   dismissTransactionNotice: () => undefined,
 };
@@ -117,6 +127,7 @@ type Snapshot = Pick<BurntatoState,
   "chainNow" | "currentRoundId" | "currentRound" | "protocolConfig" | "currentEmission" |
   "purchasesPaused" | "commitmentsPaused" | "potatoBalance" | "targetRoundId" | "ownCommitment" | "totalCommitment" |
   "activeRecoveryCommitment" | "activeRecoveryTotalCommitment" | "genesisWinnerReserve" | "genesisTreasuryBudget"
+  | "sponsorshipAvailable"
 >;
 
 const emptySnapshot: Snapshot = {
@@ -135,6 +146,7 @@ const emptySnapshot: Snapshot = {
   activeRecoveryTotalCommitment: 0n,
   genesisWinnerReserve: 0n,
   genesisTreasuryBudget: 0n,
+  sponsorshipAvailable: false,
 };
 
 function contractRequest(functionName: string, args?: readonly unknown[]) {
@@ -155,7 +167,7 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
   ]);
   const currentRoundId = roundIdRaw as bigint;
   const targetRoundId = currentRoundId + 1n;
-  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, activeOwnRaw, activeTotalRaw, winnerReserveRaw, treasuryBudgetRaw] = await Promise.all([
+  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, activeOwnRaw, activeTotalRaw, winnerReserveRaw, treasuryBudgetRaw, sponsorshipCapabilityRaw] = await Promise.all([
     currentRoundId === 0n ? Promise.resolve(null) : readContract(client, "getRound", [currentRoundId]),
     currentRoundId === 0n ? Promise.resolve([0n, 0n] as const) : readContract(client, "currentEarnedEmission"),
     account ? readContract(client, "balanceOf", [account]) : Promise.resolve(0n),
@@ -165,6 +177,9 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     currentRoundId !== 0n ? readContract(client, "totalRecoveryCommitment", [currentRoundId]) : Promise.resolve(0n),
     currentRoundId === 0n ? readContract(client, "winnerReserveEth") : Promise.resolve(0n),
     currentRoundId === 0n ? readContract(client, "nextTreasuryRewardBudget") : Promise.resolve([0n, 0n] as const),
+    readContract(client, "roundReserves", [currentRoundId === 0n ? 1n : targetRoundId])
+      .then((reserves) => ({ available: true, reserves: reserves as readonly [bigint, bigint] }))
+      .catch(() => ({ available: false, reserves: [0n, 0n] as const })),
   ]);
   const [treasuryBudgetRoundId, treasuryBudget] = treasuryBudgetRaw as readonly [bigint, bigint];
   const genesisTreasuryBudget = treasuryBudgetRoundId === targetRoundId ? treasuryBudget : 0n;
@@ -182,8 +197,11 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     totalCommitment: totalRaw as bigint,
     activeRecoveryCommitment: activeOwnRaw as bigint,
     activeRecoveryTotalCommitment: activeTotalRaw as bigint,
-    genesisWinnerReserve: winnerReserveRaw as bigint,
+    genesisWinnerReserve: currentRoundId === 0n && sponsorshipCapabilityRaw.available
+      ? sponsorshipCapabilityRaw.reserves[0]
+      : winnerReserveRaw as bigint,
     genesisTreasuryBudget,
+    sponsorshipAvailable: sponsorshipCapabilityRaw.available,
   };
 }
 
@@ -226,6 +244,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<RewardCandidate[]>([]);
+  const [upcomingRounds, setUpcomingRounds] = useState<SponsoredRound[]>([]);
   const [transactions, setTransactions] = useState<Transactions>({});
   const [latestTransaction, setLatestTransaction] = useState<TransactionState | null>(null);
   const inFlightActionsRef = useRef(new Set<TransactionAction>());
@@ -312,6 +331,25 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [account, history, publicClient, snapshot.currentRoundId]);
 
+  useEffect(() => {
+    if (!publicClient || !snapshot.sponsorshipAvailable) return;
+    let cancelled = false;
+    const nextRoundId = snapshot.currentRoundId + 1n;
+    const roundIds = sponsorshipRoundIds(history, snapshot.currentRoundId);
+    void Promise.all(roundIds.map(async (roundId): Promise<SponsoredRound | null> => {
+      try {
+        const reserves = await readContract(publicClient as PublicClient, "roundReserves", [roundId]) as readonly [bigint, bigint];
+        if (roundId !== nextRoundId && reserves[0] === 0n && reserves[1] === 0n) return null;
+        return { roundId, winnerReserve: reserves[0], recoveryReserve: reserves[1] };
+      } catch {
+        return null;
+      }
+    })).then((rounds) => {
+      if (!cancelled) setUpcomingRounds(rounds.filter((round): round is SponsoredRound => round !== null));
+    });
+    return () => { cancelled = true; };
+  }, [history, publicClient, snapshot.currentRoundId, snapshot.sponsorshipAvailable]);
+
   const runTransaction = useCallback(async (action: TransactionAction, request: { functionName: string; args?: readonly unknown[]; value?: bigint }) => {
     if (!publicClient || !account) return;
     if (!canStartTransaction(action, inFlightActionsRef.current)) return;
@@ -373,6 +411,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
   }, 0n), [account, history]);
   const gameplayTransactionPending = hasGameplayTransactionPending(transactions);
   const networkSwitchBlocked = hasAnyTransactionPending(transactions);
+  const upcomingRoundsLoading = snapshot.sponsorshipAvailable && upcomingRounds.length === 0;
 
   const value = useMemo<BurntatoState>(() => ({
     configured: true,
@@ -387,6 +426,8 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     historyError,
     leaderboard,
     rewards: account ? rewards : [],
+    upcomingRounds: snapshot.sponsorshipAvailable ? upcomingRounds : [],
+    upcomingRoundsLoading: snapshot.sponsorshipAvailable && upcomingRoundsLoading,
     lifetimeClaimed,
     transactions,
     latestTransaction,
@@ -398,9 +439,14 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     settle: () => runTransaction("settle", { functionName: "settleRound" }),
     collect: () => runTransaction("collect", { functionName: "materializeMaturedEmission" }),
     commit: (amount) => runTransaction("commit", { functionName: "commitRecovery", args: [amount] }),
+    fundRound: (roundId, winnerAmount, recoveryAmount) => runTransaction(`sponsor-${roundId}`, {
+      functionName: "fundRoundReserves",
+      args: [roundId, winnerAmount, recoveryAmount],
+      value: winnerAmount + recoveryAmount,
+    }),
     claim: (reward) => runTransaction(`${reward.kind}-${reward.roundId}`, { functionName: reward.kind === "winner" ? "claimWinner" : "claimRecovery", args: [reward.roundId, account] }),
     dismissTransactionNotice: () => setLatestTransaction(null),
-  }), [account, chainId, gameplayTransactionPending, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToRobinhood, transactions]);
+  }), [account, chainId, gameplayTransactionPending, history, historyError, historyLoading, latestTransaction, leaderboard, lifetimeClaimed, loading, networkSwitchBlocked, readError, refresh, rewards, runTransaction, snapshot, switchToRobinhood, transactions, upcomingRounds, upcomingRoundsLoading]);
 
   return <BurntatoContext.Provider value={value}>{children}</BurntatoContext.Provider>;
 }

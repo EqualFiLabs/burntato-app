@@ -51,6 +51,15 @@ describe("transaction dependencies", () => {
     expect(canStartTransaction("winner-4", inFlight)).toBe(true);
   });
 
+  it("serializes future sponsorship with active-round changes", () => {
+    const sponsorInFlight = new Set(["sponsor-10"] as const);
+    expect(canStartTransaction("settle", sponsorInFlight)).toBe(false);
+    expect(canStartTransaction("sponsor-11", sponsorInFlight)).toBe(false);
+    expect(hasGameplayTransactionPending({
+      "sponsor-10": { stage: "confirming", message: "Waiting" },
+    })).toBe(true);
+  });
+
   it("tracks the network switch separately", () => {
     const transactions: Transactions = {
       network: { stage: "wallet", message: "Switch" },

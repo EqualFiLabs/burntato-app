@@ -142,6 +142,7 @@ export function describeBurntatoError(error: unknown): string {
     return "The wallet request was cancelled.";
   }
   if (normalized.includes("incorrectpayment")) return "The price changed before submission. Refresh and try again.";
+  if (normalized.includes("invalidfutureround")) return "That round is already active or complete. Choose a later round.";
   if (normalized.includes("roundexpired")) return "This round has expired. Settle it before grabbing again.";
   if (normalized.includes("roundnotexpired")) return "This round is still live.";
   if (normalized.includes("protocolpaused")) return "Burntato is currently paused.";
