@@ -45,6 +45,7 @@
   "overrides": {
     "axios": "1.19.0",
     "hono": "4.13.7",
+    "use-sync-external-store": "1.6.0",
     "ws@8": "8.21.3"
   }
 }
