@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampAmount,
   countdownSeconds,
+  currentWinnerPot,
   deriveRoundPhase,
   describeBurntatoError,
   formatCountdown,
@@ -78,6 +79,12 @@ describe("round presentation", () => {
 
   it("preserves low-cost testnet purchase prices", () => {
     expect(formatEth(10_000_000_000_000n)).toBe("0.00001");
+  });
+
+  it("shows the pending winner reserve until Round 1 activates", () => {
+    expect(currentWinnerPot(null, 3_150_000_000_000_000n)).toBe(3_150_000_000_000_000n);
+    expect(currentWinnerPot(round({ winnerPool: 4_000_000_000_000_000n }), 3_150_000_000_000_000n))
+      .toBe(4_000_000_000_000_000n);
   });
 
   it("projects grab prices with the contract's upward BPS rounding", () => {

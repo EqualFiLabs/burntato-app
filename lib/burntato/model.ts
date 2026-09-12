@@ -79,6 +79,10 @@ export function formatPotato(value: bigint, maximumFractionDigits = 2): string {
   return Number(formatUnits(value, 18)).toLocaleString("en-US", { maximumFractionDigits });
 }
 
+export function currentWinnerPot(round: BurntatoRound | null, pendingWinnerReserve: bigint): bigint {
+  return round?.winnerPool ?? pendingWinnerReserve;
+}
+
 export function clampAmount(value: bigint, balance: bigint): bigint {
   return value < 0n ? 0n : value > balance ? balance : value;
 }
