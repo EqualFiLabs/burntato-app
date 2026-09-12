@@ -4,7 +4,7 @@ import { CalendarDays, Check, Flame, Gift, Link as LinkIcon, Lock, Share2, Troph
 import { useMemo, useState, type FormEvent } from "react";
 
 import { formatEth } from "@/lib/burntato/model";
-import { parseSponsorship, roundSharePath } from "@/lib/burntato/sponsorship";
+import { parseSponsorship, roundFundingBreakdown, roundSharePath } from "@/lib/burntato/sponsorship";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
 
@@ -12,21 +12,32 @@ function shareUrl(roundId: bigint): string {
   return new URL(roundSharePath(roundId), window.location.origin).toString();
 }
 
-function SponsoredRoundCard({
+function UpcomingRoundCard({
   roundId,
   winnerReserve,
   recoveryReserve,
+  winnerSponsored,
+  recoverySponsored,
+  fundingBreakdownAvailable,
   currentRoundId,
   focused,
 }: {
   roundId: bigint;
   winnerReserve: bigint;
   recoveryReserve: bigint;
+  winnerSponsored: bigint;
+  recoverySponsored: bigint;
+  fundingBreakdownAvailable: boolean;
   currentRoundId: bigint;
   focused: boolean;
 }) {
   const [copied, setCopied] = useState(false);
-  const total = winnerReserve + recoveryReserve;
+  const { totalLocked, communitySponsored, protocolFunded } = roundFundingBreakdown({
+    winnerReserve,
+    recoveryReserve,
+    winnerSponsored,
+    recoverySponsored,
+  });
 
   async function copyLink() {
     try {
@@ -39,7 +50,10 @@ function SponsoredRoundCard({
   }
 
   function shareOnX() {
-    const text = `Round #${roundId.toString()} of Burntato has ${formatEth(winnerReserve)} ETH for the winner and ${formatEth(recoveryReserve)} ETH in Recovery. Funds are locked onchain and may keep growing.`;
+    const source = fundingBreakdownAvailable
+      ? ` ${formatEth(communitySponsored)} ETH was community sponsored.`
+      : "";
+    const text = `Round #${roundId.toString()} of Burntato has ${formatEth(totalLocked)} ETH locked onchain: ${formatEth(winnerReserve)} ETH for the winner and ${formatEth(recoveryReserve)} ETH in Recovery.${source} The pots may keep growing.`;
     window.open(`https://x.com/intent/post?${new URLSearchParams({ text, url: shareUrl(roundId) })}`, "_blank", "noopener,noreferrer");
   }
 
@@ -64,9 +78,17 @@ function SponsoredRoundCard({
         </div>
       </div>
       <div className="sponsored-round-total">
-        <span>Total sponsorship</span>
-        <strong>{formatEth(total)} ETH</strong>
+        <span>Total locked</span>
+        <strong>{formatEth(totalLocked)} ETH</strong>
       </div>
+      {fundingBreakdownAvailable ? (
+        <div className="round-funding-sources">
+          <span><small>Community sponsored</small><strong>{formatEth(communitySponsored)} ETH</strong></span>
+          <span><small>Protocol/game funded</small><strong>{formatEth(protocolFunded)} ETH</strong></span>
+        </div>
+      ) : (
+        <p className="round-funding-unavailable">Funding source breakdown is unavailable on this deployment.</p>
+      )}
       <p>These onchain amounts are locked for Round #{roundId.toString()} and may increase before it begins.</p>
       <div className="sponsored-round-share">
         <button type="button" onClick={() => void copyLink()}>
@@ -79,18 +101,21 @@ function SponsoredRoundCard({
   );
 }
 
-export type InitialSponsoredRound = {
+export type InitialUpcomingRoundFunding = {
   roundId: string;
   winnerReserve: string;
   recoveryReserve: string;
+  winnerSponsored: string;
+  recoverySponsored: string;
+  fundingBreakdownAvailable: boolean;
 };
 
 export function UpcomingRounds({
   focusRoundId,
-  initialSponsoredRound,
+  initialRoundFunding,
 }: {
   focusRoundId?: string;
-  initialSponsoredRound?: InitialSponsoredRound;
+  initialRoundFunding?: InitialUpcomingRoundFunding;
 }) {
   const game = useBurntatoState();
   const wallet = useWalletState();
@@ -112,17 +137,20 @@ export function UpcomingRounds({
       !requestedRound
       || requestedRound <= game.currentRoundId
       || game.upcomingRounds.some(({ roundId }) => roundId === requestedRound)
-      || initialSponsoredRound?.roundId !== requestedRound.toString()
+      || initialRoundFunding?.roundId !== requestedRound.toString()
     ) {
       return game.upcomingRounds;
     }
     const initial = {
       roundId: requestedRound,
-      winnerReserve: BigInt(initialSponsoredRound.winnerReserve),
-      recoveryReserve: BigInt(initialSponsoredRound.recoveryReserve),
+      winnerReserve: BigInt(initialRoundFunding.winnerReserve),
+      recoveryReserve: BigInt(initialRoundFunding.recoveryReserve),
+      winnerSponsored: BigInt(initialRoundFunding.winnerSponsored),
+      recoverySponsored: BigInt(initialRoundFunding.recoverySponsored),
+      fundingBreakdownAvailable: initialRoundFunding.fundingBreakdownAvailable,
     };
     return [...game.upcomingRounds, initial].sort((left, right) => left.roundId < right.roundId ? -1 : 1);
-  }, [game.currentRoundId, game.upcomingRounds, initialSponsoredRound, requestedRound]);
+  }, [game.currentRoundId, game.upcomingRounds, initialRoundFunding, requestedRound]);
   const action = `sponsor-${parsed?.roundId ?? roundValue}` as TransactionAction;
   const transaction = game.transactions[action];
   const pending = transaction?.stage === "wallet" || transaction?.stage === "confirming";
@@ -157,7 +185,7 @@ export function UpcomingRounds({
         <header className="upcoming-header">
           <span className="upcoming-header-icon"><Gift aria-hidden="true" /></span>
           <div>
-            <p>Sponsored rounds</p>
+            <p>Upcoming rounds</p>
             <h1>Upcoming Pots</h1>
             <span>Fund a future round now, then share the locked onchain pots before the game begins.</span>
           </div>
@@ -177,9 +205,9 @@ export function UpcomingRounds({
           </section>
         ) : (
           <div className="upcoming-layout">
-            <section className="upcoming-list" aria-label="Upcoming sponsored rounds">
+            <section className="upcoming-list" aria-label="Upcoming round pots">
               {displayRounds.map((round) => (
-                <SponsoredRoundCard
+                <UpcomingRoundCard
                   key={round.roundId.toString()}
                   {...round}
                   currentRoundId={game.currentRoundId}

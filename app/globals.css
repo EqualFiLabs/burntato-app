@@ -5015,6 +5015,19 @@ button {
 }
 
 .sponsored-round-total strong { color: #fff1dd; font-size: var(--font-value-small); }
+.round-funding-sources {
+  display: grid;
+  margin-top: 2cqw;
+  overflow: hidden;
+  border: 0.15cqw solid rgba(255, 157, 47, 0.2);
+  border-radius: 2cqw;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.round-funding-sources > span { min-width: 0; padding: 2cqw; background: rgba(42, 27, 16, 0.55); }
+.round-funding-sources > span + span { border-left: 0.15cqw solid rgba(255, 157, 47, 0.2); }
+.round-funding-sources small { display: block; color: var(--text-muted-warm); font-size: var(--font-caption); }
+.round-funding-sources strong { display: block; margin-top: 0.5cqw; overflow-wrap: anywhere; color: #fff1dd; font-size: var(--font-body-small); }
+.round-funding-unavailable { margin-bottom: 0 !important; }
 .sponsored-round-card > p { margin: 2.5cqw 0; color: var(--text-muted-warm-subtle); font-size: var(--font-body-small); line-height: 1.45; }
 .sponsored-round-share { display: grid; gap: 2cqw; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .sponsored-round-share button {
@@ -5116,6 +5129,10 @@ button {
   .sponsored-round-pots svg { width: 21px; height: 21px; }
   .sponsored-round-pots strong { margin-top: 3px; font-size: 15px; }
   .sponsored-round-total { margin-top: 13px; padding-top: 13px; border-width: 1px; }
+  .round-funding-sources { margin-top: 10px; border-width: 1px; border-radius: 10px; }
+  .round-funding-sources > span { padding: 10px; }
+  .round-funding-sources > span + span { border-left-width: 1px; }
+  .round-funding-sources strong { margin-top: 3px; font-size: 13px; }
   .sponsored-round-card > p { margin: 13px 0; font-size: 12px; }
   .sponsored-round-share { gap: 10px; }
   .sponsored-round-share button { min-height: 42px; padding: 8px; gap: 7px; border-width: 1px; border-radius: 10px; font-size: 12px; }

@@ -30,7 +30,7 @@ import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
 import { ScreenHero } from "@/components/ScreenHero";
-import { UpcomingRounds, type InitialSponsoredRound } from "@/components/UpcomingRounds";
+import { UpcomingRounds, type InitialUpcomingRoundFunding } from "@/components/UpcomingRounds";
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
 import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
@@ -907,11 +907,11 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
 export function BurntatoApp({
   initialScreen = "grab",
   focusRoundId,
-  initialSponsoredRound,
+  initialRoundFunding,
 }: {
   initialScreen?: Screen;
   focusRoundId?: string;
-  initialSponsoredRound?: InitialSponsoredRound;
+  initialRoundFunding?: InitialUpcomingRoundFunding;
 } = {}) {
   const wallet = useWalletState();
   const game = useBurntatoState();
@@ -942,7 +942,7 @@ export function BurntatoApp({
       {screen === "rewards" && <RewardsScreen />}
       {screen === "operators" && <OperatorScreen />}
       {screen === "upcoming" && (
-        <UpcomingRounds focusRoundId={focusRoundId} initialSponsoredRound={initialSponsoredRound} />
+        <UpcomingRounds focusRoundId={focusRoundId} initialRoundFunding={initialRoundFunding} />
       )}
       <BottomNavigation screen={screen} select={setScreen} />
       <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseFundingAmount, parseFutureRoundId, parseSponsorship, publicSiteUrl, roundSharePath } from "./sponsorship";
+import { parseFundingAmount, parseFutureRoundId, parseSponsorship, publicSiteUrl, roundFundingBreakdown, roundSharePath } from "./sponsorship";
 
 describe("future-round sponsorship", () => {
   it("parses exact ETH amounts without accepting unsafe number syntax", () => {
@@ -29,5 +29,14 @@ describe("future-round sponsorship", () => {
     expect(publicSiteUrl("https://user:secret@burntato.example")).toBeNull();
     expect(publicSiteUrl("javascript:alert(1)")).toBeNull();
     expect(roundSharePath(42n)).toBe("/rounds/42");
+  });
+
+  it("separates community sponsorship from protocol and game funding", () => {
+    expect(roundFundingBreakdown({
+      winnerReserve: 8n,
+      recoveryReserve: 4n,
+      winnerSponsored: 3n,
+      recoverySponsored: 1n,
+    })).toEqual({ totalLocked: 12n, communitySponsored: 4n, protocolFunded: 8n });
   });
 });

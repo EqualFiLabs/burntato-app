@@ -12,13 +12,13 @@ import {
   dedupeEvents,
   fetchIndexedHistory,
   scanBurntatoEvents,
-  sponsorshipRoundIds,
+  upcomingFundingRoundIds,
   type BurntatoEvent,
   type LeaderboardRow,
   type RewardCandidate,
 } from "@/lib/burntato/history";
 import { describeBurntatoError, deriveRoundPhase, type BurntatoRound, type RoundConfig, type RoundPhase } from "@/lib/burntato/model";
-import type { SponsoredRound } from "@/lib/burntato/sponsorship";
+import type { UpcomingRoundFunding } from "@/lib/burntato/sponsorship";
 import {
   canStartTransaction,
   hasAnyTransactionPending,
@@ -50,7 +50,7 @@ type BurntatoState = {
   genesisWinnerReserve: bigint;
   genesisTreasuryBudget: bigint;
   sponsorshipAvailable: boolean;
-  upcomingRounds: SponsoredRound[];
+  upcomingRounds: UpcomingRoundFunding[];
   upcomingRoundsLoading: boolean;
   loading: boolean;
   readError: string | null;
@@ -157,6 +157,28 @@ function readContract(client: PublicClient, functionName: string, args?: readonl
   return client.readContract(contractRequest(functionName, args) as never) as Promise<unknown>;
 }
 
+async function readRoundFunding(client: PublicClient, roundId: bigint): Promise<Omit<UpcomingRoundFunding, "roundId">> {
+  try {
+    const funding = await readContract(client, "roundFunding", [roundId]) as readonly [bigint, bigint, bigint, bigint];
+    return {
+      winnerReserve: funding[0],
+      recoveryReserve: funding[1],
+      winnerSponsored: funding[2],
+      recoverySponsored: funding[3],
+      fundingBreakdownAvailable: true,
+    };
+  } catch {
+    const reserves = await readContract(client, "roundReserves", [roundId]) as readonly [bigint, bigint];
+    return {
+      winnerReserve: reserves[0],
+      recoveryReserve: reserves[1],
+      winnerSponsored: 0n,
+      recoverySponsored: 0n,
+      fundingBreakdownAvailable: false,
+    };
+  }
+}
+
 async function readSnapshot(client: PublicClient, account: Address | undefined): Promise<Snapshot> {
   const block = await client.getBlock();
   const [roundIdRaw, configRaw, pausedRaw, purchasesInitializedRaw] = await Promise.all([
@@ -177,9 +199,9 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     currentRoundId !== 0n ? readContract(client, "totalRecoveryCommitment", [currentRoundId]) : Promise.resolve(0n),
     currentRoundId === 0n ? readContract(client, "winnerReserveEth") : Promise.resolve(0n),
     currentRoundId === 0n ? readContract(client, "nextTreasuryRewardBudget") : Promise.resolve([0n, 0n] as const),
-    readContract(client, "roundReserves", [currentRoundId === 0n ? 1n : targetRoundId])
-      .then((reserves) => ({ available: true, reserves: reserves as readonly [bigint, bigint] }))
-      .catch(() => ({ available: false, reserves: [0n, 0n] as const })),
+    readRoundFunding(client, currentRoundId === 0n ? 1n : targetRoundId)
+      .then((funding) => ({ available: true, funding }))
+      .catch(() => ({ available: false, funding: null })),
   ]);
   const [treasuryBudgetRoundId, treasuryBudget] = treasuryBudgetRaw as readonly [bigint, bigint];
   const genesisTreasuryBudget = treasuryBudgetRoundId === targetRoundId ? treasuryBudget : 0n;
@@ -198,7 +220,7 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     activeRecoveryCommitment: activeOwnRaw as bigint,
     activeRecoveryTotalCommitment: activeTotalRaw as bigint,
     genesisWinnerReserve: currentRoundId === 0n && sponsorshipCapabilityRaw.available
-      ? sponsorshipCapabilityRaw.reserves[0]
+      ? sponsorshipCapabilityRaw.funding?.winnerReserve ?? 0n
       : winnerReserveRaw as bigint,
     genesisTreasuryBudget,
     sponsorshipAvailable: sponsorshipCapabilityRaw.available,
@@ -244,7 +266,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [rewards, setRewards] = useState<RewardCandidate[]>([]);
-  const [upcomingRounds, setUpcomingRounds] = useState<SponsoredRound[]>([]);
+  const [upcomingRounds, setUpcomingRounds] = useState<UpcomingRoundFunding[]>([]);
   const [transactions, setTransactions] = useState<Transactions>({});
   const [latestTransaction, setLatestTransaction] = useState<TransactionState | null>(null);
   const inFlightActionsRef = useRef(new Set<TransactionAction>());
@@ -335,17 +357,17 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     if (!publicClient || !snapshot.sponsorshipAvailable) return;
     let cancelled = false;
     const nextRoundId = snapshot.currentRoundId + 1n;
-    const roundIds = sponsorshipRoundIds(history, snapshot.currentRoundId);
-    void Promise.all(roundIds.map(async (roundId): Promise<SponsoredRound | null> => {
+    const roundIds = upcomingFundingRoundIds(history, snapshot.currentRoundId);
+    void Promise.all(roundIds.map(async (roundId): Promise<UpcomingRoundFunding | null> => {
       try {
-        const reserves = await readContract(publicClient as PublicClient, "roundReserves", [roundId]) as readonly [bigint, bigint];
-        if (roundId !== nextRoundId && reserves[0] === 0n && reserves[1] === 0n) return null;
-        return { roundId, winnerReserve: reserves[0], recoveryReserve: reserves[1] };
+        const funding = await readRoundFunding(publicClient as PublicClient, roundId);
+        if (roundId !== nextRoundId && funding.winnerReserve === 0n && funding.recoveryReserve === 0n) return null;
+        return { roundId, ...funding };
       } catch {
         return null;
       }
     })).then((rounds) => {
-      if (!cancelled) setUpcomingRounds(rounds.filter((round): round is SponsoredRound => round !== null));
+      if (!cancelled) setUpcomingRounds(rounds.filter((round): round is UpcomingRoundFunding => round !== null));
     });
     return () => { cancelled = true; };
   }, [history, publicClient, snapshot.currentRoundId, snapshot.sponsorshipAvailable]);

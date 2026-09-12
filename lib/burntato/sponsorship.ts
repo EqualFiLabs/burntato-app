@@ -1,9 +1,12 @@
 import { parseEther } from "viem";
 
-export type SponsoredRound = {
+export type UpcomingRoundFunding = {
   roundId: bigint;
   winnerReserve: bigint;
   recoveryReserve: bigint;
+  winnerSponsored: bigint;
+  recoverySponsored: bigint;
+  fundingBreakdownAvailable: boolean;
 };
 
 const ETH_AMOUNT = /^(?:0|[1-9]\d*)(?:\.\d{0,18})?$/;
@@ -58,4 +61,14 @@ export function publicSiteUrl(value: string | undefined): URL | null {
 
 export function roundSharePath(roundId: bigint): string {
   return `/rounds/${roundId.toString()}`;
+}
+
+export function roundFundingBreakdown(funding: Pick<UpcomingRoundFunding, "winnerReserve" | "recoveryReserve" | "winnerSponsored" | "recoverySponsored">) {
+  const totalLocked = funding.winnerReserve + funding.recoveryReserve;
+  const communitySponsored = funding.winnerSponsored + funding.recoverySponsored;
+  return {
+    totalLocked,
+    communitySponsored,
+    protocolFunded: communitySponsored <= totalLocked ? totalLocked - communitySponsored : 0n,
+  };
 }

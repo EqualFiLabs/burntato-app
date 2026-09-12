@@ -133,6 +133,7 @@ export const burntatoAbi = parseAbi([
   "function protocolConfig() view returns (ProtocolConfig)",
   "function winnerReserveEth() view returns (uint256)",
   "function roundReserves(uint256 roundId) view returns (uint256 winnerEth, uint256 recoveryEth)",
+  "function roundFunding(uint256 roundId) view returns (uint256 winnerReserve, uint256 recoveryReserve, uint256 winnerSponsoredEth, uint256 recoverySponsoredEth)",
   "function nextTreasuryRewardBudget() view returns (uint256 roundId, uint256 budget)",
   "function getRound(uint256 roundId) view returns (Round)",
   "function currentEarnedEmission() view returns (uint256 baseEarned, uint256 treasuryEarned)",

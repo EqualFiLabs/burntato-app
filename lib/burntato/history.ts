@@ -228,12 +228,11 @@ export function candidateRoundIds(events: BurntatoEvent[], account: Address): bi
   return [...rounds].sort((a, b) => a > b ? -1 : 1);
 }
 
-export function sponsorshipRoundIds(events: BurntatoEvent[], currentRoundId: bigint): bigint[] {
+export function upcomingFundingRoundIds(events: BurntatoEvent[], currentRoundId: bigint): bigint[] {
   const rounds = new Set<bigint>([currentRoundId + 1n]);
   for (const event of events) {
     if (
       event.name !== "WinnerReserveFunded"
-      && event.name !== "NextRoundWinnerFunded"
       && event.name !== "RecoveryReserveFunded"
     ) continue;
     const targetRoundId = asBigInt(event.args.targetRoundId);

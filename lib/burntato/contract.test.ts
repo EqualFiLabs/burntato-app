@@ -61,7 +61,19 @@ describe("Robinhood deployment parity", () => {
     expect(toFunctionSelector("winnerReserveEth()")).toBe("0x0649cf55");
     expect(toFunctionSelector("nextTreasuryRewardBudget()")).toBe("0x9c4c6d76");
     expect(toFunctionSelector("roundReserves(uint256)")).toBe("0xca6b7f0a");
+    expect(toFunctionSelector("roundFunding(uint256)")).toBe("0x87a214cb");
     expect(toFunctionSelector("fundRoundReserves(uint256,uint256,uint256)")).toBe("0xad2fbd57");
+
+    const roundFunding = getAbiItem({ abi: burntatoAbi, name: "roundFunding" });
+    expect(roundFunding.type).toBe("function");
+    if (roundFunding.type === "function") {
+      expect(roundFunding.outputs.map((output) => output.name)).toEqual([
+        "winnerReserve",
+        "recoveryReserve",
+        "winnerSponsoredEth",
+        "recoverySponsoredEth",
+      ]);
+    }
 
     const protocolConfig = getAbiItem({ abi: burntatoAbi, name: "protocolConfig" });
     expect(protocolConfig.type).toBe("function");

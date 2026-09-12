@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BurntatoApp } from "@/components/BurntatoApp";
 import { formatEth } from "@/lib/burntato/model";
 import { publicSiteUrl, roundSharePath } from "@/lib/burntato/sponsorship";
-import { readSponsoredRound } from "@/lib/burntato/sponsorship-server";
+import { readUpcomingRoundFunding } from "@/lib/burntato/sponsorship-server";
 
 type RoundPageProps = { params: Promise<{ roundId: string }> };
 
@@ -16,11 +16,11 @@ export async function generateMetadata({ params }: RoundPageProps): Promise<Meta
   const { roundId: value } = await params;
   const roundId = validRoundId(value);
   if (roundId === null) return { title: "Upcoming round" };
-  const sponsored = await readSponsoredRound(roundId);
-  const title = `Round #${value} sponsorship`;
-  const description = sponsored
-    ? `${formatEth(sponsored.winnerReserve)} ETH Winner pot and ${formatEth(sponsored.recoveryReserve)} ETH Recovery pot locked onchain so far. These amounts may increase before Round #${value} begins.`
-    : `See the onchain Winner and Recovery sponsorship for Burntato Round #${value}.`;
+  const funding = await readUpcomingRoundFunding(roundId);
+  const title = `Burntato Round #${value} pots`;
+  const description = funding
+    ? `${formatEth(funding.winnerReserve)} ETH Winner pot and ${formatEth(funding.recoveryReserve)} ETH Recovery pot locked onchain so far. These amounts may increase before Round #${value} begins.`
+    : `See the onchain Winner and Recovery pots for Burntato Round #${value}.`;
   const siteUrl = publicSiteUrl(process.env.NEXT_PUBLIC_BURNTATO_SITE_URL);
   const canonical = siteUrl ? new URL(roundSharePath(roundId), siteUrl).toString() : undefined;
   return {
@@ -36,15 +36,18 @@ export default async function RoundPage({ params }: RoundPageProps) {
   const { roundId: value } = await params;
   const roundId = validRoundId(value);
   if (roundId === null) notFound();
-  const sponsored = await readSponsoredRound(roundId);
+  const funding = await readUpcomingRoundFunding(roundId);
   return (
     <BurntatoApp
       initialScreen="upcoming"
       focusRoundId={value}
-      initialSponsoredRound={sponsored ? {
-        roundId: sponsored.roundId.toString(),
-        winnerReserve: sponsored.winnerReserve.toString(),
-        recoveryReserve: sponsored.recoveryReserve.toString(),
+      initialRoundFunding={funding ? {
+        roundId: funding.roundId.toString(),
+        winnerReserve: funding.winnerReserve.toString(),
+        recoveryReserve: funding.recoveryReserve.toString(),
+        winnerSponsored: funding.winnerSponsored.toString(),
+        recoverySponsored: funding.recoverySponsored.toString(),
+        fundingBreakdownAvailable: funding.fundingBreakdownAvailable,
       } : undefined}
     />
   );
