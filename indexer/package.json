@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "4.13.0",
+    "hono": "4.13.7",
     "ponder": "0.17.9",
     "viem": "2.55.10"
   },
