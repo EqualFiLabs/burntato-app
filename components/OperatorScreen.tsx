@@ -166,7 +166,6 @@ export function OperatorScreen() {
                     </button>
                   )}
 
-                  <p className="operator-transfer-warning">Selling this Operator or reducing its activation weight ends its reward registration. Unclaimed rewards are shared with other Operators. If its activation weight increases, update the reward weight here.</p>
                 </>
               )}
             </>

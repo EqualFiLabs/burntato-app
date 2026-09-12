@@ -4517,15 +4517,14 @@ button {
   width: 100%;
   min-height: 0;
   padding: 35cqw 4.2cqw 1.4cqw;
+  align-items: flex-end;
 }
 
 .operator-hub {
   display: flex;
   width: 100%;
   min-height: 0;
-  max-height: 100%;
   padding: 2.8cqw;
-  overflow-y: auto;
   border: 0.24cqw solid rgba(255, 166, 52, 0.42);
   border-radius: 3.4cqw;
   background:
@@ -4534,8 +4533,6 @@ button {
   box-shadow: inset 0 0.2cqw rgba(255, 255, 255, 0.04), 0 1.2cqw 3cqw rgba(0, 0, 0, 0.78);
   flex-direction: column;
   backdrop-filter: blur(9px);
-  scrollbar-color: rgba(255, 148, 25, 0.42) transparent;
-  scrollbar-width: thin;
 }
 
 .operator-heading {
@@ -4699,7 +4696,6 @@ button {
 .operator-batch-action strong { display: block; margin-top: 0.6cqw; overflow: hidden; font-size: var(--font-value-small); text-overflow: ellipsis; white-space: nowrap; }
 .operator-batch-action .operator-action { min-height: 8cqw; }
 
-.operator-transfer-warning,
 .operator-inline-error,
 .operator-sync {
   margin: 2.2cqw 0;
@@ -4711,9 +4707,7 @@ button {
   line-height: 1.45;
 }
 
-.operator-inline-error,
-.operator-transfer-warning { color: #ffd2c9; background: rgba(181, 28, 12, 0.24); }
-.operator-transfer-warning { border: 1px solid rgba(255, 87, 42, 0.42); }
+.operator-inline-error { color: #ffd2c9; background: rgba(181, 28, 12, 0.24); }
 
 .operator-empty {
   display: grid;
@@ -4794,7 +4788,6 @@ button {
     right: clamp(30px, 3.4vw, 52px);
     display: flex;
     width: clamp(430px, 42%, 500px);
-    height: clamp(470px, 72%, 580px);
     padding: 0;
     transform: translateY(-45%);
   }
@@ -4827,7 +4820,7 @@ button {
   .operator-batch-action .operator-action { min-height: 38px; }
   .operator-readiness { margin-top: 14px; gap: 8px; }
   .operator-readiness svg { width: 18px; height: 18px; }
-  .operator-transfer-warning, .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: var(--font-body-small); }
+  .operator-inline-error, .operator-sync { margin: 12px 0; padding: 10px; border-radius: 9px; font-size: var(--font-body-small); }
   .operator-empty { min-height: 130px; margin-top: 14px; padding: 16px; }
   .operator-empty svg { width: 26px; height: 26px; }
   .operator-empty strong { font-size: 15px; }
