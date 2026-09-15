@@ -257,7 +257,6 @@ export function UpcomingRounds({
                 type="submit"
                 disabled={wallet.status === "unconfigured" || !parsed || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked)}
               >
-                <Gift aria-hidden="true" />
                 <span>{actionLabel}</span>
               </button>
             </form>

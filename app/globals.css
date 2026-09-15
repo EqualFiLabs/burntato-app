@@ -5210,6 +5210,16 @@ button {
 .leaderboard-copy:focus-visible { outline: 3px solid #ffd05a; outline-offset: 2px; }
 .leaderboard-copy-status { display: block; min-height: 2.8cqw; margin-top: 0.8cqw; color: var(--text-muted-warm); font-size: var(--font-micro); text-align: right; }
 
+.rewards-heading h1,
+.operator-heading h1 {
+  font-family: "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.operator-transfer-note { margin: 2.2cqw 0 0; padding: 2.2cqw; border: 0.15cqw solid rgba(255, 157, 47, 0.22); border-radius: 1.8cqw; color: var(--text-muted-warm); background: rgba(61, 35, 16, 0.25); font-size: var(--font-caption); line-height: 1.45; }
+.sponsorship-submit { border-width: 0.2cqw; border-radius: 2.2cqw; }
+
 .portal-heading { grid-template-columns: minmax(0, 1fr); }
 .portal-heading > div { min-width: 0; }
 .portal-heading h1,
@@ -5264,6 +5274,8 @@ button {
   .leaderboard-copy { width: 34px; height: 34px; border-width: 1px; border-radius: 8px; }
   .leaderboard-copy svg { width: 16px; height: 16px; }
   .leaderboard-copy-status { min-height: 14px; margin-top: 4px; }
+  .operator-transfer-note { margin-top: 12px; padding: 11px; border-width: 1px; border-radius: 9px; }
+  .sponsorship-submit { border-width: 1px; border-radius: 11px; }
   .portal-field-label small { gap: 6px; }
   .portal-field-label small button { padding: 4px 7px; }
 }
