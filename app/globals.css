@@ -5210,6 +5210,15 @@ button {
 .leaderboard-copy:focus-visible { outline: 3px solid #ffd05a; outline-offset: 2px; }
 .leaderboard-copy-status { display: block; min-height: 2.8cqw; margin-top: 0.8cqw; color: var(--text-muted-warm); font-size: var(--font-micro); text-align: right; }
 
+.portal-heading { grid-template-columns: minmax(0, 1fr); }
+.portal-heading > div { min-width: 0; }
+.portal-heading h1,
+.portal-asset-input strong { font-family: "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif; font-weight: 900; }
+.portal-field-label { align-items: center; }
+.portal-field-label small { display: flex; gap: 1.2cqw; align-items: center; color: var(--text-muted-portal); font-size: var(--font-caption); }
+.portal-field-label small button { min-width: auto; min-height: 0; padding: 0.7cqw 1.2cqw; border-radius: 999px; }
+.portal-primary-action { justify-content: center; }
+
 .rules-screen { padding: 18cqw 4cqw 24cqw; overflow-y: auto; }
 .rules-dashboard { width: 100%; max-width: 1100px; margin: 0 auto; }
 .rules-heading { display: flex; gap: 3cqw; align-items: center; }
@@ -5255,4 +5264,6 @@ button {
   .leaderboard-copy { width: 34px; height: 34px; border-width: 1px; border-radius: 8px; }
   .leaderboard-copy svg { width: 16px; height: 16px; }
   .leaderboard-copy-status { min-height: 14px; margin-top: 4px; }
+  .portal-field-label small { gap: 6px; }
+  .portal-field-label small button { padding: 4px 7px; }
 }
