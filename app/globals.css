@@ -239,6 +239,30 @@ button {
   z-index: 1;
 }
 
+.protocol-state-banner {
+  position: absolute;
+  z-index: 6;
+  top: 15cqw;
+  right: 3cqw;
+  left: 3cqw;
+  padding: 1.4cqw 2cqw;
+  border: 0.18cqw solid rgba(255, 177, 62, 0.42);
+  border-radius: 1.6cqw;
+  color: #ffe3b2;
+  background: rgba(62, 37, 12, 0.94);
+  box-shadow: 0 0.8cqw 2cqw rgba(0, 0, 0, 0.55);
+  font-size: var(--font-body-small);
+  font-weight: 850;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.protocol-state-banner.is-paused {
+  border-color: rgba(255, 102, 71, 0.48);
+  color: #ffd2c6;
+  background: rgba(73, 24, 15, 0.95);
+}
+
 .round-screen {
   flex: 1 1 auto;
   min-height: 0;
@@ -2183,6 +2207,41 @@ button {
   font-size: var(--font-value-small);
 }
 
+.position-withdrawal {
+  display: inline-flex;
+  min-height: 5.4cqw;
+  padding: 0.8cqw 1.15cqw;
+  gap: 0.65cqw;
+  align-items: center;
+  justify-content: center;
+  border: 0.17cqw solid rgba(255, 166, 39, 0.58);
+  border-radius: 1.1cqw;
+  color: #2d1303;
+  background: linear-gradient(145deg, #ffc342, #ff8210);
+  font-size: var(--font-micro);
+  font-weight: 950;
+  cursor: pointer;
+  grid-column: 2 / -1;
+}
+
+.position-withdrawal svg {
+  width: 2.5cqw;
+  height: 2.5cqw;
+  stroke-width: 2.8;
+}
+
+.position-withdrawal:disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.position-withdrawal-error {
+  margin-top: 0.5cqw;
+  color: #ff9d87;
+  font-size: var(--font-micro);
+  font-weight: 800;
+}
+
 .position-note,
 .history-total {
   display: flex;
@@ -3383,6 +3442,17 @@ button {
     grid-row: 1;
   }
 
+  .protocol-state-banner {
+    top: 82px;
+    right: 34px;
+    left: 270px;
+    padding: 10px 16px;
+    border-width: 1px;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+    font-size: 12px;
+  }
+
   .round-screen {
     display: block;
     padding: 88px 38px 28px;
@@ -4059,6 +4129,25 @@ button {
   .position-row > span:last-child strong {
     margin-top: 2px;
     font-size: var(--font-value-small);
+  }
+
+  .position-withdrawal {
+    min-height: 30px;
+    padding: 5px 7px;
+    gap: 4px;
+    border-width: 1px;
+    border-radius: 6px;
+    font-size: var(--font-micro);
+  }
+
+  .position-withdrawal svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .position-withdrawal-error {
+    margin-top: 3px;
+    font-size: var(--font-micro);
   }
 
   .position-note,

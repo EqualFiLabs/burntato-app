@@ -15,6 +15,12 @@ function render(overrides: Partial<Parameters<typeof RecoveryPositions>[0]> = {}
     targetRoundId: 8n,
     queuedCommitment: 0n,
     queuedTotalCommitment: 0n,
+    chainNow: 1_000n,
+    stalledWithdrawalAt: 0n,
+    withdrawalPending: false,
+    withdrawalError: null,
+    withdrawalDisabled: false,
+    onWithdraw: () => undefined,
     ...overrides,
   }));
 }
@@ -51,8 +57,27 @@ describe("recovery positions", () => {
 
     expect(html).toContain("Queued");
     expect(html).toContain("Round #8");
-    expect(html).toContain("Pool starts at activation");
+    expect(html).toContain("Locked once Round #8 begins");
     expect(html).not.toContain("Est. recovery");
+  });
+
+  it("shows the holderless-round countdown and enables withdrawal at maturity", () => {
+    const waiting = render({ queuedCommitment: 2_000n * unit, queuedTotalCommitment: 10_000n * unit, stalledWithdrawalAt: 1_530_000n });
+    expect(waiting).toContain("Withdrawal available in 17d 16h");
+    expect(waiting).not.toContain("Withdraw 2,000 POTATO");
+
+    const available = render({ queuedCommitment: 2_000n * unit, queuedTotalCommitment: 10_000n * unit, chainNow: 1_530_000n, stalledWithdrawalAt: 1_530_000n });
+    expect(available).toContain("Holderless-round withdrawal available");
+    expect(available).toContain("Withdraw 2,000 POTATO");
+  });
+
+  it("renders pending and failed withdrawal states", () => {
+    const pending = render({ queuedCommitment: unit, queuedTotalCommitment: unit, chainNow: 2_000n, stalledWithdrawalAt: 1_500n, withdrawalPending: true });
+    expect(pending).toContain("Withdrawing…");
+    expect(pending).toContain("disabled");
+
+    const failed = render({ queuedCommitment: unit, queuedTotalCommitment: unit, chainNow: 2_000n, stalledWithdrawalAt: 1_500n, withdrawalError: "Try again." });
+    expect(failed).toContain("Try again.");
   });
 
   it("handles empty and zero-total states safely", () => {

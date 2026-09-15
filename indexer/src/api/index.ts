@@ -4,13 +4,24 @@ import { indexedEvent } from "ponder:schema";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { deploymentFromJson, ROBINHOOD_TESTNET_DEPLOYMENT } from "../../../lib/burntato/deployment";
+
 const app = new Hono();
-const deployment = "robinhood-testnet-46630-low-cost";
+const deployment = process.env.PONDER_DEPLOYMENT_JSON?.trim()
+  ? deploymentFromJson(process.env.PONDER_DEPLOYMENT_JSON)
+  : ROBINHOOD_TESTNET_DEPLOYMENT;
 app.use("*", cors({ origin: process.env.PONDER_ALLOWED_ORIGIN || "*" }));
 
 async function status() {
   const [row] = await db.select({ events: count(), indexedBlock: max(indexedEvent.blockNumber) }).from(indexedEvent);
-  return { chainId: 46_630, deployment, events: Number(row?.events ?? 0), indexedBlock: row?.indexedBlock?.toString() ?? null };
+  return {
+    chainId: deployment.chainId,
+    deployment: deployment.deploymentId,
+    sourceCommit: deployment.sourceCommit,
+    diamond: deployment.diamond,
+    events: Number(row?.events ?? 0),
+    indexedBlock: row?.indexedBlock?.toString() ?? null,
+  };
 }
 
 // Ponder owns /ready and /status for process and sync health. This route adds
@@ -40,8 +51,10 @@ app.get("/events", async (context) => {
   const last = rows.at(-1);
   context.header("Cache-Control", "public, max-age=2, stale-while-revalidate=5");
   return context.json({
-    chainId: 46_630,
-    deployment,
+    chainId: deployment.chainId,
+    deployment: deployment.deploymentId,
+    sourceCommit: deployment.sourceCommit,
+    diamond: deployment.diamond,
     nextCursor: rows.length === limit && last ? { blockNumber: last.blockNumber.toString(), logIndex: last.logIndex } : null,
     items: rows.map((row) => ({
       source: row.source,

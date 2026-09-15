@@ -1,11 +1,18 @@
 import { createConfig } from "ponder";
 import { parseAbi } from "viem";
 
+import { deploymentFromJson, ROBINHOOD_TESTNET_DEPLOYMENT } from "../lib/burntato/deployment";
+
+const deployment = process.env.PONDER_DEPLOYMENT_JSON?.trim()
+  ? deploymentFromJson(process.env.PONDER_DEPLOYMENT_JSON)
+  : ROBINHOOD_TESTNET_DEPLOYMENT;
+
 const burntatoAbi = parseAbi([
   "event PotatoPurchased(uint256 indexed roundId,address indexed buyer,uint256 price,uint256 purchaseIndex,uint256 maxReward,uint256 deadline)",
   "event EmissionFinalized(uint256 indexed roundId,address indexed holder,uint256 maxReward,uint256 earned,uint256 heldSeconds)",
   "event TreasuryRewardFinalized(uint256 indexed roundId,address indexed holder,uint256 maxReward,uint256 earned,uint256 heldSeconds)",
   "event RecoveryCommitted(uint256 indexed roundId,address indexed account,uint256 amount,uint256 totalCommitted)",
+  "event StalledRecoveryWithdrawn(uint256 indexed targetRoundId,address indexed account,uint256 amount,uint256 remainingCommitment)",
   "event RoundSettled(uint256 indexed roundId,address indexed winner,uint256 winnerPool,uint256 recoveryPool,uint256 totalCommitted,uint256 burnedPotato,uint256 treasuryPotato)",
   "event WinnerClaimed(uint256 indexed roundId,address indexed winner,address indexed recipient,uint256 amount)",
   "event RecoveryClaimed(uint256 indexed roundId,address indexed account,address indexed recipient,uint256 amount)",
@@ -47,8 +54,8 @@ const distributorAbi = parseAbi([
 ]);
 
 function rpc(): string {
-  const value = process.env.PONDER_RPC_URL_46630?.trim();
-  if (!value) throw new Error("PONDER_RPC_URL_46630 is required.");
+  const value = process.env.PONDER_RPC_URL?.trim() || process.env.PONDER_RPC_URL_46630?.trim();
+  if (!value) throw new Error("PONDER_RPC_URL is required.");
   return value;
 }
 
@@ -57,50 +64,50 @@ export default createConfig({
     ? { database: { kind: "pglite" as const, directory: process.env.PONDER_DATABASE_DIRECTORY.trim() } }
     : {}),
   chains: {
-    robinhoodTestnet: { id: 46_630, rpc: rpc(), pollingInterval: 2_000 },
+    robinhoodTestnet: { id: deployment.chainId, rpc: rpc(), pollingInterval: 2_000 },
   },
   contracts: {
     Burntato: {
       chain: "robinhoodTestnet",
       abi: burntatoAbi,
-      address: "0x5e59B7d841199cD4316b0a081d6530fc7Ae4F28F",
-      startBlock: 113_055_786,
+      address: deployment.diamond,
+      startBlock: Number(deployment.deploymentBlock),
     },
     OperatorRouter: {
       chain: "robinhoodTestnet",
       abi: operatorAbi,
-      address: "0xd4F279C7DfA2756aF90933ac4632D61eBA7eEFF6",
-      startBlock: 113_055_786,
+      address: deployment.operatorRewardsRouter,
+      startBlock: Number(deployment.deploymentBlock),
     },
     Faucet: {
       chain: "robinhoodTestnet",
       abi: faucetAbi,
-      address: "0xd2e561B46a2de6713F53d954C0415447100d2955",
-      startBlock: 112_330_669,
+      address: deployment.faucet,
+      startBlock: Number(deployment.operatorNftDeploymentBlock),
     },
     GenesisVault: {
       chain: "robinhoodTestnet",
       abi: vaultAbi,
-      address: "0xa5Cb1f90C70310Af1E5466DdFBB57f3F2353Ef58",
-      startBlock: 112_330_669,
+      address: deployment.genesisVault,
+      startBlock: Number(deployment.operatorNftDeploymentBlock),
     },
     OperatorNft: {
       chain: "robinhoodTestnet",
       abi: nftAbi,
-      address: "0x8BB2E39abAE7346293Ff084fd4D104b064BEbC71",
-      startBlock: 112_330_669,
+      address: deployment.operatorNft,
+      startBlock: Number(deployment.operatorNftDeploymentBlock),
     },
     ActivationRegistry: {
       chain: "robinhoodTestnet",
       abi: activationAbi,
-      address: "0xcE4D413915B4C6dE7DfD486d233596Da35c5cFbD",
-      startBlock: 112_330_669,
+      address: deployment.activationRegistry,
+      startBlock: Number(deployment.operatorNftDeploymentBlock),
     },
     GenesisDistributor: {
       chain: "robinhoodTestnet",
       abi: distributorAbi,
-      address: "0xfE07863397a331b35B9D1fB5Ea14130eB870bA06",
-      startBlock: 112_330_669,
+      address: deployment.genesisLaunchDistributor,
+      startBlock: Number(deployment.operatorNftDeploymentBlock),
     },
   },
 });

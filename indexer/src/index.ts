@@ -27,6 +27,7 @@ ponder.on("Burntato:PotatoPurchased", record("burntato", "PotatoPurchased"));
 ponder.on("Burntato:EmissionFinalized", record("burntato", "EmissionFinalized"));
 ponder.on("Burntato:TreasuryRewardFinalized", record("burntato", "TreasuryRewardFinalized"));
 ponder.on("Burntato:RecoveryCommitted", record("burntato", "RecoveryCommitted"));
+ponder.on("Burntato:StalledRecoveryWithdrawn", record("burntato", "StalledRecoveryWithdrawn"));
 ponder.on("Burntato:RoundSettled", record("burntato", "RoundSettled"));
 ponder.on("Burntato:WinnerClaimed", record("burntato", "WinnerClaimed"));
 ponder.on("Burntato:RecoveryClaimed", record("burntato", "RecoveryClaimed"));

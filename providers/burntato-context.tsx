@@ -39,12 +39,13 @@ type BurntatoState = {
   protocolConfig: RoundConfig | null;
   phase: RoundPhase;
   currentEmission: readonly [bigint, bigint];
-  purchasesPaused: boolean;
-  commitmentsPaused: boolean;
+  paused: boolean;
+  purchasesInitialized: boolean;
   potatoBalance: bigint;
   targetRoundId: bigint;
   ownCommitment: bigint;
   totalCommitment: bigint;
+  stalledRecoveryWithdrawalAt: bigint;
   activeRecoveryCommitment: bigint;
   activeRecoveryTotalCommitment: bigint;
   genesisWinnerReserve: bigint;
@@ -70,6 +71,7 @@ type BurntatoState = {
   settle: () => Promise<void>;
   collect: () => Promise<void>;
   commit: (amount: bigint) => Promise<void>;
+  withdrawStalledRecovery: (roundId: bigint) => Promise<void>;
   fundRound: (roundId: bigint, winnerAmount: bigint, recoveryAmount: bigint) => Promise<void>;
   claim: (reward: RewardCandidate) => Promise<void>;
   dismissTransactionNotice: () => void;
@@ -85,12 +87,13 @@ export const defaultBurntatoState: BurntatoState = {
   protocolConfig: null,
   phase: "unstarted",
   currentEmission: [0n, 0n],
-  purchasesPaused: false,
-  commitmentsPaused: false,
+  paused: false,
+  purchasesInitialized: false,
   potatoBalance: 0n,
   targetRoundId: 1n,
   ownCommitment: 0n,
   totalCommitment: 0n,
+  stalledRecoveryWithdrawalAt: 0n,
   activeRecoveryCommitment: 0n,
   activeRecoveryTotalCommitment: 0n,
   genesisWinnerReserve: 0n,
@@ -116,6 +119,7 @@ export const defaultBurntatoState: BurntatoState = {
   settle: async () => undefined,
   collect: async () => undefined,
   commit: async () => undefined,
+  withdrawStalledRecovery: async () => undefined,
   fundRound: async () => undefined,
   claim: async () => undefined,
   dismissTransactionNotice: () => undefined,
@@ -125,7 +129,7 @@ const BurntatoContext = createContext<BurntatoState>(defaultBurntatoState);
 
 type Snapshot = Pick<BurntatoState,
   "chainNow" | "currentRoundId" | "currentRound" | "protocolConfig" | "currentEmission" |
-  "purchasesPaused" | "commitmentsPaused" | "potatoBalance" | "targetRoundId" | "ownCommitment" | "totalCommitment" |
+  "paused" | "purchasesInitialized" | "potatoBalance" | "targetRoundId" | "ownCommitment" | "totalCommitment" | "stalledRecoveryWithdrawalAt" |
   "activeRecoveryCommitment" | "activeRecoveryTotalCommitment" | "genesisWinnerReserve" | "genesisTreasuryBudget"
   | "sponsorshipAvailable"
 >;
@@ -136,12 +140,13 @@ const emptySnapshot: Snapshot = {
   currentRound: null,
   protocolConfig: null,
   currentEmission: [0n, 0n],
-  purchasesPaused: false,
-  commitmentsPaused: false,
+  paused: false,
+  purchasesInitialized: false,
   potatoBalance: 0n,
   targetRoundId: 1n,
   ownCommitment: 0n,
   totalCommitment: 0n,
+  stalledRecoveryWithdrawalAt: 0n,
   activeRecoveryCommitment: 0n,
   activeRecoveryTotalCommitment: 0n,
   genesisWinnerReserve: 0n,
@@ -189,12 +194,13 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
   ]);
   const currentRoundId = roundIdRaw as bigint;
   const targetRoundId = currentRoundId + 1n;
-  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, activeOwnRaw, activeTotalRaw, winnerReserveRaw, treasuryBudgetRaw, sponsorshipCapabilityRaw] = await Promise.all([
+  const [roundRaw, emissionRaw, balanceRaw, ownRaw, totalRaw, stalledWithdrawalAtRaw, activeOwnRaw, activeTotalRaw, winnerReserveRaw, treasuryBudgetRaw, sponsorshipCapabilityRaw] = await Promise.all([
     currentRoundId === 0n ? Promise.resolve(null) : readContract(client, "getRound", [currentRoundId]),
     currentRoundId === 0n ? Promise.resolve([0n, 0n] as const) : readContract(client, "currentEarnedEmission"),
     account ? readContract(client, "balanceOf", [account]) : Promise.resolve(0n),
     account ? readContract(client, "recoveryCommitment", [targetRoundId, account]) : Promise.resolve(0n),
     readContract(client, "totalRecoveryCommitment", [targetRoundId]),
+    readContract(client, "stalledRecoveryWithdrawalAt", [targetRoundId]).catch(() => 0n),
     account && currentRoundId !== 0n ? readContract(client, "recoveryCommitment", [currentRoundId, account]) : Promise.resolve(0n),
     currentRoundId !== 0n ? readContract(client, "totalRecoveryCommitment", [currentRoundId]) : Promise.resolve(0n),
     currentRoundId === 0n ? readContract(client, "winnerReserveEth") : Promise.resolve(0n),
@@ -211,12 +217,13 @@ async function readSnapshot(client: PublicClient, account: Address | undefined):
     currentRound: roundRaw as BurntatoRound | null,
     protocolConfig: configRaw as RoundConfig,
     currentEmission: emissionRaw as readonly [bigint, bigint],
-    purchasesPaused: (pausedRaw as boolean) || !(purchasesInitializedRaw as boolean),
-    commitmentsPaused: pausedRaw as boolean,
+    paused: pausedRaw as boolean,
+    purchasesInitialized: purchasesInitializedRaw as boolean,
     potatoBalance: balanceRaw as bigint,
     targetRoundId,
     ownCommitment: ownRaw as bigint,
     totalCommitment: totalRaw as bigint,
+    stalledRecoveryWithdrawalAt: stalledWithdrawalAtRaw as bigint,
     activeRecoveryCommitment: activeOwnRaw as bigint,
     activeRecoveryTotalCommitment: activeTotalRaw as bigint,
     genesisWinnerReserve: currentRoundId === 0n && sponsorshipCapabilityRaw.available
@@ -461,6 +468,7 @@ export function BurntatoBridge({ children }: { children: ReactNode }) {
     settle: () => runTransaction("settle", { functionName: "settleRound" }),
     collect: () => runTransaction("collect", { functionName: "materializeMaturedEmission" }),
     commit: (amount) => runTransaction("commit", { functionName: "commitRecovery", args: [amount] }),
+    withdrawStalledRecovery: (roundId) => runTransaction(`withdraw-recovery-${roundId}`, { functionName: "withdrawStalledRecovery", args: [roundId] }),
     fundRound: (roundId, winnerAmount, recoveryAmount) => runTransaction(`sponsor-${roundId}`, {
       functionName: "fundRoundReserves",
       args: [roundId, winnerAmount, recoveryAmount],

@@ -44,6 +44,15 @@ describe("transaction dependencies", () => {
     expect(canStartTransaction("network", inFlight)).toBe(false);
   });
 
+  it("keeps stalled Recovery withdrawals independent from paused gameplay writes", () => {
+    const gameplayInFlight = new Set(["grab"] as const);
+    const withdrawalInFlight = new Set(["withdraw-recovery-4"] as const);
+
+    expect(canStartTransaction("withdraw-recovery-4", gameplayInFlight)).toBe(true);
+    expect(canStartTransaction("grab", withdrawalInFlight)).toBe(true);
+    expect(canStartTransaction("withdraw-recovery-4", withdrawalInFlight)).toBe(false);
+  });
+
   it("keeps gameplay mutations serialized", () => {
     const inFlight = new Set(["grab"] as const);
 

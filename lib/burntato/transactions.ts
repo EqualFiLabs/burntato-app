@@ -6,6 +6,7 @@ export type TransactionAction =
   | "settle"
   | "collect"
   | "commit"
+  | `withdraw-recovery-${string}`
   | `sponsor-${string}`
   | `winner-${string}`
   | `recovery-${string}`;

@@ -34,7 +34,7 @@ import { RulesScreen } from "@/components/RulesScreen";
 import { ScreenHero } from "@/components/ScreenHero";
 import { UpcomingRounds, type InitialUpcomingRoundFunding } from "@/components/UpcomingRounds";
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
-import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
+import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato, protocolStateNotice } from "@/lib/burntato/model";
 import { requiresSelfGrabConfirmation, walletPlacement } from "@/lib/burntato/player-ux";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -432,6 +432,9 @@ function RewardsScreen() {
     if (!wallet.activeAddress || (event.name !== "WinnerClaimed" && event.name !== "RecoveryClaimed")) return false;
     return String(event.args.account ?? event.args.winner).toLowerCase() === wallet.activeAddress.toLowerCase();
   }).reverse();
+  const withdrawalAction = `withdraw-recovery-${game.targetRoundId}` as TransactionAction;
+  const withdrawalTransaction = game.transactions[withdrawalAction];
+  const withdrawalPending = withdrawalTransaction?.stage === "wallet" || withdrawalTransaction?.stage === "confirming";
 
   return (
     <main className="screen-content rewards-screen">
@@ -499,9 +502,11 @@ function RewardsScreen() {
                       </span>
                       <span className="reward-row-action">
                         <strong>{formatEth(reward.amount)} ETH</strong>
-                        <button type="button" disabled={pending || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToRobinhood()}>
+                        <button type="button" disabled={pending || game.paused || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToRobinhood()}>
                           {pending
                             ? "Confirming…"
+                            : game.paused
+                              ? "Protocol paused"
                             : game.correctNetwork
                               ? "Claim"
                               : transactionLabel(game, "network", "Switch network")}
@@ -523,6 +528,12 @@ function RewardsScreen() {
                 targetRoundId={game.targetRoundId}
                 queuedCommitment={game.ownCommitment}
                 queuedTotalCommitment={game.totalCommitment}
+                chainNow={game.chainNow}
+                stalledWithdrawalAt={game.stalledRecoveryWithdrawalAt}
+                withdrawalPending={withdrawalPending}
+                withdrawalError={withdrawalTransaction?.stage === "error" ? withdrawalTransaction.message : null}
+                withdrawalDisabled={!game.correctNetwork && game.networkSwitchBlocked}
+                onWithdraw={() => game.correctNetwork ? void game.withdrawStalledRecovery(game.targetRoundId) : game.switchToRobinhood()}
               />
             )}
 
@@ -593,6 +604,12 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
   } else if (!game.correctNetwork) {
     actionLabel = "Switch to Robinhood";
     action = game.switchToRobinhood;
+  } else if (game.paused) {
+    actionLabel = "Protocol paused";
+    action = () => undefined;
+  } else if (!game.purchasesInitialized) {
+    actionLabel = "Gameplay not activated";
+    action = () => undefined;
   } else if (game.phase === "expired") {
     actionLabel = transactionLabel(game, "settle", "Settle Round");
     action = () => void game.settle();
@@ -602,7 +619,7 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
   }
   const grabDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
     wallet.status === "ready" && game.correctNetwork && (
-      game.loading || (game.phase !== "expired" && game.purchasesPaused)
+      game.loading || game.paused || !game.purchasesInitialized
     )
   );
 
@@ -615,7 +632,7 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
           <span>{actionLabel}</span>
           <Flame aria-hidden="true" />
         </button>
-        {wallet.status === "ready" && isHolder && canFinalizeEmission && (
+        {wallet.status === "ready" && isHolder && canFinalizeEmission && !game.paused && (
           <button
             className="secondary-game-action"
             type="button"
@@ -698,13 +715,16 @@ function BurnScreen() {
   } else if (!game.correctNetwork) {
     actionLabel = "Switch to Robinhood";
     action = game.switchToRobinhood;
+  } else if (game.paused) {
+    actionLabel = "Protocol paused";
+    action = () => undefined;
   } else if (game.currentRoundId === 0n) {
     actionLabel = "Start round in Play first";
     action = () => undefined;
   }
   const commitDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
     wallet.status === "ready" && game.correctNetwork && (
-      amount === 0n || game.currentRoundId === 0n || game.commitmentsPaused || game.loading
+      amount === 0n || game.currentRoundId === 0n || game.paused || game.loading
     )
   );
 
@@ -761,7 +781,7 @@ function BurnScreen() {
               onChange={(event) => setAmount(game.potatoBalance * BigInt(event.target.value) / 10_000n)}
             />
           </div>
-          <p className="burn-warning">This commitment cannot be undone. When the round ends, part of the committed POTATO is burned.</p>
+          <p className="burn-warning">Committed POTATO stays locked for its Recovery round. If the preceding round remains completely holderless for 30 days, an exceptional withdrawal becomes available.</p>
           <button className="primary-action burn-button" type="button" disabled={commitDisabled} onClick={action}>
             <Flame aria-hidden="true" />
             <span>{actionLabel}</span>
@@ -951,10 +971,12 @@ export function BurntatoApp({
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const transactionNotice = game.latestTransaction?.message;
   const displayedNotice = wallet.error ?? game.readError ?? game.historyError ?? transactionNotice;
+  const protocolNotice = protocolStateNotice(game.paused, game.purchasesInitialized, game.loading);
 
   return (
     <div className={`phone-shell is-${screen}`}>
       <AppHeader />
+      {protocolNotice && <div className={game.paused ? "protocol-state-banner is-paused" : "protocol-state-banner is-prelaunch"} role="status">{protocolNotice}</div>}
       {screen === "grab" && <GrabScreen showRound={() => setScreen("round")} />}
       {screen === "round" && (
         <CurrentRoundStats

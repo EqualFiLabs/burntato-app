@@ -3,7 +3,7 @@ import { decodeEventLog, type Address, type PublicClient } from "viem";
 import { burntatoAbi, BURNTATO_DEPLOYMENT } from "./contract";
 
 export type BurntatoEvent = {
-  name: "PotatoPurchased" | "EmissionFinalized" | "TreasuryRewardFinalized" | "RecoveryCommitted" | "RoundSettled" | "WinnerClaimed" | "RecoveryClaimed" | "WinnerReserveFunded" | "NextRoundWinnerFunded" | "RecoveryReserveFunded";
+  name: "PotatoPurchased" | "EmissionFinalized" | "TreasuryRewardFinalized" | "RecoveryCommitted" | "StalledRecoveryWithdrawn" | "RoundSettled" | "WinnerClaimed" | "RecoveryClaimed" | "WinnerReserveFunded" | "NextRoundWinnerFunded" | "RecoveryReserveFunded";
   blockNumber: bigint;
   transactionHash: `0x${string}`;
   logIndex: number;
@@ -42,6 +42,7 @@ const TRACKED_EVENTS = new Set<BurntatoEvent["name"]>([
   "EmissionFinalized",
   "TreasuryRewardFinalized",
   "RecoveryCommitted",
+  "StalledRecoveryWithdrawn",
   "RoundSettled",
   "WinnerClaimed",
   "RecoveryClaimed",
@@ -83,12 +84,16 @@ export async function fetchIndexedHistory(indexerUrl: string, fromBlock: bigint)
     const payload = await eventsResponse.json() as {
       chainId?: number;
       deployment?: string;
+      sourceCommit?: string;
+      diamond?: string;
       nextCursor?: { blockNumber?: string; logIndex?: number } | null;
       items?: Array<{ source?: string; name?: string; transactionHash?: string; logIndex?: number; blockNumber?: string; args?: unknown }>;
     };
     if (
       payload.chainId !== BURNTATO_DEPLOYMENT.chainId
       || payload.deployment !== BURNTATO_DEPLOYMENT.deploymentId
+      || payload.sourceCommit !== BURNTATO_DEPLOYMENT.sourceCommit
+      || payload.diamond?.toLowerCase() !== BURNTATO_DEPLOYMENT.diamond.toLowerCase()
       || !Array.isArray(payload.items)
     ) throw new Error("Indexer deployment mismatch");
     for (const item of payload.items) {
@@ -173,7 +178,7 @@ export function buildLeaderboard(events: BurntatoEvent[], currentRoundId: bigint
   };
 
   for (const event of events) {
-    const roundId = asBigInt(event.args.roundId);
+    const roundId = asBigInt(event.name === "StalledRecoveryWithdrawn" ? event.args.targetRoundId : event.args.roundId);
     if (event.name === "EmissionFinalized" || event.name === "TreasuryRewardFinalized") {
       const address = asAddress(event.args.holder);
       if (!address) continue;
@@ -195,6 +200,16 @@ export function buildLeaderboard(events: BurntatoEvent[], currentRoundId: bigint
       if (roundId === currentRoundId) row.roundCommitted += amount;
       const key = `${roundId}:${address}`;
       commitments.set(key, (commitments.get(key) ?? 0n) + amount);
+    } else if (event.name === "StalledRecoveryWithdrawn") {
+      const address = asAddress(event.args.account);
+      if (!address) continue;
+      const amount = asBigInt(event.args.amount);
+      const row = rowFor(address);
+      row.committed = row.committed > amount ? row.committed - amount : 0n;
+      if (roundId === currentRoundId) row.roundCommitted = row.roundCommitted > amount ? row.roundCommitted - amount : 0n;
+      const key = `${roundId}:${address}`;
+      const previous = commitments.get(key) ?? 0n;
+      commitments.set(key, previous > amount ? previous - amount : 0n);
     } else if (event.name === "RoundSettled") {
       const winner = asAddress(event.args.winner);
       if (winner) {

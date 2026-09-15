@@ -4,6 +4,7 @@ import { getAbiItem, getAddress, toFunctionSelector, type Abi } from "viem";
 import { burntatoAbi, BURNTATO_DEPLOYMENT, deploymentFromEnvironment } from "./contract";
 import { activationRegistryAbi, faucetAbi, genesisDistributorAbi, genesisVaultAbi, operatorRewardsAbi } from "../operators/contracts";
 import { permit2Abi, universalRouterAbi, v4QuoterAbi } from "../portal/contracts";
+import robinhoodTestnetManifest from "../../deployments/robinhood-testnet.json";
 
 describe("Robinhood deployment parity", () => {
   it("pins the deployed chain, source, and checksummed contracts", () => {
@@ -53,11 +54,27 @@ describe("Robinhood deployment parity", () => {
     expect(() => deploymentFromEnvironment({ NEXT_PUBLIC_BURNTATO_CHAIN_ID: "4663" })).toThrow(/NEXT_PUBLIC_BURNTATO_NETWORK/);
   });
 
+  it("accepts one complete manifest override and rejects partial manifests", () => {
+    const custom = deploymentFromEnvironment({
+      NEXT_PUBLIC_BURNTATO_DEPLOYMENT_JSON: JSON.stringify({
+        ...robinhoodTestnetManifest,
+        network: "Hosted fork",
+        chainId: 4_663,
+        deploymentId: "hosted-fork",
+      }),
+    });
+    expect(custom).toMatchObject({ network: "Hosted fork", chainId: 4_663, deploymentId: "hosted-fork" });
+    expect(() => deploymentFromEnvironment({ NEXT_PUBLIC_BURNTATO_DEPLOYMENT_JSON: "{}" })).toThrow(/chainId/);
+    expect(() => deploymentFromEnvironment({ NEXT_PUBLIC_BURNTATO_DEPLOYMENT_JSON: "{" })).toThrow(/valid JSON/);
+  });
+
   it("keeps deployed game selectors and tuple order stable", () => {
     expect(toFunctionSelector("protocolConfig()")).toBe("0xf5efbb4f");
     expect(toFunctionSelector("getRound(uint256)")).toBe("0x8f1327c0");
     expect(toFunctionSelector("paused()")).toBe("0x5c975abb");
     expect(toFunctionSelector("purchasesInitialized()")).toBe("0x71e67bba");
+    expect(toFunctionSelector("stalledRecoveryWithdrawalAt(uint256)")).toBe("0x4ddf075c");
+    expect(toFunctionSelector("withdrawStalledRecovery(uint256)")).toBe("0x9ce2ced8");
     expect(toFunctionSelector("winnerReserveEth()")).toBe("0x0649cf55");
     expect(toFunctionSelector("nextTreasuryRewardBudget()")).toBe("0x9c4c6d76");
     expect(toFunctionSelector("roundReserves(uint256)")).toBe("0xca6b7f0a");
