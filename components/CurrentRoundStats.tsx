@@ -77,7 +77,7 @@ export function CurrentRoundStats({
   const holder = round?.currentHolder;
   const hasHolder = Boolean(holder && holder.toLowerCase() !== ZERO_ADDRESS);
   const isClosed = phase === "expired" || phase === "settled";
-  const statusLabel = phase === "open" ? "Open" : phase === "expired" ? "Expired" : phase === "settled" ? "Settled" : "Ready";
+  const statusLabel = phase === "open" ? "Time remaining" : phase === "expired" ? "Expired" : phase === "settled" ? "Settled" : "Ready";
 
   return (
     <main className="screen-content round-screen">

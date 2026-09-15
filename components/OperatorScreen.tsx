@@ -119,7 +119,7 @@ export function OperatorScreen() {
                         disabled={Boolean(readinessAction) || actionPending || operator.loading || operator.batchClaimable === 0n}
                         onClick={() => void operator.claimAllBurntato()}
                       >
-                        {actionLabel(operator, "claim-burntato-batch", `Claim ${operator.batchClaimOperatorIds.length}`)}
+                        {actionLabel(operator, "claim-burntato-batch", "Claim all")}
                       </button>
                     </div>
                   )}
@@ -129,6 +129,8 @@ export function OperatorScreen() {
           )}
 
           {operator.error && <p className="operator-inline-error" role="alert">{operator.error}</p>}
+
+          <p className="operator-transfer-note">Registration never locks an Operator. You can transfer it without unregistering; the new owner must register it before earning Burntato rewards.</p>
 
           {BURNTATO_DEPLOYMENT.explorer && (
             <a className="operator-contract-link" href={`${BURNTATO_DEPLOYMENT.explorer}/address/${BURNTATO_DEPLOYMENT.operatorRewardsRouter}`} target="_blank" rel="noopener noreferrer">

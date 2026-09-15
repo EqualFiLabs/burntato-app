@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownUp, ArrowLeftRight, Check, Clock3, WalletCards } from "lucide-react";
+import { ArrowDownUp, Check, Clock3 } from "lucide-react";
 import { useSignTypedData as usePrivySignTypedData } from "@privy-io/react-auth";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -324,7 +324,6 @@ export function LivePortalScreen() {
       <div className="portal-controls">
         <section className="portal-hub" aria-labelledby="live-portal-title">
           <div className="portal-heading">
-            <span className="portal-heading-icon"><ArrowLeftRight aria-hidden="true" /></span>
             <div><p>{BURNTATO_DEPLOYMENT.network}</p><h1 id="live-portal-title">ETH ↔ POTATO</h1></div>
           </div>
           <div className="portal-context-row">
@@ -333,13 +332,12 @@ export function LivePortalScreen() {
           </div>
           <div className="portal-workspace" role="tabpanel">
             <div className="portal-asset-card">
-              <div className="portal-field-label"><span>You pay</span><button type="button" onClick={() => sourceBalance !== undefined && setAmount(formatEther(sourceBalance))}>MAX</button></div>
+              <div className="portal-field-label"><span>You pay</span><small>Balance {formatted(sourceBalance)} {direction === "buy" ? "ETH" : "POTATO"} <button type="button" onClick={() => sourceBalance !== undefined && setAmount(formatEther(sourceBalance))}>MAX</button></small></div>
               <div className="portal-asset-input"><input inputMode="decimal" value={amount} aria-label="Swap amount" onChange={(event) => setAmount(event.target.value)} /><strong>{direction === "buy" ? "ETH" : "POTATO"}</strong></div>
-              <small>Balance {formatted(sourceBalance)} {direction === "buy" ? "ETH" : "POTATO"}</small>
             </div>
             <button className="portal-reverse" type="button" aria-label="Reverse swap direction" onClick={() => { setDirection((current) => current === "buy" ? "sell" : "buy"); setQuote(null); }}><ArrowDownUp aria-hidden="true" /></button>
             <div className="portal-asset-card is-output">
-              <div className="portal-field-label"><span>You receive</span><em>{quoteLoading ? "Quoting…" : "Quote"}</em></div>
+              <div className="portal-field-label"><span>You receive</span><small>{quoteLoading ? "Quoting…" : "Estimated output"}</small></div>
               <div className="portal-asset-input"><strong>{formatted(quote?.amountOut)}</strong><strong>{direction === "buy" ? "POTATO" : "ETH"}</strong></div>
               <small>Minimum {formatted(quote?.minimumOut)} {direction === "buy" ? "POTATO" : "ETH"}</small>
             </div>
@@ -351,7 +349,7 @@ export function LivePortalScreen() {
           {insufficientBalance && <p className="portal-live-error">You do not have enough {direction === "buy" ? "ETH" : "POTATO"} for this swap.</p>}
           {quoteError && <p className="portal-live-error">{quoteError}</p>}
           {direction === "buy" && buysEnabled === false && <p className="portal-live-error">Buying POTATO is temporarily unavailable.</p>}
-          <button className="primary-action portal-primary-action" type="button" disabled={primaryDisabled} onClick={primaryAction}><WalletCards aria-hidden="true" /><span>{primaryLabel}</span></button>
+          <button className="primary-action portal-primary-action" type="button" disabled={primaryDisabled} onClick={primaryAction}><span>{primaryLabel}</span></button>
           {transaction && <div className={`portal-live-status is-${transaction.stage}`} role="status" aria-live="polite"><Check aria-hidden="true" /><span>{transaction.message}</span>{transaction.hash && BURNTATO_DEPLOYMENT.explorer && <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>}</div>}
           <div className="portal-coming-soon"><Clock3 aria-hidden="true" /><span><strong>Bridge coming soon</strong><small>Base, Arbitrum, and Solana support is coming later.</small></span></div>
         </section>

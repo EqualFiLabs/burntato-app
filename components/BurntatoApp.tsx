@@ -3,6 +3,7 @@
 import {
   ArrowLeftRight,
   BadgeCheck,
+  BookOpen,
   CalendarDays,
   Check,
   ChevronDown,
@@ -29,19 +30,20 @@ import { CurrentRoundStats } from "@/components/CurrentRoundStats";
 import { OperatorScreen } from "@/components/OperatorScreen";
 import { LivePortalScreen } from "@/components/LivePortalScreen";
 import { RecoveryPositions } from "@/components/RecoveryPositions";
+import { RulesScreen } from "@/components/RulesScreen";
 import { ScreenHero } from "@/components/ScreenHero";
-import { UpcomingRounds, type InitialSponsoredRound } from "@/components/UpcomingRounds";
+import { UpcomingRounds, type InitialUpcomingRoundFunding } from "@/components/UpcomingRounds";
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
-import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato } from "@/lib/burntato/model";
+import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato, protocolStateNotice } from "@/lib/burntato/model";
+import { requiresSelfGrabConfirmation, walletPlacement } from "@/lib/burntato/player-ux";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
 
-type Screen = "grab" | "round" | "burn" | "portal" | "leaderboard" | "rewards" | "operators" | "upcoming";
+type Screen = "grab" | "round" | "burn" | "portal" | "leaderboard" | "rewards" | "operators" | "upcoming" | "rules";
 type RewardsTab = "ready" | "positions" | "history";
 type LeaderboardMetric = "earned" | "wins" | "hold" | "recovery";
 type LeaderboardPeriod = "all-time" | "round";
 type LeaderboardEntry = {
-  name: string;
   address: string;
   earned: number;
   roundEarned: number;
@@ -52,7 +54,6 @@ type LeaderboardEntry = {
   recovery: number;
   roundRecovery: number;
   committed: number;
-  trend: number;
   isYou?: boolean;
 };
 
@@ -186,7 +187,6 @@ function AppHeader() {
         <span className="balance-pill" title="Read-only Ethereum balance for the active wallet">
           <EthereumMark small />
           <NetworkEthBalance />
-          <span className="tiny-plus" aria-hidden="true"><Plus /></span>
         </span>
         {connected ? (
           <div className="wallet-control" ref={walletControlRef}>
@@ -289,11 +289,12 @@ function LeaderboardScreen() {
   const wallet = useWalletState();
   const [metric, setMetric] = useState<LeaderboardMetric>("earned");
   const [period, setPeriod] = useState<LeaderboardPeriod>("all-time");
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState(false);
   const leaderboardEntries = useMemo<LeaderboardEntry[]>(() => game.leaderboard.map((row) => {
     const isYou = wallet.activeAddress?.toLowerCase() === row.address.toLowerCase();
     return {
-      name: isYou ? "You" : shortAddress(row.address),
-      address: shortAddress(row.address),
+      address: row.address,
       earned: Number(row.earned) / 1e18,
       roundEarned: Number(row.roundEarned) / 1e18,
       wins: row.wins,
@@ -303,14 +304,25 @@ function LeaderboardScreen() {
       recovery: Number(row.recovery) / 1e18,
       roundRecovery: Number(row.roundRecovery) / 1e18,
       committed: Number(period === "round" ? row.roundCommitted : row.committed) / 1e18,
-      trend: 0,
       isYou,
     };
   }), [game.leaderboard, period, wallet.activeAddress]);
   const ranked = [...leaderboardEntries].sort(
     (a, b) => leaderboardValue(b, metric, period) - leaderboardValue(a, metric, period),
   );
-  const podium = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
+  const yourPlacement = walletPlacement(ranked.map((entry) => entry.address), wallet.activeAddress);
+
+  async function copyLeaderboardAddress(address: string) {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopyError(false);
+      setCopiedAddress(address);
+      window.setTimeout(() => setCopiedAddress((current) => current === address ? null : current), 1_800);
+    } catch {
+      setCopiedAddress(null);
+      setCopyError(true);
+    }
+  }
 
   return (
     <main className="screen-content leaderboard-screen">
@@ -323,7 +335,10 @@ function LeaderboardScreen() {
               <p>Hall of Flame</p>
               <h1 id="leaderboard-title">Leaderboard</h1>
             </div>
-            <span className="leaderboard-live"><i aria-hidden="true" /> Round #{game.currentRoundId.toString()}</span>
+            <div className="leaderboard-heading-status">
+              <span className="leaderboard-live"><i aria-hidden="true" /> Round #{game.currentRoundId.toString()}</span>
+              {wallet.status === "ready" && <strong>Your placement {yourPlacement ? `#${yourPlacement}` : "Not ranked"}</strong>}
+            </div>
           </div>
 
           <div className="leaderboard-period" role="group" aria-label="Leaderboard period">
@@ -359,48 +374,40 @@ function LeaderboardScreen() {
             ))}
           </div>
 
-          {ranked.length > 0 ? <div className="leaderboard-podium" aria-label="Top three players">
-            {podium.map((entry) => {
-              const rank = ranked.indexOf(entry) + 1;
-              return (
-                <article className={`podium-card is-rank-${rank}${entry.isYou ? " is-you" : ""}`} key={entry.address}>
-                  <span className="podium-rank">#{rank}</span>
-                  <span className="player-avatar">{entry.name.slice(0, 1)}</span>
-                  <strong>{entry.name}</strong>
-                  <small>{entry.address}</small>
-                  <em>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</em>
-                </article>
-              );
-            })}
-          </div> : game.historyLoading
+          {ranked.length === 0 && (game.historyLoading
             ? <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>Loading leaderboard…</strong><span>Results will appear shortly.</span></div>
-            : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No completed play yet</strong><span>The first completed hold or round will appear here.</span></div>}
+            : <div className="onchain-empty"><Trophy aria-hidden="true" /><strong>No completed play yet</strong><span>The first completed hold or round will appear here.</span></div>)}
 
-          {ranked.length > 3 && <div className="leaderboard-list-wrap">
+          {ranked.length > 0 && <div className="leaderboard-list-wrap">
             <div className="leaderboard-list-heading">
               <span>Rank</span>
               <span>Player</span>
               <span>{leaderboardMetrics.find((option) => option.id === metric)?.label}</span>
+              <span>Address</span>
             </div>
-            <ol className="leaderboard-list" start={4} aria-label="Leaderboard standings">
-              {ranked.slice(3).map((entry, index) => (
+            <ol className="leaderboard-list" aria-label="Leaderboard standings">
+              {ranked.map((entry, index) => (
                 <li className={entry.isYou ? "leaderboard-row is-you" : "leaderboard-row"} key={entry.address}>
-                  <span className="list-rank">#{index + 4}</span>
-                  <span className="player-avatar is-small">{entry.name.slice(0, 1)}</span>
+                  <span className="list-rank">#{index + 1}</span>
+                  <span className="player-avatar is-small">{entry.isYou ? "Y" : entry.address.slice(-1).toUpperCase()}</span>
                   <span className="leaderboard-player">
-                    <strong>{entry.name}{entry.isYou && <i>You</i>}</strong>
-                    <small>{entry.address} · {leaderboardSecondary(entry, metric, period)}</small>
+                    <strong>{shortAddress(entry.address)}{entry.isYou && <i>You</i>}</strong>
+                    <small>{leaderboardSecondary(entry, metric, period)}</small>
                   </span>
                   <span className="leaderboard-score">
                     <strong>{formatLeaderboardValue(leaderboardValue(entry, metric, period), metric)}</strong>
-                    <small className={entry.trend > 0 ? "is-up" : entry.trend < 0 ? "is-down" : ""}>
-                      {entry.trend > 0 ? `↑ ${entry.trend}` : entry.trend < 0 ? `↓ ${Math.abs(entry.trend)}` : "—"}
-                    </small>
                   </span>
+                  <button className="leaderboard-copy" type="button" onClick={() => void copyLeaderboardAddress(entry.address)} aria-label={`Copy address for rank ${index + 1}`}>
+                    {copiedAddress === entry.address ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
+                  </button>
                 </li>
               ))}
             </ol>
           </div>}
+
+          <span className="leaderboard-copy-status" role="status" aria-live="polite">
+            {copyError ? "Address could not be copied." : copiedAddress ? "Address copied." : ""}
+          </span>
 
         </section>
       </div>
@@ -425,6 +432,9 @@ function RewardsScreen() {
     if (!wallet.activeAddress || (event.name !== "WinnerClaimed" && event.name !== "RecoveryClaimed")) return false;
     return String(event.args.account ?? event.args.winner).toLowerCase() === wallet.activeAddress.toLowerCase();
   }).reverse();
+  const withdrawalAction = `withdraw-recovery-${game.targetRoundId}` as TransactionAction;
+  const withdrawalTransaction = game.transactions[withdrawalAction];
+  const withdrawalPending = withdrawalTransaction?.stage === "wallet" || withdrawalTransaction?.stage === "confirming";
 
   return (
     <main className="screen-content rewards-screen">
@@ -492,9 +502,11 @@ function RewardsScreen() {
                       </span>
                       <span className="reward-row-action">
                         <strong>{formatEth(reward.amount)} ETH</strong>
-                        <button type="button" disabled={pending || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToRobinhood()}>
+                        <button type="button" disabled={pending || game.paused || (!game.correctNetwork && game.networkSwitchBlocked)} onClick={() => game.correctNetwork ? void game.claim(reward) : game.switchToRobinhood()}>
                           {pending
                             ? "Confirming…"
+                            : game.paused
+                              ? "Protocol paused"
                             : game.correctNetwork
                               ? "Claim"
                               : transactionLabel(game, "network", "Switch network")}
@@ -516,6 +528,12 @@ function RewardsScreen() {
                 targetRoundId={game.targetRoundId}
                 queuedCommitment={game.ownCommitment}
                 queuedTotalCommitment={game.totalCommitment}
+                chainNow={game.chainNow}
+                stalledWithdrawalAt={game.stalledRecoveryWithdrawalAt}
+                withdrawalPending={withdrawalPending}
+                withdrawalError={withdrawalTransaction?.stage === "error" ? withdrawalTransaction.message : null}
+                withdrawalDisabled={!game.correctNetwork && game.networkSwitchBlocked}
+                onWithdraw={() => game.correctNetwork ? void game.withdrawStalledRecovery(game.targetRoundId) : game.switchToRobinhood()}
               />
             )}
 
@@ -559,11 +577,22 @@ function LiveCountdown({ deadline, anchor }: { deadline: bigint; anchor: bigint 
 function GrabScreen({ showRound }: { showRound: () => void }) {
   const game = useBurntatoState();
   const wallet = useWalletState();
+  const [selfGrabOpen, setSelfGrabOpen] = useState(false);
+  const selfGrabDialogRef = useRef<HTMLDialogElement>(null);
   const displayRoundId = game.currentRoundId === 0n ? 1n : game.currentRoundId;
   const price = game.currentRound?.nextPrice ?? game.protocolConfig?.startingPrice ?? 0n;
   const isHolder = Boolean(wallet.activeAddress && game.currentRound?.currentHolder.toLowerCase() === wallet.activeAddress.toLowerCase());
   const vestingMature = Boolean(game.currentRound && game.chainNow >= game.currentRound.holderSince + game.currentRound.config.emissionVestingDuration);
   const canFinalizeEmission = Boolean(game.currentRound && vestingMature && !game.currentRound.holderEmissionFinalized);
+  const confirmSelfGrab = requiresSelfGrabConfirmation(game.phase, game.currentRound?.currentHolder, wallet.activeAddress);
+
+  useEffect(() => {
+    const dialog = selfGrabDialogRef.current;
+    if (!dialog) return;
+    if (selfGrabOpen && !dialog.open) dialog.showModal();
+    if (!selfGrabOpen && dialog.open) dialog.close();
+  }, [selfGrabOpen]);
+
   let actionLabel = `Grab for ${formatEth(price)} ETH`;
   let action: () => void = () => void game.grab();
   if (wallet.status === "unconfigured") {
@@ -575,15 +604,22 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
   } else if (!game.correctNetwork) {
     actionLabel = "Switch to Robinhood";
     action = game.switchToRobinhood;
+  } else if (game.paused) {
+    actionLabel = "Protocol paused";
+    action = () => undefined;
+  } else if (!game.purchasesInitialized) {
+    actionLabel = "Gameplay not activated";
+    action = () => undefined;
   } else if (game.phase === "expired") {
     actionLabel = transactionLabel(game, "settle", "Settle Round");
     action = () => void game.settle();
   } else {
     actionLabel = transactionLabel(game, "grab", actionLabel);
+    action = confirmSelfGrab ? () => setSelfGrabOpen(true) : () => void game.grab();
   }
   const grabDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
     wallet.status === "ready" && game.correctNetwork && (
-      game.loading || (game.phase !== "expired" && game.purchasesPaused)
+      game.loading || game.paused || !game.purchasesInitialized
     )
   );
 
@@ -596,7 +632,7 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
           <span>{actionLabel}</span>
           <Flame aria-hidden="true" />
         </button>
-        {wallet.status === "ready" && isHolder && canFinalizeEmission && (
+        {wallet.status === "ready" && isHolder && canFinalizeEmission && !game.paused && (
           <button
             className="secondary-game-action"
             type="button"
@@ -636,6 +672,21 @@ function GrabScreen({ showRound }: { showRound: () => void }) {
           </span>
         </button>
       </section>
+      <dialog
+        ref={selfGrabDialogRef}
+        className="self-grab-dialog"
+        aria-labelledby="self-grab-title"
+        onCancel={() => setSelfGrabOpen(false)}
+        onClose={() => setSelfGrabOpen(false)}
+      >
+        <div className="self-grab-dialog-icon"><Flame aria-hidden="true" /></div>
+        <h2 id="self-grab-title">Grab your own Hot Potato again?</h2>
+        <p>This finalizes your current POTATO emission, spends {formatEth(price)} ETH, resets the round timer, starts a new emission opportunity, and increases the next Grab price.</p>
+        <div className="self-grab-dialog-actions">
+          <button type="button" onClick={() => setSelfGrabOpen(false)}>Cancel</button>
+          <button type="button" onClick={() => { setSelfGrabOpen(false); void game.grab(); }}>Grab again for {formatEth(price)} ETH</button>
+        </div>
+      </dialog>
     </main>
   );
 }
@@ -664,13 +715,16 @@ function BurnScreen() {
   } else if (!game.correctNetwork) {
     actionLabel = "Switch to Robinhood";
     action = game.switchToRobinhood;
+  } else if (game.paused) {
+    actionLabel = "Protocol paused";
+    action = () => undefined;
   } else if (game.currentRoundId === 0n) {
     actionLabel = "Start round in Play first";
     action = () => undefined;
   }
   const commitDisabled = wallet.status === "unconfigured" || (game.correctNetwork ? game.gameplayTransactionPending : game.networkSwitchBlocked) || (
     wallet.status === "ready" && game.correctNetwork && (
-      amount === 0n || game.currentRoundId === 0n || game.commitmentsPaused || game.loading
+      amount === 0n || game.currentRoundId === 0n || game.paused || game.loading
     )
   );
 
@@ -727,7 +781,7 @@ function BurnScreen() {
               onChange={(event) => setAmount(game.potatoBalance * BigInt(event.target.value) / 10_000n)}
             />
           </div>
-          <p className="burn-warning">This commitment cannot be undone. When the round ends, part of the committed POTATO is burned.</p>
+          <p className="burn-warning">Committed POTATO stays locked for its Recovery round. If the preceding round remains completely holderless for 30 days, an exceptional withdrawal becomes available.</p>
           <button className="primary-action burn-button" type="button" disabled={commitDisabled} onClick={action}>
             <Flame aria-hidden="true" />
             <span>{actionLabel}</span>
@@ -762,6 +816,7 @@ const destinationNavigation = [
   { id: "upcoming", label: "Upcoming", Icon: CalendarDays, screen: "upcoming" },
   { id: "operators", label: "Operators", Icon: BadgeCheck, screen: "operators" },
   { id: "leaderboard", label: "Leaderboard", Icon: Trophy, screen: "leaderboard" },
+  { id: "rules", label: "Rules", Icon: BookOpen, screen: "rules" },
 ] as const;
 
 const mobileNavigation = [
@@ -800,6 +855,12 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
     setMenuOpen(false);
   }
 
+  function destinationLabel(destination: (typeof destinationNavigation)[number]) {
+    return destination.id === "round" ? `Round #${(game.currentRoundId || 1n).toString()}` : destination.label;
+  }
+
+  const moreActive = !mobileNavigation.some((destination) => destination.screen === screen);
+
   return (
     <>
       <nav className="bottom-navigation" aria-label="Primary navigation">
@@ -820,12 +881,12 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
                 onClick={() => chooseDestination(destination)}
               >
                 <span className="nav-icon"><destination.Icon aria-hidden="true" /></span>
-                <span>{destination.label}</span>
+                <span>{destinationLabel(destination)}</span>
               </button>
             );
           })}
           <button
-            className={menuOpen || screen === "round" || screen === "leaderboard" || screen === "operators" || screen === "upcoming" ? "nav-item is-active" : "nav-item"}
+            className={menuOpen || moreActive ? "nav-item is-active" : "nav-item"}
             type="button"
             aria-expanded={menuOpen}
             aria-controls="mobile-navigation-menu"
@@ -848,16 +909,12 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
                 onClick={() => chooseDestination(destination)}
               >
                 <span className="nav-icon"><destination.Icon aria-hidden="true" /></span>
-                <span>{destination.label}</span>
+                <span>{destinationLabel(destination)}</span>
               </button>
             );
           })}
         </div>
 
-        <button className="sidebar-round" type="button" onClick={() => select("round")} aria-label="Open current round economics">
-          <span className="sidebar-round-flame"><Flame /></span>
-          <span><small>Live round</small><strong>#{(game.currentRoundId || 1n).toString()}</strong></span>
-        </button>
       </nav>
 
       <dialog
@@ -890,15 +947,11 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
                 onClick={() => chooseDestination(destination)}
               >
                 <span><destination.Icon aria-hidden="true" /></span>
-                <strong>{destination.label}</strong>
+                <strong>{destinationLabel(destination)}</strong>
               </button>
             );
           })}
         </nav>
-        <button className="mobile-menu-round" type="button" onClick={() => { select("round"); setMenuOpen(false); }} aria-label="Open current round economics">
-          <span className="sidebar-round-flame"><Flame /></span>
-          <span><small>Live round</small><strong>#{(game.currentRoundId || 1n).toString()}</strong></span>
-        </button>
       </dialog>
     </>
   );
@@ -907,21 +960,23 @@ function BottomNavigation({ screen, select }: { screen: Screen; select: (screen:
 export function BurntatoApp({
   initialScreen = "grab",
   focusRoundId,
-  initialSponsoredRound,
+  initialRoundFunding,
 }: {
   initialScreen?: Screen;
   focusRoundId?: string;
-  initialSponsoredRound?: InitialSponsoredRound;
+  initialRoundFunding?: InitialUpcomingRoundFunding;
 } = {}) {
   const wallet = useWalletState();
   const game = useBurntatoState();
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const transactionNotice = game.latestTransaction?.message;
   const displayedNotice = wallet.error ?? game.readError ?? game.historyError ?? transactionNotice;
+  const protocolNotice = protocolStateNotice(game.paused, game.purchasesInitialized, game.loading);
 
   return (
     <div className={`phone-shell is-${screen}`}>
       <AppHeader />
+      {protocolNotice && <div className={game.paused ? "protocol-state-banner is-paused" : "protocol-state-banner is-prelaunch"} role="status">{protocolNotice}</div>}
       {screen === "grab" && <GrabScreen showRound={() => setScreen("round")} />}
       {screen === "round" && (
         <CurrentRoundStats
@@ -941,8 +996,9 @@ export function BurntatoApp({
       {screen === "portal" && <LivePortalScreen />}
       {screen === "rewards" && <RewardsScreen />}
       {screen === "operators" && <OperatorScreen />}
+      {screen === "rules" && <RulesScreen />}
       {screen === "upcoming" && (
-        <UpcomingRounds focusRoundId={focusRoundId} initialSponsoredRound={initialSponsoredRound} />
+        <UpcomingRounds focusRoundId={focusRoundId} initialRoundFunding={initialRoundFunding} />
       )}
       <BottomNavigation screen={screen} select={setScreen} />
       <div className={displayedNotice ? "demo-notice is-visible" : "demo-notice"} role="status" aria-live="polite">

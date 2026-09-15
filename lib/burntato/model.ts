@@ -52,6 +52,12 @@ export type RoundPhase = "unstarted" | "open" | "expired" | "settled";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
+export function protocolStateNotice(paused: boolean, purchasesInitialized: boolean, loading: boolean): string | null {
+  if (paused) return "Protocol paused. Gameplay and claims are temporarily unavailable. Trading remains available.";
+  if (!loading && !purchasesInitialized) return "Burntato is ready. Gameplay has not been activated yet.";
+  return null;
+}
+
 export function deriveRoundPhase(round: BurntatoRound | null, chainNow: bigint): RoundPhase {
   if (!round || !round.activated || round.currentHolder.toLowerCase() === ZERO_ADDRESS) return "unstarted";
   if (round.settled) return "settled";
@@ -69,6 +75,17 @@ export function formatCountdown(seconds: number): string {
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
   return [hours, minutes, secs].map((part) => String(part).padStart(2, "0")).join(":");
+}
+
+export function formatRecoveryWithdrawalCountdown(availableAt: bigint, chainNow: bigint): string {
+  if (availableAt <= chainNow) return "available now";
+  const remaining = availableAt - chainNow;
+  const days = remaining / 86_400n;
+  const hours = (remaining % 86_400n) / 3_600n;
+  const minutes = (remaining % 3_600n) / 60n;
+  if (days > 0n) return `${days}d ${hours}h`;
+  if (hours > 0n) return `${hours}h ${minutes}m`;
+  return `${minutes > 0n ? minutes : 1n}m`;
 }
 
 export function formatEth(value: bigint, maximumFractionDigits = 8): string {
@@ -138,7 +155,7 @@ export function remainingRoundEmissions(
 export function describeBurntatoError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error ?? "");
   const normalized = message.toLowerCase();
-  if (normalized.includes("user rejected") || normalized.includes("user denied") || normalized.includes("cancel")) {
+  if (normalized.includes("user rejected") || normalized.includes("user denied") || normalized.includes("user cancelled") || normalized.includes("request was cancelled")) {
     return "The wallet request was cancelled.";
   }
   if (normalized.includes("incorrectpayment")) return "The price changed before submission. Refresh and try again.";
@@ -147,6 +164,9 @@ export function describeBurntatoError(error: unknown): string {
   if (normalized.includes("roundnotexpired")) return "This round is still live.";
   if (normalized.includes("protocolpaused")) return "Burntato is currently paused.";
   if (normalized.includes("purchasesnotinitialized")) return "Burntato purchases have not been initialized.";
+  if (normalized.includes("recoverywithdrawaltoosoon")) return "This stalled Recovery commitment is not withdrawable yet.";
+  if (normalized.includes("recoverywithdrawalunavailable")) return "This Recovery commitment is no longer eligible for the holderless-round withdrawal.";
+  if (normalized.includes("nothingtocancel")) return "There is no Recovery commitment left to withdraw.";
   if (normalized.includes("commitmentclosed")) return "Commitments for that round are closed.";
   if (normalized.includes("insufficientbalance")) return "Your POTATO balance is too low.";
   if (normalized.includes("nothingtoclaim")) return "There is nothing claimable for this round.";

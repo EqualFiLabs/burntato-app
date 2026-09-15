@@ -8,8 +8,10 @@ import {
   describeBurntatoError,
   formatCountdown,
   formatEth,
+  formatRecoveryWithdrawalCountdown,
   projectGrabPrices,
   projectedRecoveryPayout,
+  protocolStateNotice,
   recoveryPositionShareBps,
   remainingRoundEmissions,
   shareBps,
@@ -64,6 +66,12 @@ function round(overrides: Partial<BurntatoRound> = {}): BurntatoRound {
 }
 
 describe("round presentation", () => {
+  it("distinguishes pre-launch and protocol-pause notices", () => {
+    expect(protocolStateNotice(false, false, false)).toBe("Burntato is ready. Gameplay has not been activated yet.");
+    expect(protocolStateNotice(true, true, false)).toContain("Trading remains available");
+    expect(protocolStateNotice(false, true, false)).toBeNull();
+    expect(protocolStateNotice(false, false, true)).toBeNull();
+  });
   it("distinguishes unstarted, open, expired, and settled rounds", () => {
     expect(deriveRoundPhase(round({ activated: false }), 1n)).toBe("unstarted");
     expect(deriveRoundPhase(round(), 99n)).toBe("open");
@@ -75,6 +83,13 @@ describe("round presentation", () => {
     expect(countdownSeconds(3_700n, 1n)).toBe(3_699);
     expect(formatCountdown(3_699)).toBe("01:01:39");
     expect(countdownSeconds(10n, 11n)).toBe(0);
+  });
+
+  it("formats long Recovery withdrawal waits without implying second-level precision", () => {
+    expect(formatRecoveryWithdrawalCountdown(1_530_000n, 1_000n)).toBe("17d 16h");
+    expect(formatRecoveryWithdrawalCountdown(4_700n, 1_000n)).toBe("1h 1m");
+    expect(formatRecoveryWithdrawalCountdown(1_001n, 1_000n)).toBe("1m");
+    expect(formatRecoveryWithdrawalCountdown(1_000n, 1_000n)).toBe("available now");
   });
 
   it("preserves low-cost testnet purchase prices", () => {
@@ -143,6 +158,9 @@ describe("transaction feedback", () => {
     expect(describeBurntatoError(new Error("User rejected the request"))).toContain("cancelled");
     expect(describeBurntatoError(new Error("ProtocolPaused()"))).toContain("paused");
     expect(describeBurntatoError(new Error("PurchasesNotInitialized()"))).toContain("not been initialized");
+    expect(describeBurntatoError(new Error("RecoveryWithdrawalTooSoon(123)"))).toContain("not withdrawable yet");
+    expect(describeBurntatoError(new Error("RecoveryWithdrawalUnavailable(4)"))).toContain("no longer eligible");
+    expect(describeBurntatoError(new Error("NothingToCancel()"))).toContain("no Recovery commitment");
     expect(describeBurntatoError(new Error("InvalidFutureRound(4, 4)"))).toContain("later round");
   });
 });
