@@ -6,6 +6,7 @@ const consumerSources = [
   "components/BurntatoApp.tsx",
   "components/LivePortalScreen.tsx",
   "components/OperatorScreen.tsx",
+  "components/RulesScreen.tsx",
   "providers/burntato-context.tsx",
   "lib/portal/router.ts",
 ];
@@ -52,5 +53,15 @@ describe("consumer-facing copy", () => {
 
     expect(portalSource).toContain('<h1 id="live-portal-title">ETH ↔ POTATO</h1>');
     expect(portalSource).not.toContain('<h2 id="live-portal-title">ETH ↔ POTATO</h2>');
+  });
+
+  it("explains self-grabs and transferable Operator registrations", () => {
+    const appSource = readFileSync(resolve(process.cwd(), "components/BurntatoApp.tsx"), "utf8");
+    const rulesSource = readFileSync(resolve(process.cwd(), "components/RulesScreen.tsx"), "utf8");
+
+    expect(appSource).toContain("Grab your own Hot Potato again?");
+    expect(rulesSource).toContain("The current holder may Grab again to defend their position");
+    expect(rulesSource).toContain("Registration never locks the NFT");
+    expect(rulesSource).toContain("they are not a player action in this app");
   });
 });
