@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  balanceProgressBps,
   clampAmount,
   countdownSeconds,
   currentWinnerPot,
@@ -133,6 +134,15 @@ describe("round presentation", () => {
 });
 
 describe("commitment controls", () => {
+  it("maps commitment amounts to the complete slider progress range", () => {
+    expect(balanceProgressBps(0n, 0n)).toBe(0);
+    expect(balanceProgressBps(0n, 100n)).toBe(0);
+    expect(balanceProgressBps(25n, 100n)).toBe(2_500);
+    expect(balanceProgressBps(50n, 100n)).toBe(5_000);
+    expect(balanceProgressBps(100n, 100n)).toBe(10_000);
+    expect(balanceProgressBps(120n, 100n)).toBe(10_000);
+  });
+
   it("clamps bigint token amounts and calculates prospective share", () => {
     expect(clampAmount(-1n, 100n)).toBe(0n);
     expect(clampAmount(120n, 100n)).toBe(100n);

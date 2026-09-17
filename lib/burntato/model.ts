@@ -104,6 +104,11 @@ export function clampAmount(value: bigint, balance: bigint): bigint {
   return value < 0n ? 0n : value > balance ? balance : value;
 }
 
+export function balanceProgressBps(amount: bigint, balance: bigint): number {
+  if (balance <= 0n) return 0;
+  return Number((clampAmount(amount, balance) * 10_000n) / balance);
+}
+
 export function shareBps(amount: bigint, totalBefore: bigint): bigint {
   const total = totalBefore + amount;
   return total === 0n ? 0n : (amount * 10_000n) / total;

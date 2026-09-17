@@ -1084,13 +1084,26 @@ button {
 }
 
 .amount-range {
+  --amount-progress: 0%;
   width: calc(100% - 1cqw);
   height: 3.1cqw;
   margin: 1.5cqw 0.5cqw 0;
   appearance: none;
   border-radius: 999px;
   outline: none;
-  background: linear-gradient(90deg, #ee2310 0%, #ff3810 82%, #6b230c 82%, #6b230c 100%);
+  background: transparent;
+}
+
+.amount-range::-webkit-slider-runnable-track {
+  height: 3.1cqw;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #ee2310 0%,
+    #ff3810 var(--amount-progress),
+    #6b230c var(--amount-progress),
+    #6b230c 100%
+  );
   box-shadow:
     inset 0 0.25cqw 0.35cqw rgba(78, 0, 0, 0.75),
     0 0 0.8cqw rgba(255, 49, 0, 0.42);
@@ -1105,6 +1118,22 @@ button {
   background: #ff3c09;
   box-shadow: 0 0 0.7cqw rgba(255, 75, 0, 0.9);
   cursor: grab;
+  margin-top: -0.75cqw;
+}
+
+.amount-range::-moz-range-track {
+  height: 3.1cqw;
+  border-radius: 999px;
+  background: #6b230c;
+  box-shadow:
+    inset 0 0.25cqw 0.35cqw rgba(78, 0, 0, 0.75),
+    0 0 0.8cqw rgba(255, 49, 0, 0.42);
+}
+
+.amount-range::-moz-range-progress {
+  height: 3.1cqw;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ee2310, #ff3810);
 }
 
 .amount-range::-moz-range-thumb {
