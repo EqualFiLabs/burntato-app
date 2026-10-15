@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownUp, Check, Clock3 } from "lucide-react";
+import { ArrowDownUp, Check } from "lucide-react";
 import { useSignTypedData as usePrivySignTypedData } from "@privy-io/react-auth";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -351,7 +351,6 @@ export function LivePortalScreen() {
           {direction === "buy" && buysEnabled === false && <p className="portal-live-error">Buying POTATO is temporarily unavailable.</p>}
           <button className="primary-action portal-primary-action" type="button" disabled={primaryDisabled} onClick={primaryAction}><span>{primaryLabel}</span></button>
           {transaction && <div className={`portal-live-status is-${transaction.stage}`} role="status" aria-live="polite"><Check aria-hidden="true" /><span>{transaction.message}</span>{transaction.hash && BURNTATO_DEPLOYMENT.explorer && <a href={`${BURNTATO_DEPLOYMENT.explorer}/tx/${transaction.hash}`} target="_blank" rel="noopener noreferrer">View transaction</a>}</div>}
-          <div className="portal-coming-soon"><Clock3 aria-hidden="true" /><span><strong>Bridge coming soon</strong><small>Base, Arbitrum, and Solana support is coming later.</small></span></div>
         </section>
       </div>
     </main>

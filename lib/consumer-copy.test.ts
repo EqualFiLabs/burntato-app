@@ -53,6 +53,7 @@ describe("consumer-facing copy", () => {
 
     expect(portalSource).toContain('<h1 id="live-portal-title">ETH ↔ POTATO</h1>');
     expect(portalSource).not.toContain('<h2 id="live-portal-title">ETH ↔ POTATO</h2>');
+    expect(portalSource).not.toContain("Bridge coming soon");
   });
 
   it("explains self-grabs and transferable Operator registrations", () => {

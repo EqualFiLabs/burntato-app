@@ -23,7 +23,7 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 
 import { NetworkEthBalance } from "@/components/NetworkEthBalance";
 import { CurrentRoundStats } from "@/components/CurrentRoundStats";
@@ -34,7 +34,7 @@ import { RulesScreen } from "@/components/RulesScreen";
 import { ScreenHero } from "@/components/ScreenHero";
 import { UpcomingRounds, type InitialUpcomingRoundFunding } from "@/components/UpcomingRounds";
 import { BURNTATO_DEPLOYMENT } from "@/lib/burntato/contract";
-import { countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato, protocolStateNotice } from "@/lib/burntato/model";
+import { balanceProgressBps, countdownSeconds, currentWinnerPot, formatCountdown, formatEth, formatPotato, protocolStateNotice } from "@/lib/burntato/model";
 import { requiresSelfGrabConfirmation, walletPlacement } from "@/lib/burntato/player-ux";
 import { useBurntatoState, type TransactionAction } from "@/providers/burntato-context";
 import { useWalletState } from "@/providers/wallet-context";
@@ -698,7 +698,8 @@ function BurnScreen() {
   const [amount, setAmount] = useState(0n);
   const totalAfter = game.totalCommitment + amount;
   const yourShare = totalAfter === 0n ? 0 : Number((game.ownCommitment + amount) * 10_000n / totalAfter) / 100;
-  const amountRangeValue = game.potatoBalance === 0n ? 0 : Number(amount * 10_000n / game.potatoBalance);
+  const amountRangeValue = balanceProgressBps(amount, game.potatoBalance);
+  const amountRangeStyle = { "--amount-progress": `${amountRangeValue / 100}%` } as CSSProperties;
 
   function setPercentage(percent: number) {
     setAmount(game.potatoBalance * BigInt(Math.round(percent * 100)) / 100n);
@@ -777,6 +778,7 @@ function BurnScreen() {
               max="10000"
               step="1"
               value={amountRangeValue}
+              style={amountRangeStyle}
               aria-label="POTATO commitment amount"
               onChange={(event) => setAmount(game.potatoBalance * BigInt(event.target.value) / 10_000n)}
             />
