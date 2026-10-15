@@ -22,6 +22,19 @@ describe("Robinhood V4 exact-input routing", () => {
     const [actions, params] = decodeAbiParameters(parseAbiParameters("bytes actions,bytes[] params"), plan);
     expect(actions).toBe("0x060c0f");
     expect(params).toHaveLength(3);
+
+    const [swap] = decodeAbiParameters(
+      parseAbiParameters("((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,uint256 minHopPriceX36,bytes hookData) params"),
+      params[0],
+    );
+    expect(swap).toEqual({
+      poolKey: key,
+      zeroForOne: true,
+      amountIn: 1_000n,
+      amountOutMinimum: 900n,
+      minHopPriceX36: 0n,
+      hookData: "0x",
+    });
   });
 
   it("derives a bounded minimum output", () => {

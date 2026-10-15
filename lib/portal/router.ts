@@ -10,7 +10,7 @@ export type PoolKey = {
 
 export type SwapDirection = "buy" | "sell";
 
-const swapParams = parseAbiParameters("(address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,uint256 minHopPriceX36,bytes hookData");
+const swapParams = parseAbiParameters("((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) poolKey,bool zeroForOne,uint128 amountIn,uint128 amountOutMinimum,uint256 minHopPriceX36,bytes hookData) params");
 const currencyAmount = parseAbiParameters("address currency,uint256 amount");
 const planParams = parseAbiParameters("bytes actions,bytes[] params");
 
@@ -38,7 +38,7 @@ export function buildSwapPlan(poolKey: PoolKey, direction: SwapDirection, amount
   const output = zeroForOne ? poolKey.currency1 : poolKey.currency0;
   const actions = concat(["0x06", "0x0c", "0x0f"]);
   const params: Hex[] = [
-    encodeAbiParameters(swapParams, [poolKey, zeroForOne, amountIn, amountOutMinimum, 0n, "0x"]),
+    encodeAbiParameters(swapParams, [{ poolKey, zeroForOne, amountIn, amountOutMinimum, minHopPriceX36: 0n, hookData: "0x" }]),
     encodeAbiParameters(currencyAmount, [input, amountIn]),
     encodeAbiParameters(currencyAmount, [output, amountOutMinimum]),
   ];
